@@ -28,15 +28,11 @@ let isProcessing = false; // Kunci input saat proses database berjalan
 // FUNGSI UTILITY UI
 // =============================
 
-/**
- * Mengatur tampilan UI berdasarkan status.
- */
 function updateUIStatus(state, message = null) {
   statusCard.className = 'p-6 rounded-2xl transition-all duration-300 ';
   statusIcon.className = 'w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full shadow-lg text-white ';
   statusMessage.classList.remove('text-primary-blue', 'text-success-green', 'text-error-red', 'text-yellow-600');
   
-  // Bersihkan animasi dan kelas sebelumnya
   statusIcon.classList.remove('status-icon', 'animate-spin', 'bg-primary-blue/80', 'bg-success-green', 'bg-error-red', 'bg-yellow-500');
   statusCard.classList.remove('bg-blue-50', 'bg-success-green/20', 'bg-error-red/20', 'bg-yellow-50');
 
@@ -110,7 +106,6 @@ function handleKeydown(e) {
         return;
     }
     
-    // Jika tombol ENTER ditekan (akhir dari tap kartu)
     if (e.key === 'Enter') {
         e.preventDefault(); 
         const rfidId = currentRFID.trim();
@@ -124,24 +119,67 @@ function handleKeydown(e) {
         return;
     }
 
-    // Jika tombol adalah karakter ID kartu (alfanumerik)
     if (e.key.length === 1 && /^[a-zA-Z0-9]+$/.test(e.key) && currentRFID.length < 20) {
         e.preventDefault(); 
         currentRFID += e.key;
     }
     
-    // Handle Backspace
     if (e.key === 'Backspace') {
         currentRFID = currentRFID.slice(0, -1);
     }
 }
 
 // =============================
-// CEK KARTU DI SUPABASE (TERMASUK LOGGING)
+// FUNGSI PENENTU SLOT WAKTU (BARU)
+// =============================
+
+/**
+ * Menentukan slot waktu berdasarkan jam saat ini.
+ * @returns {string|null} 'pagi', 'siang', 'sore', 'malam', atau null jika di luar jam absen.
+ */
+function getCurrentSlot() {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    // Konversi ke format HHMM (e.g., 05:00 -> 500, 14:30 -> 1430)
+    const currentTimeHHMM = currentHour * 100 + currentMinute; 
+
+    // Pagi: 05:00 - 09:00 (500 sampai 900)
+    if (currentTimeHHMM >= 500 && currentTimeHHMM <= 900) return 'pagi';
+    
+    // Siang: 11:00 - 14:00 (1100 sampai 1400)
+    if (currentTimeHHMM >= 1100 && currentTimeHHMM <= 1400) return 'siang';
+
+    // Sore: 17:00 - 20:00 (1700 sampai 2000)
+    if (currentTimeHHMM >= 1700 && currentTimeHHMM <= 2000) return 'sore';
+
+    // Malam: 22:00 - 05:00
+    // (2200 sampai 2359) ATAU (0000 sampai 0459)
+    if (currentTimeHHMM >= 2200 || currentTimeHHMM < 500) return 'malam';
+
+    // Di luar jam absen yang ditentukan
+    return null; 
+}
+
+
+// =============================
+// CEK KARTU DI SUPABASE (LOGIKA ABSEN BERDASARKAN JAM)
 // =============================
 async function cekCard(card) {
   
+  const currentSlot = getCurrentSlot();
+  
+  let result = {
+      success: false,
+      message: 'Kartu Tidak Terdaftar!',
+      rfidId: card,
+      nama: 'Pengguna tidak terdaftar',
+      departemen: 'N/A',
+      status_log: 'Gagal (Unknown Card)'
+  };
+
   try {
+    // 1. Cek Kartu di Database
     const { data, error } = await db
       .from("data_master")
       .select("card, nama, departemen, pagi, siang, sore, malam")
@@ -150,78 +188,81 @@ async function cekCard(card) {
 
     if (error) throw error;
 
-    const result = {
-        success: false,
-        message: 'Kartu Tidak Terdaftar!',
-        rfidId: card,
-        nama: 'Pengguna tidak terdaftar',
-        departemen: 'N/A',
-        status_log: 'Gagal (Unknown Card)'
-    };
-
     if (data) {
       result.nama = data.nama;
       result.departemen = data.departemen || 'N/A';
       
-      const dapatMakan =
-        data.pagi === "Kantin" ||
-        data.siang === "Kantin" ||
-        data.sore === "Kantin" ||
-        data.malam === "Kantin";
-
-      if (dapatMakan) {
-        // --- LOGIKA CEK DOUBLE TAP (5 menit cooldown) ---
-        const { data: recentLog } = await db
-            .from("log_absen")
-            .select("created_at")
-            .eq("card", card)
-            .order("created_at", { ascending: false })
-            .limit(1);
-
-        let isDoubleTap = false;
-        if (recentLog && recentLog.length > 0) {
-            const lastTap = new Date(recentLog[0].created_at).getTime();
-            const now = new Date().getTime();
-            const diffMinutes = (now - lastTap) / (1000 * 60);
-
-            if (diffMinutes < 5) {
-                isDoubleTap = true;
-            }
-        }
-        
-        if (isDoubleTap) {
-            result.success = false;
-            result.message = `Absen GAGAL: Terlalu cepat (Absen Ganda)!`;
-            result.status_log = "Gagal (Double Tap)";
-        } else {
-            result.success = true;
-            result.message = `Absen Sukses! Selamat Makan, ${data.nama}!`;
-            result.status_log = "Sukses";
-        }
+      // 2. Cek Jam Absen
+      if (!currentSlot) {
+          result.success = false;
+          result.message = `GAGAL: Tap di luar jam absen!`;
+          result.status_log = `Gagal (Diluar Jam Absen)`;
 
       } else {
-        result.success = false;
-        result.message = `GAGAL: Tidak ada jatah makan hari ini!`;
-        result.status_log = "Gagal (No Jatah)";
+        // 3. Cek Jatah Makan pada Slot yang Aktif
+        const jatahUntukSlotIni = data[currentSlot]; // Ambil nilai dari kolom 'pagi', 'siang', 'sore', atau 'malam'
+        
+        if (jatahUntukSlotIni === "Kantin") {
+          
+          // --- LOGIKA CEK DOUBLE TAP (5 menit cooldown) ---
+          const { data: recentLog } = await db
+              .from("log_absen")
+              .select("created_at")
+              // Cek tap ganda hanya untuk slot yang sama
+              .eq("card", card)
+              .like("status", `%(${currentSlot.toUpperCase()})%`) 
+              .order("created_at", { ascending: false })
+              .limit(1);
+
+          let isDoubleTap = false;
+          if (recentLog && recentLog.length > 0) {
+              const lastTap = new Date(recentLog[0].created_at).getTime();
+              const now = new Date().getTime();
+              const diffMinutes = (now - lastTap) / (1000 * 60);
+
+              if (diffMinutes < 5) {
+                  isDoubleTap = true;
+              }
+          }
+          
+          if (isDoubleTap) {
+              result.success = false;
+              result.message = `Absen GAGAL: Terlalu cepat (Absen Ganda)!`;
+              result.status_log = `Gagal (Double Tap ${currentSlot.toUpperCase()})`;
+          } else {
+              result.success = true;
+              result.message = `Absen Sukses Slot ${currentSlot.toUpperCase()}! Selamat, ${data.nama}!`;
+              result.status_log = `Sukses (${currentSlot.toUpperCase()})`;
+          }
+
+        } else {
+          // Tidak ada jatah ('Tidak Ada' atau null) untuk slot ini
+          result.success = false;
+          result.message = `GAGAL: Tidak ada jatah makan slot ${currentSlot.toUpperCase()} hari ini!`;
+          result.status_log = `Gagal (No Jatah ${currentSlot.toUpperCase()})`;
+        }
       }
-
-      // --- PENTING: PENCATATAN LOG DI SINI ---
-      await db.from("log_absen").insert({
-          card: result.rfidId,
-          nama: result.nama,
-          departemen: result.departemen,
-          status: result.status_log
-      });
     }
+    
+    // --- PENCATATAN LOG UNTUK SEMUA TAP ---
+    const { error: logError } = await db.from("log_absen").insert({
+        card: result.rfidId,
+        nama: result.nama,
+        departemen: result.departemen,
+        status: result.status_log
+    });
 
+    if (logError) throw logError;
+    
     displayResult(result);
 
   } catch (error) {
     console.error("Kesalahan Supabase/Jaringan:", error);
-    // Log kegagalan koneksi jika belum ada log yang dibuat
-    db.from("log_absen").insert({
+    
+    // Log kegagalan saat proses pengecekan database/koneksi
+    await db.from("log_absen").insert({
         card: card,
-        nama: 'Koneksi Error',
+        nama: 'Error Koneksi Database',
         departemen: 'N/A',
         status: "Gagal (Error Koneksi)"
     });
