@@ -3,17 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Presensi RFID (Keyboard HID + Audio)</title>
+  <title>Sistem Presensi RFID (Keyboard HID)</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
-    /* Styling dasar dan animasi */
+    /* Mengatur font dan transisi */
     body {
       font-family: 'Inter', sans-serif;
       transition: background-color 0.5s ease;
     }
+    /* Animasi pulse untuk ikon saat menunggu input */
     .status-icon {
       animation: pulse-ring 1.5s infinite;
     }
@@ -32,7 +33,7 @@
             'primary-blue': '#1e3a8a', 
             'success-green': '#10b981',
             'error-red': '#ef4444',
-            'warning-yellow': '#f59e0b',
+            'warning-yellow': '#f59e0b', // Digunakan untuk status 'Processing'
           }
         }
       }
@@ -75,9 +76,6 @@
       </div>
     </div>
   </div>
-
-  <audio id="success-sound" src="Audio Absen SUKSES.mpeg" preload="auto"></audio>
-  <audio id="fail-sound" src="Audio Absen GAGAL.mpeg" preload="auto"></audio>
 
   <script type="module" src="app.js"></script>
 </body>
