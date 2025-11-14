@@ -3,21 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Presensi RFID (HID + Audio)</title>
+  <title>Sistem Presensi RFID (Keyboard HID + Audio)</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
+    /* Styling dasar dan animasi */
     body {
       font-family: 'Inter', sans-serif;
       transition: background-color 0.5s ease;
     }
-    /* Tambahkan warna kuning untuk status 'processing' */
-    .text-yellow-600 { color: #d97706; }
-    .bg-yellow-50 { background-color: #fffbeb; }
-    .bg-yellow-500 { background-color: #f59e0b; }
-
     .status-icon {
       animation: pulse-ring 1.5s infinite;
     }
@@ -28,6 +24,7 @@
     }
   </style>
   <script>
+    // Konfigurasi warna khusus Tailwind
     tailwind.config = {
       theme: {
         extend: {
@@ -35,6 +32,7 @@
             'primary-blue': '#1e3a8a', 
             'success-green': '#10b981',
             'error-red': '#ef4444',
+            'warning-yellow': '#f59e0b',
           }
         }
       }
@@ -43,14 +41,6 @@
 </head>
 <body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
 
-  <div id="audio-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-90 flex flex-col items-center justify-center z-50 transition-opacity duration-300">
-    <h2 class="text-white text-3xl font-bold mb-6">Aplikasi Presensi Siap</h2>
-    <p class="text-gray-300 mb-8 text-center px-4">Browser memerlukan interaksi Anda untuk mengaktifkan feedback audio.</p>
-    <button id="start-button" class="bg-primary-blue hover:bg-blue-800 text-white font-bold py-3 px-8 rounded-xl shadow-xl transition-colors">
-        Mulai Presensi
-    </button>
-  </div>
-  
   <div id="app-container" class="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-8 sm:p-10 text-center transition-all duration-500 transform scale-100">
 
     <div class="mb-8">
@@ -63,8 +53,8 @@
       <div id="status-icon" class="status-icon w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-primary-blue/80 shadow-lg text-white">
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
       </div>
-      <p id="status-message" class="text-xl font-semibold text-primary-blue">Menunggu Kartu...</p>
-      <p class="text-sm text-gray-400 mt-1" id="reader-status-hint">Sentuh Kartu RFID Anda ke Reader</p>
+      <p id="status-message" class="text-xl font-semibold text-primary-blue">Reader Siap. Tap Kartu.</p>
+      <p class="text-sm text-gray-400 mt-1" id="reader-status-hint">Listener Keyboard (HID) aktif. Tempelkan kartu.</p>
     </div>
 
     <div id="hasil-container" class="mt-6 p-6 border-t border-gray-100 hidden">
@@ -86,8 +76,8 @@
     </div>
   </div>
 
-  <audio id="success-sound" src="assets/Audio Absen SUKSES.mpeg" preload="auto"></audio>
-  <audio id="fail-sound" src="assets/Audio Absen GAGAL.mpeg" preload="auto"></audio>
+  <audio id="success-sound" src="Audio Absen SUKSES.mpeg" preload="auto"></audio>
+  <audio id="fail-sound" src="Audio Absen GAGAL.mpeg" preload="auto"></audio>
 
   <script type="module" src="app.js"></script>
 </body>
