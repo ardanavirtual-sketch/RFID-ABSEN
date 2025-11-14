@@ -1,26 +1,95 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Admin Panel</title>
-  <link rel="stylesheet" href="admin.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel Presensi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <link rel="stylesheet" href="admin.css"> 
+    <script type="module" src="admin.js"></script>
+
+    <style>
+        .sidebar { transition: width 0.3s; }
+        .active-link { background-color: #3b82f6; }
+    </style>
 </head>
-<body>
+<body class="bg-gray-100 flex h-screen">
 
-  <h1>LOG ABSENSI RFID</h1>
+    <aside id="sidebar" class="w-64 bg-gray-800 text-white flex-shrink-0">
+        <div class="p-4 border-b border-gray-700">
+            <h1 class="text-2xl font-bold">Admin Panel</h1>
+        </div>
+        <nav class="p-2 space-y-1">
+            <a href="#" id="menu-log" class="nav-link block px-4 py-2 rounded-lg text-sm hover:bg-gray-700 active-link" data-view="log-absen">
+                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                Log Absen
+            </a>
+            <a href="#" id="menu-update" class="nav-link block px-4 py-2 rounded-lg text-sm hover:bg-gray-700" data-view="update-data">
+                <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                Update Data Jatah Makan
+            </a>
+        </nav>
+    </aside>
 
-  <table id="logTable">
-    <thead>
-      <tr>
-        <th>Waktu</th>
-        <th>Kartu</th>
-        <th>Nama</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+    <main class="flex-grow p-6 overflow-auto">
+        <h2 id="view-title" class="text-3xl font-bold text-gray-800 mb-6">Log Absen</h2>
 
-  <script type="module" src="admin.js"></script>
+        <section id="log-absen" class="view-content bg-white p-6 rounded-xl shadow-lg">
+            <div class="mb-4 flex justify-between items-center">
+                <h3 class="text-xl font-semibold">Tabel Riwayat Absen Hari Ini</h3>
+                <button id="refresh-log" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Refresh</button>
+            </div>
+            
+            <div id="log-status" class="text-center py-4 text-gray-500">Memuat data...</div>
+            <div class="overflow-x-auto">
+                <table id="log-table" class="min-w-full divide-y divide-gray-200 hidden">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departemen</th> <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Kartu</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-table-body" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="update-data" class="view-content bg-white p-6 rounded-xl shadow-lg hidden">
+            <h3 class="text-xl font-semibold mb-4">Import Data Jatah Makan Harian (Excel/CSV)</h3>
+            <div class="border-2 border-dashed border-gray-300 p-8 rounded-lg text-center mb-6">
+                <p class="mb-4 text-gray-600">Pastikan file Excel/CSV memiliki kolom: **card**, **nama**, **departemen**, **pagi**, **siang**, **sore**, **malam**.</p>
+                <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" class="mb-4 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"/>
+                
+                <button id="preview-data" class="bg-yellow-500 text-white px-6 py-3 rounded-lg hover:bg-yellow-600 transition disabled:opacity-50" disabled>
+                    Lihat Pratinjau Data
+                </button>
+                <button id="import-data-button" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition disabled:opacity-50" disabled>
+                    Import & Arsipkan Data Lama
+                </button>
+            </div>
+
+            <div id="import-status" class="mt-4 text-sm font-medium"></div>
+
+            <div id="preview-section" class="hidden mt-6">
+                <h4 class="text-lg font-bold mb-3">Pratinjau Data Baru (<span id="preview-count">0</span> Baris)</h4>
+                <div class="overflow-x-auto max-h-96">
+                    <table id="preview-table" class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            </thead>
+                        <tbody id="preview-table-body" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </main>
+
 </body>
 </html>
