@@ -1,9 +1,6 @@
-// app.js
-
 import { createClient } from "https://esm.sh/@supabase/supabase-js";
 
 // --- KONFIGURASI SUPABASE ---
-// Ganti dengan kredensial Supabase Anda jika berbeda
 const SUPABASE_URL = "https://ymzcvyumplerqccaplxi.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI";
 
@@ -15,24 +12,30 @@ const statusIcon = document.getElementById('status-icon');
 const statusMessage = document.getElementById('status-message');
 const hasilContainer = document.getElementById('hasil-container');
 const hasilTitle = document.getElementById('hasil-title');
-const hasilNama = document = document.getElementById('hasil-nama');
+const hasilNama = document.getElementById('hasil-nama');
 const hasilID = document.getElementById('hasil-id');
 const hasilWaktu = document.getElementById('hasil-waktu');
 const appContainer = document.getElementById('app-container');
 
 // --- STATE APLIKASI ---
 let currentRFID = ''; 
-let isProcessing = false; // Kunci input saat proses database berjalan
+let isProcessing = false; // Flag untuk mencegah tap ganda saat proses database berjalan
 
 // =============================
 // FUNGSI UTILITY UI
 // =============================
 
+/**
+ * Mengatur tampilan UI berdasarkan status.
+ * @param {string} state - 'loading', 'processing', 'success', 'error', atau 'default'.
+ * @param {string} message - Pesan status yang akan ditampilkan.
+ */
 function updateUIStatus(state, message = null) {
   statusCard.className = 'p-6 rounded-2xl transition-all duration-300 ';
   statusIcon.className = 'w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full shadow-lg text-white ';
   statusMessage.classList.remove('text-primary-blue', 'text-success-green', 'text-error-red', 'text-yellow-600');
   
+  // Bersihkan animasi dan kelas sebelumnya
   statusIcon.classList.remove('status-icon', 'animate-spin', 'bg-primary-blue/80', 'bg-success-green', 'bg-error-red', 'bg-yellow-500');
   statusCard.classList.remove('bg-blue-50', 'bg-success-green/20', 'bg-error-red/20', 'bg-yellow-50');
 
@@ -72,6 +75,7 @@ function updateUIStatus(state, message = null) {
 function displayResult(result) {
     const currentTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     
+    // Transisi latar belakang utama
     appContainer.classList.remove('scale-105', 'bg-success-green/20', 'bg-error-red/20');
 
     if (result.success) {
@@ -84,11 +88,13 @@ function displayResult(result) {
         hasilTitle.textContent = 'Detail Kegagalan';
     }
 
+    // Tampilkan Detail
     hasilNama.textContent = result.nama;
     hasilID.textContent = `${result.rfidId} (${result.departemen})`;
     hasilWaktu.textContent = currentTime;
     hasilContainer.classList.remove('hidden');
 
+    // Atur ulang status setelah 5 detik
     setTimeout(() => {
         isProcessing = false; // IZINKAN INPUT BARU
         updateUIStatus('default', 'Reader Siap. Silakan tap kartu...');
@@ -98,14 +104,21 @@ function displayResult(result) {
 }
 
 // =============================
-// FUNGSI HID LISTENER 
+// FUNGSI HID LISTENER (PENTING)
 // =============================
+
+/**
+ * Logika pengumpul input dari keyboard listener (reader RFID).
+ * @param {Event} e - Event keydown.
+ */
 function handleKeydown(e) {
+    // 1. Mencegah pemrosesan jika sedang sibuk (isProcessing = true)
     if (isProcessing) {
         e.preventDefault(); 
         return;
     }
     
+    // 2. Jika tombol yang ditekan adalah ENTER (akhir dari tap kartu)
     if (e.key === 'Enter') {
         e.preventDefault(); 
         const rfidId = currentRFID.trim();
@@ -113,69 +126,34 @@ function handleKeydown(e) {
         if (rfidId.length > 0) {
             isProcessing = true; // Kunci input
             updateUIStatus('processing', 'Memproses Data Kartu...');
-            cekCard(rfidId); 
+            cekCard(rfidId); // Panggil fungsi asinkron
         }
         currentRFID = ''; // Reset buffer input
         return;
     }
 
+    // 3. Jika tombol yang ditekan adalah karakter ID kartu (angka/huruf)
+    // Asumsi ID kartu adalah alfanumerik dan panjangnya kurang dari 20.
     if (e.key.length === 1 && /^[a-zA-Z0-9]+$/.test(e.key) && currentRFID.length < 20) {
         e.preventDefault(); 
         currentRFID += e.key;
+        // Opsional: Tampilkan di console untuk debug
+        // console.log("Current ID:", currentRFID); 
     }
     
+    // 4. Handle Backspace (hanya jika ada ID yang terketik manual)
     if (e.key === 'Backspace') {
         currentRFID = currentRFID.slice(0, -1);
     }
 }
 
 // =============================
-// FUNGSI PENENTU SLOT WAKTU
-// =============================
-
-/**
- * Menentukan slot waktu berdasarkan jam saat ini.
- */
-function getCurrentSlot() {
-    const now = new Date();
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-    const currentTimeHHMM = currentHour * 100 + currentMinute; 
-
-    // Pagi: 05:00 - 09:00 (500 sampai 900)
-    if (currentTimeHHMM >= 500 && currentTimeHHMM <= 900) return 'pagi';
-    
-    // Siang: 11:00 - 14:00 (1100 sampai 1400)
-    if (currentTimeHHMM >= 1100 && currentTimeHHMM <= 1400) return 'siang';
-
-    // Sore: 17:00 - 20:00 (1700 sampai 2000)
-    if (currentTimeHHMM >= 1700 && currentTimeHHMM <= 2000) return 'sore';
-
-    // Malam: 22:00 - 05:00
-    if (currentTimeHHMM >= 2200 || currentTimeHHMM < 500) return 'malam';
-
-    return null; 
-}
-
-
-// =============================
-// CEK KARTU DI SUPABASE (LOGIKA ABSEN BERDASARKAN JAM)
+// CEK KARTU DI SUPABASE
 // =============================
 async function cekCard(card) {
   
-  const currentSlot = getCurrentSlot();
-  
-  let result = {
-      success: false,
-      message: 'Kartu Tidak Terdaftar!',
-      rfidId: card,
-      nama: 'Pengguna tidak terdaftar',
-      departemen: 'N/A',
-      status_log: 'Gagal (Unknown Card)'
-  };
-
   try {
-    // 1. Cek Kartu di Database
+    // Ambil data kartu dan departemen
     const { data, error } = await db
       .from("data_master")
       .select("card, nama, departemen, pagi, siang, sore, malam")
@@ -184,94 +162,75 @@ async function cekCard(card) {
 
     if (error) throw error;
 
+    const result = {
+        success: false,
+        message: 'Kartu Tidak Terdaftar!',
+        rfidId: card,
+        nama: 'Pengguna tidak terdaftar',
+        departemen: 'N/A',
+        status_log: 'Gagal (Unknown Card)'
+    };
+
     if (data) {
       result.nama = data.nama;
       result.departemen = data.departemen || 'N/A';
       
-      // --- LOGIKA BARU: CEK JATAH MAKAN TOTAL ---
-      // Cek apakah ada satupun kolom yang terisi (tidak null/kosong)
-      const hasAnyJatah = data.pagi || data.siang || data.sore || data.malam;
-      
-      if (!hasAnyJatah) {
-          result.success = false;
-          result.message = `GAGAL: Tidak ada jatah makan yang dialokasikan hari ini!`;
-          result.status_log = `Gagal (No Jatah Total)`;
-      } else {
-        // --- LANJUT KE LOGIKA CEK SLOT WAKTU ---
-        if (!currentSlot) {
-            result.success = false;
-            result.message = `GAGAL: Tap di luar jam absen!`;
-            result.status_log = `Gagal (Diluar Jam Absen)`;
+      // CEK JATAH MAKAN
+      const dapatMakan =
+        data.pagi === "Kantin" ||
+        data.siang === "Kantin" ||
+        data.sore === "Kantin" ||
+        data.malam === "Kantin";
 
-        } else {
-          // 3. Cek Jatah Makan pada Slot yang Aktif
-          const jatahUntukSlotIni = data[currentSlot]; 
-          
-          if (jatahUntukSlotIni === "Kantin") {
-            
-            // --- LOGIKA CEK DOUBLE TAP (5 menit cooldown) ---
-            const { data: recentLog } = await db
-                .from("log_absen")
-                .select("created_at")
-                .eq("card", card)
-                .like("status", `%(${currentSlot.toUpperCase()})%`) 
-                .order("created_at", { ascending: false })
-                .limit(1);
+      if (dapatMakan) {
+        // --- LOGIKA CEK DOUBLE TAP (Opsional: 5 menit cooldown) ---
+        const { data: recentLog } = await db
+            .from("log_absen")
+            .select("created_at")
+            .eq("card", card)
+            .order("created_at", { ascending: false })
+            .limit(1);
 
-            let isDoubleTap = false;
-            if (recentLog && recentLog.length > 0) {
-                const lastTap = new Date(recentLog[0].created_at).getTime();
-                const now = new Date().getTime();
-                const diffMinutes = (now - lastTap) / (1000 * 60);
+        let isDoubleTap = false;
+        if (recentLog && recentLog.length > 0) {
+            const lastTap = new Date(recentLog[0].created_at).getTime();
+            const now = new Date().getTime();
+            const diffMinutes = (now - lastTap) / (1000 * 60);
 
-                if (diffMinutes < 5) {
-                    isDoubleTap = true;
-                }
+            if (diffMinutes < 5) {
+                isDoubleTap = true;
             }
-            
-            if (isDoubleTap) {
-                result.success = false;
-                result.message = `Absen GAGAL: Terlalu cepat (Absen Ganda)!`;
-                result.status_log = `Gagal (Double Tap ${currentSlot.toUpperCase()})`;
-            } else {
-                result.success = true;
-                result.message = `Absen Sukses Slot ${currentSlot.toUpperCase()}! Selamat, ${data.nama}!`;
-                result.status_log = `Sukses (${currentSlot.toUpperCase()})`;
-            }
-
-          } else {
-            // Tidak ada jatah ('Tidak Ada' atau null/kosong) untuk slot ini
-            result.success = false;
-            result.message = `GAGAL: Tidak ada jatah makan slot ${currentSlot.toUpperCase()} hari ini!`;
-            result.status_log = `Gagal (No Jatah ${currentSlot.toUpperCase()})`;
-          }
         }
-      } // --- AKHIR DARI LOGIKA CEK SLOT WAKTU ---
-    }
-    
-    // --- PENCATATAN LOG UNTUK SEMUA TAP ---
-    const { error: logError } = await db.from("log_absen").insert({
-        card: result.rfidId,
-        nama: result.nama,
-        departemen: result.departemen,
-        status: result.status_log
-    });
+        
+        if (isDoubleTap) {
+            result.success = false;
+            result.message = `Absen GAGAL: Terlalu cepat (Absen Ganda)!`;
+            result.status_log = "Gagal (Double Tap)";
+        } else {
+            result.success = true;
+            result.message = `Absen Sukses! Selamat Makan, ${data.nama}!`;
+            result.status_log = "Sukses";
+        }
 
-    if (logError) throw logError;
-    
+      } else {
+        result.success = false;
+        result.message = `GAGAL: Tidak ada jatah makan hari ini!`;
+        result.status_log = "Gagal (No Jatah)";
+      }
+
+      // Log absensi ke database (baik sukses maupun gagal)
+      await db.from("log_absen").insert({
+          card: result.rfidId,
+          nama: result.nama,
+          departemen: result.departemen,
+          status: result.status_log
+      });
+    }
+
     displayResult(result);
 
   } catch (error) {
     console.error("Kesalahan Supabase/Jaringan:", error);
-    
-    // Log kegagalan saat proses pengecekan database/koneksi
-    await db.from("log_absen").insert({
-        card: card,
-        nama: 'Error Koneksi Database',
-        departemen: 'N/A',
-        status: "Gagal (Error Koneksi)"
-    });
-    
     displayResult({
         success: false,
         message: 'Kesalahan Server/Jaringan!',
@@ -286,7 +245,9 @@ async function cekCard(card) {
 // =============================
 // INISIALISASI
 // =============================
+
 window.onload = () => {
+    // Tambahkan listener keyboard pada seluruh dokumen
     document.addEventListener('keydown', handleKeydown);
     updateUIStatus('default', 'Reader Siap. Silakan tap kartu...');
 };
