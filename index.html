@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Presensi RFID Modern</title>
-  <!-- Memuat Tailwind CSS CDN untuk styling modern -->
+  <title>Sistem Presensi RFID (Terpisah & Modular)</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     /* Mengatur font ke Inter (default Tailwind) dan memastikan layout full screen */
     body {
@@ -29,6 +29,7 @@
             'primary-blue': '#1e3a8a', /* Deep Blue */
             'success-green': '#10b981',
             'error-red': '#ef4444',
+            'warning-yellow': '#f59e0b',
           }
         }
       }
@@ -39,39 +40,31 @@
 
   <div id="app-container" class="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-8 sm:p-10 text-center transition-all duration-500 transform scale-100">
 
-    <!-- Header & Logo Placeholder -->
     <div class="mb-8">
-      <!-- Placeholder untuk Logo atau Ikon Institusi (Menggunakan SVG inline sebagai contoh) -->
       <svg class="w-16 h-16 mx-auto text-primary-blue mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
       <h1 class="text-3xl font-extrabold text-gray-900">Sistem Presensi RFID</h1>
-      <p class="text-gray-500 mt-1">Presensi Cepat & Akurat untuk Karyawan/Mahasiswa</p>
+      <p class="text-gray-500 mt-1">Terhubung ke Supabase</p>
     </div>
 
-    <!-- Area Status Utama -->
     <div id="status-card" class="p-6 rounded-2xl transition-all duration-300 bg-blue-50">
       <div id="status-icon" class="status-icon w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-primary-blue/80 shadow-lg text-white">
-        <!-- Ikon Default (Lonceng/Notification) -->
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
       </div>
       <p id="status-message" class="text-xl font-semibold text-primary-blue">Menunggu Kartu...</p>
-      <p class="text-sm text-gray-400 mt-1">Sentuh Kartu RFID Anda ke Reader</p>
+      <p class="text-sm text-gray-400 mt-1" id="reader-status-hint">Sentuh Kartu RFID Anda ke Reader</p>
     </div>
 
-    <!-- Area Hasil/Detail Absensi -->
     <div id="hasil-container" class="mt-6 p-6 border-t border-gray-100 hidden">
       <h3 class="text-xl font-bold text-left mb-4" id="hasil-title">Detail Presensi</h3>
       <div class="space-y-3 text-left">
-        <!-- Baris Nama -->
         <div class="flex justify-between items-center pb-2 border-b border-dashed">
           <span class="text-gray-500 font-medium">Nama:</span>
           <span class="text-gray-900 font-semibold" id="hasil-nama">-</span>
         </div>
-        <!-- Baris ID Kartu -->
         <div class="flex justify-between items-center pb-2 border-b border-dashed">
           <span class="text-gray-500 font-medium">ID Kartu:</span>
           <span class="text-gray-900 font-semibold text-sm" id="hasil-id">-</span>
         </div>
-        <!-- Baris Waktu -->
         <div class="flex justify-between items-center">
           <span class="text-gray-500 font-medium">Waktu Presensi:</span>
           <span class="text-gray-900 font-semibold" id="hasil-waktu">-</span>
@@ -79,138 +72,15 @@
       </div>
     </div>
 
-    <!-- Tombol Simulasi (Hanya untuk demonstrasi) -->
-    <button id="simulate-tap" class="mt-8 w-full py-3 bg-primary-blue hover:bg-primary-blue/90 text-white font-bold rounded-xl shadow-md transition-transform duration-200 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-primary-blue/50">
+    <button id="connect-reader" class="mt-8 w-full py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-xl shadow-md transition-transform duration-200 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-gray-600/50">
+      Hubungkan Reader RFID Serial (OTG)
+    </button>
+    
+    <button id="simulate-tap" class="mt-4 w-full py-3 bg-primary-blue hover:bg-primary-blue/90 text-white font-bold rounded-xl shadow-md transition-transform duration-200 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-primary-blue/50">
       Simulasi Tempel Kartu RFID (Klik)
     </button>
   </div>
 
-  <script>
-    // Konfigurasi Variabel Global
-    const statusCard = document.getElementById('status-card');
-    const statusIcon = document.getElementById('status-icon');
-    const statusMessage = document.getElementById('status-message');
-    const hasilContainer = document.getElementById('hasil-container');
-    const hasilTitle = document.getElementById('hasil-title');
-    const hasilNama = document.getElementById('hasil-nama');
-    const hasilID = document.getElementById('hasil-id');
-    const hasilWaktu = document.getElementById('hasil-waktu');
-    const simulateButton = document.getElementById('simulate-tap');
-    const appContainer = document.getElementById('app-container');
-
-    // Data simulasi (seperti dari database)
-    const knownCards = [
-      { id: '1A2B3C4D', nama: 'Budi Santoso' },
-      { id: '5E6F7G8H', nama: 'Siti Rahmawati' }
-    ];
-
-    /**
-     * Mengatur ulang tampilan ke kondisi 'Menunggu Kartu'.
-     */
-    function resetStatus() {
-      // Hapus kelas status sebelumnya
-      appContainer.classList.remove('scale-105', 'bg-success-green/20', 'bg-error-red/20');
-      statusCard.classList.remove('bg-success-green/20', 'bg-error-red/20');
-      statusIcon.classList.remove('bg-success-green', 'bg-error-red', 'animate-none');
-
-      // Terapkan kelas 'Menunggu'
-      statusCard.classList.add('bg-blue-50');
-      statusIcon.classList.add('bg-primary-blue/80', 'status-icon'); // Tambah animasi pulsing
-      statusIcon.innerHTML = `<!-- Ikon Lonceng --><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>`;
-      statusMessage.textContent = 'Menunggu Kartu...';
-      statusMessage.classList.remove('text-success-green', 'text-error-red');
-      statusMessage.classList.add('text-primary-blue');
-
-      hasilContainer.classList.add('hidden');
-      hasilNama.textContent = '-';
-      hasilID.textContent = '-';
-      hasilWaktu.textContent = '-';
-      simulateButton.disabled = false;
-      simulateButton.textContent = 'Simulasi Tempel Kartu RFID (Klik)';
-    }
-
-    /**
-     * Memproses kartu RFID yang baru saja 'ditempelkan'.
-     * @param {string} rfidId - ID kartu yang disimulasikan.
-     */
-    function handleRfidTap(rfidId) {
-      simulateButton.disabled = true;
-      simulateButton.textContent = 'Memproses...';
-      
-      // 1. Fase Memproses
-      statusCard.classList.replace('bg-blue-50', 'bg-yellow-50');
-      statusIcon.classList.replace('bg-primary-blue/80', 'bg-yellow-500');
-      statusIcon.classList.remove('status-icon'); // Hentikan animasi pulse
-      statusIcon.innerHTML = `<!-- Ikon Loading --><svg class="animate-spin w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
-      statusMessage.textContent = 'Memproses Data Kartu...';
-      statusMessage.classList.replace('text-primary-blue', 'text-yellow-600');
-      hasilContainer.classList.add('hidden');
-
-      // 2. Simulasi Proses Server/Database (Delay 1.5 detik)
-      setTimeout(() => {
-        const user = knownCards.find(card => card.id === rfidId);
-        const currentTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-        if (user) {
-          // --- KARTU DIKENAL: SUKSES ---
-          appContainer.classList.add('scale-105', 'bg-success-green/20');
-          statusCard.classList.replace('bg-yellow-50', 'bg-success-green/20');
-          statusIcon.classList.replace('bg-yellow-500', 'bg-success-green');
-          statusIcon.innerHTML = `<!-- Ikon Ceklis --><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-          statusMessage.textContent = 'Absensi Berhasil!';
-          statusMessage.classList.replace('text-yellow-600', 'text-success-green');
-          
-          hasilTitle.textContent = 'Detail Presensi Sukses';
-          hasilNama.textContent = user.nama;
-          hasilID.textContent = user.id;
-          hasilWaktu.textContent = currentTime;
-          hasilContainer.classList.remove('hidden');
-
-        } else {
-          // --- KARTU TIDAK DIKENAL: GAGAL ---
-          appContainer.classList.add('scale-105', 'bg-error-red/20');
-          statusCard.classList.replace('bg-yellow-50', 'bg-error-red/20');
-          statusIcon.classList.replace('bg-yellow-500', 'bg-error-red');
-          statusIcon.innerHTML = `<!-- Ikon Silang --><svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-          statusMessage.textContent = 'Kartu Tidak Dikenal!';
-          statusMessage.classList.replace('text-yellow-600', 'text-error-red');
-
-          hasilTitle.textContent = 'Detail Kegagalan';
-          hasilNama.textContent = 'Pengguna tidak terdaftar';
-          hasilID.textContent = rfidId;
-          hasilWaktu.textContent = currentTime;
-          hasilContainer.classList.remove('hidden');
-        }
-
-        // 3. Atur ulang ke kondisi 'Menunggu' setelah 5 detik
-        setTimeout(resetStatus, 5000);
-
-      }, 1500); // 1.5 detik delay simulasi
-    }
-
-    /**
-     * Fungsi untuk mensimulasikan tempelan kartu (dipicu oleh tombol).
-     */
-    function simulateTapHandler() {
-      // Secara acak pilih ID kartu yang dikenal, atau ID acak untuk kasus gagal
-      const randomChance = Math.random();
-      let simulatedId;
-
-      if (randomChance < 0.8) { // 80% kemungkinan sukses
-        const randomIndex = Math.floor(Math.random() * knownCards.length);
-        simulatedId = knownCards[randomIndex].id;
-      } else { // 20% kemungkinan gagal
-        simulatedId = '9X0Y1Z2A'; // ID yang tidak dikenal
-      }
-
-      handleRfidTap(simulatedId);
-    }
-
-    // Listener untuk tombol simulasi
-    simulateButton.addEventListener('click', simulateTapHandler);
-
-    // Inisialisasi status saat memuat
-    window.onload = resetStatus;
-  </script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
