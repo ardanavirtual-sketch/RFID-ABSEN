@@ -15,7 +15,7 @@ const statusIcon = document.getElementById('status-icon');
 const statusMessage = document.getElementById('status-message');
 const hasilContainer = document.getElementById('hasil-container');
 const hasilTitle = document.getElementById('hasil-title');
-const hasilNama = document.getElementById('hasil-nama');
+const hasilNama = document = document.getElementById('hasil-nama');
 const hasilID = document.getElementById('hasil-id');
 const hasilWaktu = document.getElementById('hasil-waktu');
 const appContainer = document.getElementById('app-container');
@@ -130,18 +130,16 @@ function handleKeydown(e) {
 }
 
 // =============================
-// FUNGSI PENENTU SLOT WAKTU (BARU)
+// FUNGSI PENENTU SLOT WAKTU
 // =============================
 
 /**
  * Menentukan slot waktu berdasarkan jam saat ini.
- * @returns {string|null} 'pagi', 'siang', 'sore', 'malam', atau null jika di luar jam absen.
  */
 function getCurrentSlot() {
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
-    // Konversi ke format HHMM (e.g., 05:00 -> 500, 14:30 -> 1430)
     const currentTimeHHMM = currentHour * 100 + currentMinute; 
 
     // Pagi: 05:00 - 09:00 (500 sampai 900)
@@ -154,10 +152,8 @@ function getCurrentSlot() {
     if (currentTimeHHMM >= 1700 && currentTimeHHMM <= 2000) return 'sore';
 
     // Malam: 22:00 - 05:00
-    // (2200 sampai 2359) ATAU (0000 sampai 0459)
     if (currentTimeHHMM >= 2200 || currentTimeHHMM < 500) return 'malam';
 
-    // Di luar jam absen yang ditentukan
     return null; 
 }
 
@@ -192,56 +188,65 @@ async function cekCard(card) {
       result.nama = data.nama;
       result.departemen = data.departemen || 'N/A';
       
-      // 2. Cek Jam Absen
-      if (!currentSlot) {
+      // --- LOGIKA BARU: CEK JATAH MAKAN TOTAL ---
+      // Cek apakah ada satupun kolom yang terisi (tidak null/kosong)
+      const hasAnyJatah = data.pagi || data.siang || data.sore || data.malam;
+      
+      if (!hasAnyJatah) {
           result.success = false;
-          result.message = `GAGAL: Tap di luar jam absen!`;
-          result.status_log = `Gagal (Diluar Jam Absen)`;
-
+          result.message = `GAGAL: Tidak ada jatah makan yang dialokasikan hari ini!`;
+          result.status_log = `Gagal (No Jatah Total)`;
       } else {
-        // 3. Cek Jatah Makan pada Slot yang Aktif
-        const jatahUntukSlotIni = data[currentSlot]; // Ambil nilai dari kolom 'pagi', 'siang', 'sore', atau 'malam'
-        
-        if (jatahUntukSlotIni === "Kantin") {
-          
-          // --- LOGIKA CEK DOUBLE TAP (5 menit cooldown) ---
-          const { data: recentLog } = await db
-              .from("log_absen")
-              .select("created_at")
-              // Cek tap ganda hanya untuk slot yang sama
-              .eq("card", card)
-              .like("status", `%(${currentSlot.toUpperCase()})%`) 
-              .order("created_at", { ascending: false })
-              .limit(1);
-
-          let isDoubleTap = false;
-          if (recentLog && recentLog.length > 0) {
-              const lastTap = new Date(recentLog[0].created_at).getTime();
-              const now = new Date().getTime();
-              const diffMinutes = (now - lastTap) / (1000 * 60);
-
-              if (diffMinutes < 5) {
-                  isDoubleTap = true;
-              }
-          }
-          
-          if (isDoubleTap) {
-              result.success = false;
-              result.message = `Absen GAGAL: Terlalu cepat (Absen Ganda)!`;
-              result.status_log = `Gagal (Double Tap ${currentSlot.toUpperCase()})`;
-          } else {
-              result.success = true;
-              result.message = `Absen Sukses Slot ${currentSlot.toUpperCase()}! Selamat, ${data.nama}!`;
-              result.status_log = `Sukses (${currentSlot.toUpperCase()})`;
-          }
+        // --- LANJUT KE LOGIKA CEK SLOT WAKTU ---
+        if (!currentSlot) {
+            result.success = false;
+            result.message = `GAGAL: Tap di luar jam absen!`;
+            result.status_log = `Gagal (Diluar Jam Absen)`;
 
         } else {
-          // Tidak ada jatah ('Tidak Ada' atau null) untuk slot ini
-          result.success = false;
-          result.message = `GAGAL: Tidak ada jatah makan slot ${currentSlot.toUpperCase()} hari ini!`;
-          result.status_log = `Gagal (No Jatah ${currentSlot.toUpperCase()})`;
+          // 3. Cek Jatah Makan pada Slot yang Aktif
+          const jatahUntukSlotIni = data[currentSlot]; 
+          
+          if (jatahUntukSlotIni === "Kantin") {
+            
+            // --- LOGIKA CEK DOUBLE TAP (5 menit cooldown) ---
+            const { data: recentLog } = await db
+                .from("log_absen")
+                .select("created_at")
+                .eq("card", card)
+                .like("status", `%(${currentSlot.toUpperCase()})%`) 
+                .order("created_at", { ascending: false })
+                .limit(1);
+
+            let isDoubleTap = false;
+            if (recentLog && recentLog.length > 0) {
+                const lastTap = new Date(recentLog[0].created_at).getTime();
+                const now = new Date().getTime();
+                const diffMinutes = (now - lastTap) / (1000 * 60);
+
+                if (diffMinutes < 5) {
+                    isDoubleTap = true;
+                }
+            }
+            
+            if (isDoubleTap) {
+                result.success = false;
+                result.message = `Absen GAGAL: Terlalu cepat (Absen Ganda)!`;
+                result.status_log = `Gagal (Double Tap ${currentSlot.toUpperCase()})`;
+            } else {
+                result.success = true;
+                result.message = `Absen Sukses Slot ${currentSlot.toUpperCase()}! Selamat, ${data.nama}!`;
+                result.status_log = `Sukses (${currentSlot.toUpperCase()})`;
+            }
+
+          } else {
+            // Tidak ada jatah ('Tidak Ada' atau null/kosong) untuk slot ini
+            result.success = false;
+            result.message = `GAGAL: Tidak ada jatah makan slot ${currentSlot.toUpperCase()} hari ini!`;
+            result.status_log = `Gagal (No Jatah ${currentSlot.toUpperCase()})`;
+          }
         }
-      }
+      } // --- AKHIR DARI LOGIKA CEK SLOT WAKTU ---
     }
     
     // --- PENCATATAN LOG UNTUK SEMUA TAP ---
