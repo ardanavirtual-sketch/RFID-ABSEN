@@ -1,85 +1,17 @@
 <!DOCTYPE html>
-<html lang="id">
+<html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Presensi RFID (Terpisah & Modular)</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    /* Mengatur font ke Inter (default Tailwind) dan memastikan layout full screen */
-    body {
-      font-family: 'Inter', sans-serif;
-      transition: background-color 0.5s ease;
-    }
-    .status-icon {
-      animation: pulse-ring 1.5s infinite;
-    }
-    @keyframes pulse-ring {
-      0% { transform: scale(0.9); opacity: 0.7; }
-      50% { transform: scale(1.05); opacity: 1; }
-      100% { transform: scale(0.9); opacity: 0.7; }
-    }
-  </style>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'primary-blue': '#1e3a8a', /* Deep Blue */
-            'success-green': '#10b981',
-            'error-red': '#ef4444',
-            'warning-yellow': '#f59e0b',
-          }
-        }
-      }
-    }
-  </script>
+  <title>Absensi RFID</title>
+  <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
+<body>
 
-  <div id="app-container" class="w-full max-w-lg bg-white rounded-3xl shadow-2xl p-8 sm:p-10 text-center transition-all duration-500 transform scale-100">
+  <h1>ABSENSI RFID</h1>
+  <p>Silakan tap kartu RFID ke reader...</p>
 
-    <div class="mb-8">
-      <svg class="w-16 h-16 mx-auto text-primary-blue mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-      <h1 class="text-3xl font-extrabold text-gray-900">Sistem Presensi RFID</h1>
-      <p class="text-gray-500 mt-1">Terhubung ke Supabase</p>
-    </div>
-
-    <div id="status-card" class="p-6 rounded-2xl transition-all duration-300 bg-blue-50">
-      <div id="status-icon" class="status-icon w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-primary-blue/80 shadow-lg text-white">
-        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-      </div>
-      <p id="status-message" class="text-xl font-semibold text-primary-blue">Menunggu Kartu...</p>
-      <p class="text-sm text-gray-400 mt-1" id="reader-status-hint">Sentuh Kartu RFID Anda ke Reader</p>
-    </div>
-
-    <div id="hasil-container" class="mt-6 p-6 border-t border-gray-100 hidden">
-      <h3 class="text-xl font-bold text-left mb-4" id="hasil-title">Detail Presensi</h3>
-      <div class="space-y-3 text-left">
-        <div class="flex justify-between items-center pb-2 border-b border-dashed">
-          <span class="text-gray-500 font-medium">Nama:</span>
-          <span class="text-gray-900 font-semibold" id="hasil-nama">-</span>
-        </div>
-        <div class="flex justify-between items-center pb-2 border-b border-dashed">
-          <span class="text-gray-500 font-medium">ID Kartu:</span>
-          <span class="text-gray-900 font-semibold text-sm" id="hasil-id">-</span>
-        </div>
-        <div class="flex justify-between items-center">
-          <span class="text-gray-500 font-medium">Waktu Presensi:</span>
-          <span class="text-gray-900 font-semibold" id="hasil-waktu">-</span>
-        </div>
-      </div>
-    </div>
-
-    <button id="connect-reader" class="mt-8 w-full py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-xl shadow-md transition-transform duration-200 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-gray-600/50">
-      Hubungkan Reader RFID Serial (OTG)
-    </button>
-    
-    <button id="simulate-tap" class="mt-4 w-full py-3 bg-primary-blue hover:bg-primary-blue/90 text-white font-bold rounded-xl shadow-md transition-transform duration-200 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-primary-blue/50">
-      Simulasi Tempel Kartu RFID (Klik)
-    </button>
-  </div>
+  <div id="status">Menghubungkan ke reader...</div>
+  <div id="hasil"></div>
 
   <script type="module" src="app.js"></script>
 </body>
