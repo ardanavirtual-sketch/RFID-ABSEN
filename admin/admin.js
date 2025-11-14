@@ -28,15 +28,14 @@ const previewCount = document.getElementById('preview-count');
 const previewTableBody = document.getElementById('preview-table-body');
 const previewTable = document.getElementById('preview-table');
 
-let importedJsonData = []; // Data Excel yang sudah di-parse
-const requiredHeaders = ['card', 'nama', 'departemen', 'pagi', 'siang', 'sore', 'malam']; // <-- departemen DITAMBAHKAN
+let importedJsonData = []; 
+const requiredHeaders = ['card', 'nama', 'departemen', 'pagi', 'siang', 'sore', 'malam']; 
 
 // ===================================
 // UTILITY FUNCTIONS
 // ===================================
 
 function switchView(targetView) {
-    // ... (Logika switching view tetap sama) ...
     viewContents.forEach(section => {
         section.classList.add('hidden');
         if (section.id === targetView) {
@@ -68,14 +67,14 @@ async function fetchLogAbsen() {
     logTable.classList.add('hidden');
     logTableBody.innerHTML = '';
 
-    const today = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
+    const today = new Date().toISOString().split('T')[0]; 
     const startOfDay = `${today}T00:00:00.000Z`;
 
     try {
         const { data: logData, error } = await db
             .from('log_absen')
             .select('*')
-            .gte('created_at', startOfDay) // Hanya ambil data hari ini
+            .gte('created_at', startOfDay) 
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -91,7 +90,7 @@ async function fetchLogAbsen() {
             
             row.insertCell().textContent = time;
             row.insertCell().textContent = log.nama;
-            row.insertCell().textContent = log.departemen || 'N/A'; // <-- TAMBAH KOLOM DEPARTEMEN
+            row.insertCell().textContent = log.departemen || 'N/A';
             row.insertCell().textContent = log.card;
             
             const statusCell = row.insertCell();
@@ -114,7 +113,6 @@ async function fetchLogAbsen() {
 // ===================================
 
 function handleFileUpload(event) {
-    // ... (Logika handleFileUpload tetap sama) ...
     const file = event.target.files[0];
     if (!file) return;
 
@@ -125,21 +123,19 @@ function handleFileUpload(event) {
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
         
-        // Konversi data ke format yang lebih stabil (tanpa spasi di header)
+        // Konversi data ke format yang stabil
         importedJsonData = XLSX.utils.sheet_to_json(sheet, {
-            raw: false, // Jaga format teks
-            header: requiredHeaders // Paksa header sesuai urutan yang kita mau
+            raw: false, 
+            header: requiredHeaders 
         }).map(row => {
-             // Pastikan semua key ada, jika tidak ada di Excel, akan muncul 'undefined', yang Supabase akan terima
             const newRow = {};
             requiredHeaders.forEach(header => {
-                newRow[header] = row[header] || '';
+                // Pastikan nilai terambil, gunakan string kosong jika undefined
+                newRow[header] = row[header] !== undefined ? row[header] : ''; 
             });
             return newRow;
         });
 
-        // Cek header wajib (Menggunakan logika yang lebih longgar, mengandalkan requiredHeaders di XLSX.utils.sheet_to_json)
-        // Kita hanya perlu memastikan ada data
         if (importedJsonData.length === 0) {
             importStatus.className = 'mt-4 text-sm font-medium text-red-600';
             importStatus.textContent = `❌ Gagal: File kosong atau tidak terbaca.`;
@@ -148,11 +144,10 @@ function handleFileUpload(event) {
             return;
         }
 
-        // Aktifkan pratinjau
         importStatus.className = 'mt-4 text-sm font-medium text-blue-600';
         importStatus.textContent = `✅ File dimuat. ${importedJsonData.length} baris siap dipratinjau.`;
         previewDataButton.disabled = false;
-        importDataButton.disabled = true; // Jangan izinkan import sebelum pratinjau
+        importDataButton.disabled = true; 
 
     };
     reader.readAsArrayBuffer(file);
@@ -161,19 +156,17 @@ function handleFileUpload(event) {
 function showPreview() {
     previewTableBody.innerHTML = '';
     
-    // Buat header tabel pratinjau
     const tableHead = previewTable.querySelector('thead');
     tableHead.innerHTML = '';
     if (importedJsonData.length > 0) {
         const headerRow = tableHead.insertRow();
-        requiredHeaders.forEach(key => { // Gunakan requiredHeaders untuk urutan yang konsisten
+        requiredHeaders.forEach(key => { 
             const th = document.createElement('th');
             th.className = 'px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider';
             th.textContent = key;
             headerRow.appendChild(th);
         });
 
-        // Isi body tabel (hanya 10 baris pertama)
         importedJsonData.slice(0, 10).forEach(rowObject => {
             const row = previewTableBody.insertRow();
             requiredHeaders.forEach(key => {
@@ -190,7 +183,6 @@ function showPreview() {
 }
 
 async function processImport() {
-    // ... (Logika processImport tetap sama) ...
     if (importedJsonData.length === 0) {
         alert("Tidak ada data untuk di-import.");
         return;
@@ -221,7 +213,6 @@ async function processImport() {
                 .insert(dataToArchive);
 
             if (archiveError) throw archiveError;
-            console.log(`Berhasil mengarsipkan ${oldData.length} data lama.`);
         }
         
         // 2. HAPUS DATA LAMA (Truncate data_master)
@@ -233,7 +224,6 @@ async function processImport() {
             .neq('id', 0); 
 
         if (deleteError) throw deleteError;
-        console.log('Berhasil menghapus data master lama.');
 
         // 3. INSERT DATA BARU
         importStatus.textContent = `Memulai proses import... (3/3: Memasukkan ${importedJsonData.length} Data Baru)`;
@@ -263,7 +253,6 @@ async function processImport() {
 // ===================================
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Navigasi Sidebar
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -271,14 +260,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Log Absen Listeners
     refreshLogButton.addEventListener('click', fetchLogAbsen);
-
-    // Update Data Listeners
     excelFileInput.addEventListener('change', handleFileUpload);
     previewDataButton.addEventListener('click', showPreview);
     importDataButton.addEventListener('click', processImport);
 
-    // Default View
     switchView('log-absen');
 });
