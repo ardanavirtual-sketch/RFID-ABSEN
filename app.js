@@ -1,4 +1,4 @@
-// app.js (Kode sudah dimodifikasi untuk Keyboard Input/HID)
+// app.js (Kode Lengkap untuk HID Listener + Audio Feedback)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -22,12 +22,16 @@ const hasilWaktu = document.getElementById('hasil-waktu');
 const appContainer = document.getElementById('app-container');
 const readerStatusHint = document.getElementById('reader-status-hint');
 
+// Referensi Audio BARU (Pastikan ID di HTML sama)
+const successSound = document.getElementById('success-sound');
+const failSound = document.getElementById('fail-sound');
+
 // State untuk HID Listener
-let currentRFID = ''; // Buffer untuk menampung input ID kartu
-let isProcessing = false; // Mencegah double tap saat proses masih berjalan
+let currentRFID = ''; 
+let isProcessing = false; 
 
 // ===================================
-// UTILITY/UI FUNCTIONS (TETAP SAMA)
+// UTILITY/UI FUNCTIONS
 // ===================================
 
 function resetStatus() {
@@ -46,7 +50,6 @@ function resetStatus() {
     hasilID.textContent = '-';
     hasilWaktu.textContent = '-';
     
-    // Pesan status baru untuk HID Listener
     statusMessage.textContent = 'Reader Siap. Tap Kartu.';
     readerStatusHint.textContent = 'Listener Keyboard (HID) aktif. Tempelkan kartu.';
 }
@@ -63,10 +66,12 @@ function showProcessingStatus() {
 
 
 function updateUI({ success, message, rfidId, nama, status_log }) {
-    // ... (Fungsi updateUI tetap sama) ...
     const currentTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
     if (success) {
+        // --- LOGIKA AUDIO SUKSES ---
+        successSound.play().catch(e => console.error("Gagal putar suara sukses:", e));
+        
         appContainer.classList.add('scale-105', 'bg-success-green/20');
         statusCard.classList.replace('bg-warning-yellow/20', 'bg-success-green/20');
         statusIcon.classList.replace('bg-warning-yellow', 'bg-success-green');
@@ -76,6 +81,9 @@ function updateUI({ success, message, rfidId, nama, status_log }) {
         hasilTitle.textContent = 'Detail Presensi Sukses';
 
     } else {
+        // --- LOGIKA AUDIO GAGAL ---
+        failSound.play().catch(e => console.error("Gagal putar suara gagal:", e));
+        
         appContainer.classList.add('scale-105', 'bg-error-red/20');
         statusCard.classList.replace('bg-warning-yellow/20', 'bg-error-red/20');
         statusIcon.classList.replace('bg-warning-yellow', 'bg-error-red');
@@ -103,7 +111,7 @@ function updateUI({ success, message, rfidId, nama, status_log }) {
 // ===================================
 
 async function checkCardSupabase(rfidId) {
-    if (isProcessing) return; // Mencegah pemrosesan ganda
+    if (isProcessing) return;
     isProcessing = true;
 
     showProcessingStatus();
@@ -160,48 +168,39 @@ async function checkCardSupabase(rfidId) {
     }
 
     updateUI(result);
-    // isProcessing akan direset di updateUI setelah timeout
 }
 
 // ===================================
-// HID KEYBOARD LISTENER LOGIC (BARU)
+// HID KEYBOARD LISTENER LOGIC
 // ===================================
 
 function setupHIDListener() {
     document.addEventListener('keydown', (e) => {
-        // Abaikan jika sedang memproses atau jika tombol ditekan berulang (key repeat)
         if (isProcessing || e.repeat) {
             e.preventDefault(); 
             return;
         }
 
-        // 1. Cek tombol ENTER (Tanda berakhirnya ID kartu)
         if (e.key === 'Enter') {
-            e.preventDefault(); // Mencegah newline/form submission default
+            e.preventDefault(); 
             
             const rfidId = currentRFID.trim();
             if (rfidId.length > 0) {
                 checkCardSupabase(rfidId);
             }
-            // Reset buffer ID kartu setelah Enter ditekan
             currentRFID = '';
             
-            // Perbarui hint (opsional, untuk debugging)
             readerStatusHint.textContent = `Input ID diterima. Menunggu reset...`;
             return;
         }
 
-        // 2. Jika bukan Enter dan ID belum terlalu panjang, tambahkan karakter ke buffer
-        // Kebanyakan RFID reader hanya mengirimkan angka/huruf
         if (e.key.length === 1 && /[\w\d]/.test(e.key) && currentRFID.length < 20) {
             currentRFID += e.key;
             
-            // Tampilkan buffer di hint (sangat membantu untuk debugging)
             readerStatusHint.textContent = `ID Diterima: ${currentRFID} | Menunggu Enter...`;
             return;
         }
 
-        // 3. Tangani Backspace (opsional)
         if (e.key === 'Backspace') {
             currentRFID = currentRFID.slice(0, -1);
             readerStatusHint.textContent = `ID Diterima: ${currentRFID} | Menunggu Enter...`;
@@ -216,6 +215,5 @@ function setupHIDListener() {
 // ===================================
 
 window.onload = () => {
-    // Mulai mendengarkan input keyboard/HID reader
     setupHIDListener();
 };
