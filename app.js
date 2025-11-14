@@ -1,6 +1,9 @@
+// app.js
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js";
 
 // --- KONFIGURASI SUPABASE ---
+// Ganti dengan kredensial Supabase Anda jika berbeda
 const SUPABASE_URL = "https://ymzcvyumplerqccaplxi.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI";
 
@@ -19,7 +22,7 @@ const appContainer = document.getElementById('app-container');
 
 // --- STATE APLIKASI ---
 let currentRFID = ''; 
-let isProcessing = false; // Flag untuk mencegah tap ganda saat proses database berjalan
+let isProcessing = false; // Kunci input saat proses database berjalan
 
 // =============================
 // FUNGSI UTILITY UI
@@ -27,8 +30,6 @@ let isProcessing = false; // Flag untuk mencegah tap ganda saat proses database 
 
 /**
  * Mengatur tampilan UI berdasarkan status.
- * @param {string} state - 'loading', 'processing', 'success', 'error', atau 'default'.
- * @param {string} message - Pesan status yang akan ditampilkan.
  */
 function updateUIStatus(state, message = null) {
   statusCard.className = 'p-6 rounded-2xl transition-all duration-300 ';
@@ -75,7 +76,6 @@ function updateUIStatus(state, message = null) {
 function displayResult(result) {
     const currentTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     
-    // Transisi latar belakang utama
     appContainer.classList.remove('scale-105', 'bg-success-green/20', 'bg-error-red/20');
 
     if (result.success) {
@@ -88,13 +88,11 @@ function displayResult(result) {
         hasilTitle.textContent = 'Detail Kegagalan';
     }
 
-    // Tampilkan Detail
     hasilNama.textContent = result.nama;
     hasilID.textContent = `${result.rfidId} (${result.departemen})`;
     hasilWaktu.textContent = currentTime;
     hasilContainer.classList.remove('hidden');
 
-    // Atur ulang status setelah 5 detik
     setTimeout(() => {
         isProcessing = false; // IZINKAN INPUT BARU
         updateUIStatus('default', 'Reader Siap. Silakan tap kartu...');
@@ -104,21 +102,15 @@ function displayResult(result) {
 }
 
 // =============================
-// FUNGSI HID LISTENER (PENTING)
+// FUNGSI HID LISTENER 
 // =============================
-
-/**
- * Logika pengumpul input dari keyboard listener (reader RFID).
- * @param {Event} e - Event keydown.
- */
 function handleKeydown(e) {
-    // 1. Mencegah pemrosesan jika sedang sibuk (isProcessing = true)
     if (isProcessing) {
         e.preventDefault(); 
         return;
     }
     
-    // 2. Jika tombol yang ditekan adalah ENTER (akhir dari tap kartu)
+    // Jika tombol ENTER ditekan (akhir dari tap kartu)
     if (e.key === 'Enter') {
         e.preventDefault(); 
         const rfidId = currentRFID.trim();
@@ -126,34 +118,30 @@ function handleKeydown(e) {
         if (rfidId.length > 0) {
             isProcessing = true; // Kunci input
             updateUIStatus('processing', 'Memproses Data Kartu...');
-            cekCard(rfidId); // Panggil fungsi asinkron
+            cekCard(rfidId); 
         }
         currentRFID = ''; // Reset buffer input
         return;
     }
 
-    // 3. Jika tombol yang ditekan adalah karakter ID kartu (angka/huruf)
-    // Asumsi ID kartu adalah alfanumerik dan panjangnya kurang dari 20.
+    // Jika tombol adalah karakter ID kartu (alfanumerik)
     if (e.key.length === 1 && /^[a-zA-Z0-9]+$/.test(e.key) && currentRFID.length < 20) {
         e.preventDefault(); 
         currentRFID += e.key;
-        // Opsional: Tampilkan di console untuk debug
-        // console.log("Current ID:", currentRFID); 
     }
     
-    // 4. Handle Backspace (hanya jika ada ID yang terketik manual)
+    // Handle Backspace
     if (e.key === 'Backspace') {
         currentRFID = currentRFID.slice(0, -1);
     }
 }
 
 // =============================
-// CEK KARTU DI SUPABASE
+// CEK KARTU DI SUPABASE (TERMASUK LOGGING)
 // =============================
 async function cekCard(card) {
   
   try {
-    // Ambil data kartu dan departemen
     const { data, error } = await db
       .from("data_master")
       .select("card, nama, departemen, pagi, siang, sore, malam")
@@ -175,7 +163,6 @@ async function cekCard(card) {
       result.nama = data.nama;
       result.departemen = data.departemen || 'N/A';
       
-      // CEK JATAH MAKAN
       const dapatMakan =
         data.pagi === "Kantin" ||
         data.siang === "Kantin" ||
@@ -183,7 +170,7 @@ async function cekCard(card) {
         data.malam === "Kantin";
 
       if (dapatMakan) {
-        // --- LOGIKA CEK DOUBLE TAP (Opsional: 5 menit cooldown) ---
+        // --- LOGIKA CEK DOUBLE TAP (5 menit cooldown) ---
         const { data: recentLog } = await db
             .from("log_absen")
             .select("created_at")
@@ -218,7 +205,7 @@ async function cekCard(card) {
         result.status_log = "Gagal (No Jatah)";
       }
 
-      // Log absensi ke database (baik sukses maupun gagal)
+      // --- PENTING: PENCATATAN LOG DI SINI ---
       await db.from("log_absen").insert({
           card: result.rfidId,
           nama: result.nama,
@@ -231,6 +218,14 @@ async function cekCard(card) {
 
   } catch (error) {
     console.error("Kesalahan Supabase/Jaringan:", error);
+    // Log kegagalan koneksi jika belum ada log yang dibuat
+    db.from("log_absen").insert({
+        card: card,
+        nama: 'Koneksi Error',
+        departemen: 'N/A',
+        status: "Gagal (Error Koneksi)"
+    });
+    
     displayResult({
         success: false,
         message: 'Kesalahan Server/Jaringan!',
@@ -245,9 +240,7 @@ async function cekCard(card) {
 // =============================
 // INISIALISASI
 // =============================
-
 window.onload = () => {
-    // Tambahkan listener keyboard pada seluruh dokumen
     document.addEventListener('keydown', handleKeydown);
     updateUIStatus('default', 'Reader Siap. Silakan tap kartu...');
 };
