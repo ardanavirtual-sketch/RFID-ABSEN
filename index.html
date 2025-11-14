@@ -3,15 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Presensi RFID (Serial Mode)</title>
+  <title>Sistem Presensi RFID (Keyboard HID)</title>
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
   <style>
-    /* Mengatur font ke Inter (default Tailwind) dan memastikan layout full screen */
+    /* Mengatur font dan transisi */
     body {
       font-family: 'Inter', sans-serif;
       transition: background-color 0.5s ease;
     }
+    /* Animasi pulse untuk ikon saat menunggu input */
     .status-icon {
       animation: pulse-ring 1.5s infinite;
     }
@@ -22,14 +25,15 @@
     }
   </style>
   <script>
+    // Konfigurasi warna khusus Tailwind
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            'primary-blue': '#1e3a8a', /* Deep Blue */
+            'primary-blue': '#1e3a8a', 
             'success-green': '#10b981',
             'error-red': '#ef4444',
-            'warning-yellow': '#f59e0b',
+            'warning-yellow': '#f59e0b', // Digunakan untuk status 'Processing'
           }
         }
       }
@@ -43,15 +47,15 @@
     <div class="mb-8">
       <svg class="w-16 h-16 mx-auto text-primary-blue mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
       <h1 class="text-3xl font-extrabold text-gray-900">Sistem Presensi RFID</h1>
-      <p class="text-gray-500 mt-1">Mode Koneksi Serial (OTG) ke Supabase</p>
+      <p class="text-gray-500 mt-1">Mode Koneksi Keyboard Emulator (HID)</p>
     </div>
 
     <div id="status-card" class="p-6 rounded-2xl transition-all duration-300 bg-blue-50">
       <div id="status-icon" class="status-icon w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-primary-blue/80 shadow-lg text-white">
         <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
       </div>
-      <p id="status-message" class="text-xl font-semibold text-primary-blue">Menunggu Koneksi Serial...</p>
-      <p class="text-sm text-gray-400 mt-1" id="reader-status-hint">Klik tombol di bawah untuk menyambungkan reader.</p>
+      <p id="status-message" class="text-xl font-semibold text-primary-blue">Reader Siap. Tap Kartu.</p>
+      <p class="text-sm text-gray-400 mt-1" id="reader-status-hint">Listener Keyboard (HID) aktif. Tempelkan kartu.</p>
     </div>
 
     <div id="hasil-container" class="mt-6 p-6 border-t border-gray-100 hidden">
@@ -71,11 +75,6 @@
         </div>
       </div>
     </div>
-
-    <button id="connect-reader" class="mt-8 w-full py-3 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-xl shadow-md transition-transform duration-200 transform hover:scale-[1.01] focus:outline-none focus:ring-4 focus:ring-gray-600/50">
-      Hubungkan Reader RFID Serial (OTG)
-    </button>
-    
   </div>
 
   <script type="module" src="app.js"></script>
