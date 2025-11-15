@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin Data Karyawan (Lengkap & Terkoreksi)</title>
+    <title>Panel Admin Sistem Absensi</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -18,18 +18,30 @@
         .review-table th { background-color: #f3f4f6; }
         .btn-primary { transition: all 0.15s; }
         .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .tab-active { border-bottom: 3px solid #1e3a8a; font-weight: bold; color: #1e3a8a; }
     </style>
 </head>
 <body>
 
     <div id="admin-app" class="min-h-screen flex flex-col items-center p-4 sm:p-8">
-        <header class="w-full container mx-auto mb-8 bg-white p-4 rounded-lg shadow-lg">
+        <header class="w-full container mx-auto mb-4 bg-white p-4 rounded-lg shadow-lg">
             <h1 class="text-3xl font-bold text-gray-800">Panel Administrasi Sistem Absensi</h1>
         </header>
 
         <div id="global-message" class="w-full container mx-auto mb-4 p-3 rounded-lg text-center font-medium hidden"></div>
         
-        <div id="admin-panel-view" class="w-full container mx-auto">
+        <div class="w-full container mx-auto mb-4 bg-white rounded-xl shadow-lg">
+            <nav class="flex border-b border-gray-200">
+                <button id="tab-data-karyawan" onclick="switchView('data-karyawan')" class="py-3 px-6 text-sm sm:text-base text-gray-600 transition duration-150 ease-in-out tab-active">
+                    Data Karyawan
+                </button>
+                <button id="tab-laporan-absen" onclick="switchView('laporan-absen')" class="py-3 px-6 text-sm sm:text-base text-gray-600 transition duration-150 ease-in-out">
+                    Laporan Absensi Harian
+                </button>
+            </nav>
+        </div>
+
+        <div id="data-karyawan-view" class="w-full container mx-auto">
             <div class="bg-white p-6 rounded-xl shadow-2xl">
                 <div class="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0">
                     <h2 class="text-3xl font-extrabold text-gray-800">Data Karyawan</h2>
@@ -83,6 +95,41 @@
                 </div>
             </div>
         </div>
+        
+        <div id="laporan-absen-view" class="w-full container mx-auto hidden">
+            <div class="bg-white p-6 rounded-xl shadow-2xl">
+                <h2 class="text-3xl font-extrabold text-gray-800 mb-6">Laporan Absensi Harian</h2>
+                
+                <div id="summary-section" class="mb-10">
+                    <h3 class="text-2xl font-semibold mb-4 border-b pb-2">Ringkasan Absensi Hari Ini</h3>
+                    <div id="summary-cards" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="col-span-4 text-center py-10 text-gray-500" id="summary-loading">Memuat ringkasan absensi...</div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-4">Absen Sukses dihitung unik: Satu kali sukses per karyawan per periode (pagi/siang/sore/malam).</p>
+                </div>
+
+                <div id="detail-section">
+                    <h3 class="text-2xl font-semibold mb-4 border-b pb-2">Detail Log Semua Tap (Sukses & Gagal)</h3>
+                    <div class="overflow-x-auto relative shadow-md sm:rounded-lg max-h-[50vh]">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu Tap</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Karyawan</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Periode</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Card ID</th>
+                                </tr>
+                            </thead>
+                            <tbody id="log-body" class="bg-white divide-y divide-gray-200">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
     </div>
 
     <div id="import-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
@@ -137,7 +184,6 @@
             </form>
         </div>
     </div>
-
     <div id="form-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg transform transition-all duration-300 scale-95 opacity-0" id="form-content">
             <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-4">Tambah Karyawan Baru</h3>
@@ -186,7 +232,6 @@
             </form>
         </div>
     </div>
-
     <div id="delete-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md transform transition-all duration-300 scale-95 opacity-0" id="delete-content">
             <h3 class="text-2xl font-bold text-red-600 mb-4">Konfirmasi Penghapusan</h3>
@@ -203,6 +248,7 @@
         const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
         const TABLE_NAME = 'data_master';
+        const LOG_TABLE_NAME = 'log_absen'; // Tabel Absensi
         const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; 
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -213,13 +259,164 @@
         let cardIdToDelete = null;
 
         document.addEventListener('DOMContentLoaded', () => {
-            fetchData();
+            fetchData(); // Load default view (Data Karyawan)
             document.getElementById('crud-form').addEventListener('submit', handleFormSubmit);
             document.getElementById('import-form').addEventListener('submit', handleImportSubmit);
         });
 
-        // --- Fungsi Helper UI ---
+        // --- Navigasi View ---
+        function switchView(viewId) {
+            document.getElementById('data-karyawan-view').classList.add('hidden');
+            document.getElementById('laporan-absen-view').classList.add('hidden');
 
+            document.getElementById('tab-data-karyawan').classList.remove('tab-active');
+            document.getElementById('tab-laporan-absen').classList.remove('tab-active');
+
+            if (viewId === 'data-karyawan') {
+                document.getElementById('data-karyawan-view').classList.remove('hidden');
+                document.getElementById('tab-data-karyawan').classList.add('tab-active');
+                fetchData();
+            } else if (viewId === 'laporan-absen') {
+                document.getElementById('laporan-absen-view').classList.remove('hidden');
+                document.getElementById('tab-laporan-absen').classList.add('tab-active');
+                loadAbsensiReport(); // Panggil fungsi baru
+            }
+        }
+
+
+        // --- FUNGSI BARU: LAPORAN ABSENSI (Anti-Duplikasi) ---
+
+        function getTodayDateRange() {
+            const today = new Date().toISOString().split('T')[0];
+            return {
+                start: `${today}T00:00:00+00:00`,
+                end: `${today}T23:59:59+00:00`
+            };
+        }
+        
+        /**
+         * Mengambil dan memproses data log absensi hari ini dengan logika anti-duplikasi.
+         * Absen Sukses dihitung 1x per card per periode.
+         */
+        async function getAbsenSummary() {
+            const { start, end } = getTodayDateRange();
+            
+            // 1. Ambil semua log hari ini
+            const { data: logs, error } = await supabaseClient
+                .from(LOG_TABLE_NAME)
+                .select('card, status, periode, created_at, nama')
+                .gte('created_at', start)
+                .lt('created_at', end)
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error("Error fetching logs:", error);
+                showGlobalMessage(`Gagal memuat log absensi: ${error.message}`, 'error');
+                return { summary: {}, logs: [] };
+            }
+
+            const periods = ['pagi', 'siang', 'sore', 'malam'];
+            const summary = {};
+            // Set untuk melacak tap sukses unik (anti-duplikasi)
+            const uniqueSuccessTaps = new Set(); 
+            
+            periods.forEach(p => {
+                summary[p] = { success: 0, fail: 0 };
+            });
+
+            // 2. Proses Log untuk Anti-Duplikasi dan Penghitungan
+            logs.forEach(log => {
+                // Pastikan periode valid
+                if (!periods.includes(log.periode)) return; 
+                
+                const key = `${log.card}-${log.periode}`; // Kunci unik: Card ID + Periode
+                
+                if (log.status === 'Sukses') {
+                    // Hanya hitung tap sukses pertama untuk Kartu + Periode
+                    if (!uniqueSuccessTaps.has(key)) {
+                        summary[log.periode].success++;
+                        uniqueSuccessTaps.add(key);
+                    }
+                } else {
+                    // Hitung SEMUA kegagalan
+                    summary[log.periode].fail++;
+                }
+            });
+
+            return { summary, logs };
+        }
+
+        function renderSummaryCards(summary) {
+            const periods = ['pagi', 'siang', 'sore', 'malam'];
+            const container = document.getElementById('summary-cards');
+            container.innerHTML = ''; // Bersihkan loading message
+
+            periods.forEach(p => {
+                const data = summary[p] || { success: 0, fail: 0 };
+                const total = data.success + data.fail;
+                
+                const card = document.createElement('div');
+                card.className = 'bg-gray-50 p-4 rounded-lg shadow border-l-4 border-primary-blue';
+                card.innerHTML = `
+                    <p class="text-sm font-medium text-gray-500 capitalize">${p.toUpperCase()} (${total} Tap)</p>
+                    <div class="mt-1 flex justify-between items-end">
+                        <div class="text-3xl font-bold text-success-green">${data.success}</div>
+                        <div class="text-sm text-error-red">Gagal: ${data.fail}</div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function renderLogDetails(logs) {
+            const tbody = document.getElementById('log-body');
+            tbody.innerHTML = '';
+            
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-gray-500">Tidak ada data absensi hari ini.</td></tr>';
+                return;
+            }
+
+            logs.forEach(log => {
+                const statusColor = log.status === 'Sukses' ? 'text-success-green font-semibold' : 'text-error-red';
+                
+                // Format Waktu
+                const dateObj = new Date(log.created_at);
+                const logTime = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                // const logDate = dateObj.toLocaleDateString('id-ID'); // Jika perlu tanggal
+
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${logTime}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${log.nama || 'Tidak Terdaftar'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">${log.periode || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm ${statusColor}">${log.status}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${log.card}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        async function loadAbsensiReport() {
+            document.getElementById('summary-loading').style.display = 'block';
+            document.getElementById('log-body').innerHTML = '<tr><td colspan="5" class="py-4 text-center text-gray-500">Memuat detail log...</td></tr>';
+
+            const { summary, logs } = await getAbsenSummary();
+            
+            document.getElementById('summary-loading').style.display = 'none';
+
+            renderSummaryCards(summary);
+            renderLogDetails(logs);
+        }
+
+        // --- FUNGSI LAMA (CRUD, FETCH DATA, DLL) TETAP DI SINI ---
+        
+        // ... (Kode showGlobalMessage, formatTime, fetchData, applySearchFilter, clearSearchFilter) ...
+        // ... (Kode openFormModal, closeFormModal, handleFormSubmit) ...
+        // ... (Kode openDeleteModal, closeDeleteModal, executeDelete) ...
+        // ... (Kode openImportModal, closeImportModal, parseExcelFile, processExcelData, handleImportSubmit) ...
+        
         function showGlobalMessage(message, type = 'success') {
             const msgEl = document.getElementById('global-message');
             msgEl.textContent = message;
@@ -235,16 +432,12 @@
             if (!textValue) return '-';
             return String(textValue).trim() || '-';
         }
-
-        // --- 2. LOGIKA FETCH DATA & PENCARIAN (Terkoreksi pada Rendering) ---
-
-        /** Fungsi Utama untuk mengambil data dengan filter Card ID dan Nama */
+        
         async function fetchData(cardFilter = '', nameFilter = '') {
             let query = supabaseClient
                 .from(TABLE_NAME)
                 .select('*');
 
-            // Apply Filters
             if (cardFilter) {
                 query = query.ilike('card', `%${cardFilter}%`);
             }
@@ -273,7 +466,6 @@
             } else {
                 noDataMsg.classList.add('hidden');
                 data.forEach(item => {
-                    // KOREKSI PENTING: Menggunakan insertRow()
                     const row = tbody.insertRow(); 
                     row.className = 'hover:bg-gray-50';
 
@@ -293,24 +485,18 @@
             }
         }
         
-        /** Fungsi Pencarian */
         function applySearchFilter() {
             const card = document.getElementById('search-card').value.trim();
             const nama = document.getElementById('search-nama').value.trim();
             fetchData(card, nama);
         }
 
-        /** Fungsi Reset Pencarian */
         function clearSearchFilter() {
             document.getElementById('search-card').value = '';
             document.getElementById('search-nama').value = '';
             fetchData(); 
         }
 
-
-        // --- 3. LOGIKA CRUD (Terkoreksi pada Update/Edit) ---
-
-        /** Membuka Modal Form CRUD */
         async function openFormModal(mode, cardId = null) {
             currentMode = mode;
             const modal = document.getElementById('form-modal');
@@ -372,11 +558,9 @@
             setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
-        /** Handle Submit Form (KOREKSI LOGIKA UPDATE) */
         async function handleFormSubmit(event) {
             event.preventDefault();
 
-            // Ambil semua data dari form
             const card = document.getElementById('form-card').value.trim();
             const nik = document.getElementById('form-nik').value.trim();
             const nama = document.getElementById('form-nama').value.trim();
@@ -390,13 +574,11 @@
             let message;
 
             if (currentMode === 'create') {
-                // INSERT
                 const payload = { card, nik, nama, departemen, pagi, siang, sore, malam };
                 const result = await supabaseClient.from(TABLE_NAME).insert([payload]);
                 error = result.error;
                 message = 'Data karyawan berhasil ditambahkan.';
-            } else { // Mode EDIT/UPDATE
-                // Payload hanya berisi kolom yang diupdate
+            } else {
                 const updateData = { 
                     nik: nik, 
                     nama: nama, 
@@ -407,7 +589,6 @@
                     malam: malam 
                 };
                 
-                // Lakukan UPDATE menggunakan Card ID sebagai kondisi WHERE
                 const result = await supabaseClient
                     .from(TABLE_NAME)
                     .update(updateData)
@@ -453,9 +634,6 @@
             closeDeleteModal();
         }
 
-
-        // --- 4. LOGIKA IMPORT EXCEL (SINKRONISASI PENUH) ---
-        
         function openImportModal() {
             document.getElementById('excel-file-input').value = '';
             document.getElementById('step-upload').classList.remove('hidden');
@@ -646,6 +824,7 @@
             
             fetchData(); 
         }
+
     </script>
 
 </body>
