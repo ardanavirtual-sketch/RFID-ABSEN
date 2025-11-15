@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin Data Karyawan (Edit Absensi)</title>
+    <title>Panel Admin Data Karyawan (Lengkap & Terkoreksi)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -43,6 +43,21 @@
                     </div>
                 </div>
 
+                <div class="flex space-x-2 mb-4">
+                    <input type="text" id="search-card" placeholder="Cari berdasarkan Card ID..." 
+                           class="p-2 border border-gray-300 rounded-lg flex-1 focus:ring-indigo-500 focus:border-indigo-500"
+                           onkeypress="if(event.key === 'Enter') applySearchFilter()">
+                    <input type="text" id="search-nama" placeholder="Cari berdasarkan Nama..." 
+                           class="p-2 border border-gray-300 rounded-lg flex-1 focus:ring-indigo-500 focus:border-indigo-500"
+                           onkeypress="if(event.key === 'Enter') applySearchFilter()">
+                    <button onclick="applySearchFilter()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300 btn-primary">
+                        Cari
+                    </button>
+                    <button onclick="clearSearchFilter()" class="bg-gray-400 text-white px-4 py-2 rounded-lg font-semibold hover:bg-gray-500 transition duration-300">
+                        Reset
+                    </button>
+                </div>
+                
                 <div class="overflow-x-auto relative shadow-md sm:rounded-lg mt-4 max-h-[70vh]">
                     <table class="w-full text-sm text-left text-gray-500 admin-table">
                         <thead class="text-xs uppercase text-white">
@@ -184,7 +199,7 @@
     </div>
 
     <script>
-        // --- 1. KONFIGURASI SUPABASE ---
+        // --- 1. KONFIGURASI SUPABASE (PASTIKAN INI SESUAI) ---
         const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
         const TABLE_NAME = 'data_master';
@@ -221,12 +236,23 @@
             return String(textValue).trim() || '-';
         }
 
-        // --- 3. LOGIKA CRUD & FETCH DATA ---
+        // --- 2. LOGIKA FETCH DATA & PENCARIAN (Terkoreksi pada Rendering) ---
 
-        async function fetchData() {
-            const { data, error } = await supabaseClient
+        /** Fungsi Utama untuk mengambil data dengan filter Card ID dan Nama */
+        async function fetchData(cardFilter = '', nameFilter = '') {
+            let query = supabaseClient
                 .from(TABLE_NAME)
-                .select('*')
+                .select('*');
+
+            // Apply Filters
+            if (cardFilter) {
+                query = query.ilike('card', `%${cardFilter}%`);
+            }
+            if (nameFilter) {
+                query = query.ilike('nama', `%${nameFilter}%`);
+            }
+            
+            const { data, error } = await query
                 .order('nama', { ascending: true });
 
             const tbody = document.getElementById('data-table-body');
@@ -242,11 +268,13 @@
             }
 
             if (data.length === 0) {
+                noDataMsg.textContent = (cardFilter || nameFilter) ? 'Tidak ada data yang cocok dengan kriteria pencarian.' : 'Belum ada data karyawan yang tersimpan.';
                 noDataMsg.classList.remove('hidden');
             } else {
                 noDataMsg.classList.add('hidden');
                 data.forEach(item => {
-                    const row = tbody.insertRow();
+                    // KOREKSI PENTING: Menggunakan insertRow()
+                    const row = tbody.insertRow(); 
                     row.className = 'hover:bg-gray-50';
 
                     row.insertCell().textContent = item.card;
@@ -265,46 +293,50 @@
             }
         }
         
-        /** Membuka Modal Form CRUD (Diperbarui) */
+        /** Fungsi Pencarian */
+        function applySearchFilter() {
+            const card = document.getElementById('search-card').value.trim();
+            const nama = document.getElementById('search-nama').value.trim();
+            fetchData(card, nama);
+        }
+
+        /** Fungsi Reset Pencarian */
+        function clearSearchFilter() {
+            document.getElementById('search-card').value = '';
+            document.getElementById('search-nama').value = '';
+            fetchData(); 
+        }
+
+
+        // --- 3. LOGIKA CRUD (Terkoreksi pada Update/Edit) ---
+
+        /** Membuka Modal Form CRUD */
         async function openFormModal(mode, cardId = null) {
             currentMode = mode;
             const modal = document.getElementById('form-modal');
             const content = document.getElementById('form-content');
             
-            // Data Master
             const formCard = document.getElementById('form-card');
             const formNik = document.getElementById('form-nik');
             const formNama = document.getElementById('form-nama');
             const formDepartemen = document.getElementById('form-departemen');
-            
-            // Data Absensi
             const formPagi = document.getElementById('form-pagi');
             const formSiang = document.getElementById('form-siang');
             const formSore = document.getElementById('form-sore');
             const formMalam = document.getElementById('form-malam');
 
-            const modalTitle = document.getElementById('modal-title');
-            
             document.getElementById('crud-form').reset();
             formCard.readOnly = false;
 
             if (mode === 'create') {
-                modalTitle.textContent = 'Tambah Karyawan Baru';
+                document.getElementById('modal-title').textContent = 'Tambah Karyawan Baru';
                 document.getElementById('submit-button').textContent = 'Simpan Data';
-                
-                // Set nilai absensi ke string kosong agar tersimpan di Supabase jika tidak diisi
-                formPagi.value = '';
-                formSiang.value = '';
-                formSore.value = '';
-                formMalam.value = '';
-                
             } else { // mode === 'edit'
-                modalTitle.textContent = 'Edit Data Karyawan & Absensi';
+                document.getElementById('modal-title').textContent = 'Edit Data Karyawan & Absensi';
                 document.getElementById('submit-button').textContent = 'Update Data';
                 formCard.value = cardId;
                 formCard.readOnly = true;
 
-                // Ambil SEMUA DATA (termasuk absensi)
                 const { data, error } = await supabaseClient
                     .from(TABLE_NAME)
                     .select('*') 
@@ -317,12 +349,9 @@
                     return;
                 }
 
-                // Isi data Master
                 formNik.value = data.nik;
                 formNama.value = data.nama;
                 formDepartemen.value = data.departemen;
-                
-                // Isi data Absensi
                 formPagi.value = data.pagi || '';
                 formSiang.value = data.siang || '';
                 formSore.value = data.sore || '';
@@ -343,49 +372,59 @@
             setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
-        /** Handle Submit Form (Diperbarui untuk Create dan Edit) */
+        /** Handle Submit Form (KOREKSI LOGIKA UPDATE) */
         async function handleFormSubmit(event) {
             event.preventDefault();
 
-            // Ambil semua data dari form (Master & Absensi)
+            // Ambil semua data dari form
             const card = document.getElementById('form-card').value.trim();
             const nik = document.getElementById('form-nik').value.trim();
             const nama = document.getElementById('form-nama').value.trim();
             const departemen = document.getElementById('form-departemen').value.trim();
-            
-            // Kolom Absensi
             const pagi = document.getElementById('form-pagi').value.trim();
             const siang = document.getElementById('form-siang').value.trim();
             const sore = document.getElementById('form-sore').value.trim();
             const malam = document.getElementById('form-malam').value.trim();
 
-            const payload = { card, nik, nama, departemen, pagi, siang, sore, malam };
             let error;
             let message;
 
             if (currentMode === 'create') {
-                // INSERT menggunakan SEMUA kolom
+                // INSERT
+                const payload = { card, nik, nama, departemen, pagi, siang, sore, malam };
                 const result = await supabaseClient.from(TABLE_NAME).insert([payload]);
                 error = result.error;
                 message = 'Data karyawan berhasil ditambahkan.';
-            } else {
-                // UPDATE menggunakan SEMUA kolom (Master dan Absensi)
-                const updateData = payload; 
-                delete updateData.card; // Hapus Card ID dari data update 
+            } else { // Mode EDIT/UPDATE
+                // Payload hanya berisi kolom yang diupdate
+                const updateData = { 
+                    nik: nik, 
+                    nama: nama, 
+                    departemen: departemen, 
+                    pagi: pagi, 
+                    siang: siang, 
+                    sore: sore, 
+                    malam: malam 
+                };
                 
-                const result = await supabaseClient.from(TABLE_NAME).update(updateData).eq('card', card);
+                // Lakukan UPDATE menggunakan Card ID sebagai kondisi WHERE
+                const result = await supabaseClient
+                    .from(TABLE_NAME)
+                    .update(updateData)
+                    .eq('card', card);
+                    
                 error = result.error;
                 message = 'Data karyawan berhasil diupdate.';
             }
 
             if (error) {
                 console.error("CRUD Error:", error);
-                const errorMessage = error.code === '23505' ? 'Gagal: Card ID sudah terdaftar (Primary Key Constraint).' : error.message;
+                const errorMessage = error.code === '23505' ? 'Gagal: Card ID sudah terdaftar.' : error.message;
                 showGlobalMessage(`Gagal ${currentMode === 'create' ? 'menambah' : 'mengupdate'} data: ${errorMessage}`, 'error');
             } else {
                 showGlobalMessage(message, 'success');
                 closeFormModal();
-                fetchData();
+                fetchData(); 
             }
         }
         
@@ -415,7 +454,7 @@
         }
 
 
-        // --- 4. LOGIKA IMPORT EXCEL (SINKRONISASI PENUH) - Tidak Berubah ---
+        // --- 4. LOGIKA IMPORT EXCEL (SINKRONISASI PENUH) ---
         
         function openImportModal() {
             document.getElementById('excel-file-input').value = '';
