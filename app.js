@@ -30,18 +30,25 @@ const logGagalElement = document.getElementById('log-gagal');
 let currentRFID = ''; // Buffer untuk menampung input ID kartu
 let isProcessing = false; // Mencegah double tap saat proses masih berjalan
 
-// New State for Log Counters
+// State for Log Counters
 let logCounters = {
     success: 0,
     fail: 0
 };
 
+// ===============================================
+// NEW STATE: Mencegah Hitungan Ganda per Kartu
+// ===============================================
+// Struktur: { 'rfidId': { timestamp: <Date.now()>, status: 'SUCCESS' | 'FAIL' } }
+const lastTapStatus = new Map(); 
+// Jendela waktu (dalam milidetik) untuk mencegah hitungan ganda. 
+// Contoh: 60 detik (1 menit). Anda dapat mengubah ini.
+const DEDUPLICATION_WINDOW_MS = 60000; 
 
 // ===================================
 // UTILITY/UI FUNCTIONS
 // ===================================
 
-// New function to determine the meal period based on current time
 function getCurrentMealPeriod() {
     const hour = new Date().getHours();
     
@@ -59,14 +66,78 @@ function getCurrentMealPeriod() {
     }
 }
 
-function updateLogCounters(isSuccess) {
-    if (isSuccess) {
-        logCounters.success++;
+// FUNGSI UPDATE BARU: Hanya memperbarui counter jika ini adalah TAP YANG UNIK
+function updateLogCounters(rfidId, isSuccess) {
+    const statusKey = isSuccess ? 'SUCCESS' : 'FAIL';
+    
+    // Cek tap sebelumnya
+    const previousTap = lastTapStatus.get(rfidId);
+    
+    // 1. Jika belum ada tap sebelumnya, atau tap sebelumnya sudah kadaluarsa (di luar window deduplication)
+    if (!previousTap || (Date.now() - previousTap.timestamp) > DEDUPLICATION_WINDOW_MS) {
+        
+        // Lakukan penghitungan
+        if (isSuccess) {
+            logCounters.success++;
+        } else {
+            logCounters.fail++;
+        }
+
+        // Simpan status tap baru
+        lastTapStatus.set(rfidId, {
+            timestamp: Date.now(),
+            status: statusKey
+        });
+
+        // Update UI
         logSuksesElement.textContent = logCounters.success;
-    } else {
-        logCounters.fail++;
         logGagalElement.textContent = logCounters.fail;
+        return true; // Berhasil dihitung
+    
+    // 2. Jika tap sebelumnya masih dalam window dan statusnya SAMA (Sukses -> Sukses, atau Gagal -> Gagal)
+    } else if (previousTap.status === statusKey) {
+        // Jangan dihitung, tapi perbarui timestamp untuk memperpanjang window
+        lastTapStatus.set(rfidId, {
+            timestamp: Date.now(),
+            status: statusKey
+        });
+        return false; // Tidak dihitung (duplikat)
+        
+    // 3. Jika tap sebelumnya masih dalam window TAPI statusnya BERBEDA (Gagal -> Sukses, atau Sukses -> Gagal)
+    } else if (previousTap.status !== statusKey) {
+        // Ini adalah perubahan status (misal: gagal karena di luar jam, lalu tap lagi saat jam sudah masuk). 
+        // Logikanya, kita harus mencabut hitungan status lama dan menambahkan hitungan status baru.
+        // ---
+        // Namun, agar sederhana sesuai permintaan Anda (hanya hitung 1x per ID), kita asumsikan 
+        // jika ada perubahan status, kita harus menghitungnya sebagai tap unik BARU.
+        
+        // Cabut hitungan lama
+        if (previousTap.status === 'SUCCESS') {
+            logCounters.success = Math.max(0, logCounters.success - 1);
+        } else {
+            logCounters.fail = Math.max(0, logCounters.fail - 1);
+        }
+        
+        // Tambahkan hitungan baru
+        if (isSuccess) {
+            logCounters.success++;
+        } else {
+            logCounters.fail++;
+        }
+        
+        // Simpan status tap baru
+        lastTapStatus.set(rfidId, {
+            timestamp: Date.now(),
+            status: statusKey
+        });
+
+        // Update UI
+        logSuksesElement.textContent = logCounters.success;
+        logGagalElement.textContent = logCounters.fail;
+        return true; // Berhasil dihitung (karena perubahan status)
     }
+    
+    return false; // Default: Tidak dihitung
 }
 
 function resetStatus() {
@@ -103,8 +174,8 @@ function showProcessingStatus() {
 
 function updateUI({ success, message, rfidId, nama, status_log }) {
     
-    // Update Log Counters
-    updateLogCounters(success); 
+    // Update Log Counters DENGAN LOGIKA DEDUPLIKASI
+    // updateLogCounters(rfidId, success); // Panggil di sini
     
     const currentTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
@@ -150,7 +221,6 @@ async function checkCardSupabase(rfidId) {
 
     showProcessingStatus();
     
-    // Dapatkan periode makan saat ini
     const currentPeriod = getCurrentMealPeriod();
 
     let result = {
@@ -164,6 +234,10 @@ async function checkCardSupabase(rfidId) {
     if (currentPeriod === 'di luar jam absen') {
         result.message = 'Di luar jam absensi yang ditentukan!';
         result.status_log = "Gagal (Outside Time)";
+        
+        // PENTING: Update counter sebelum update UI
+        updateLogCounters(rfidId, result.success); 
+        
         updateUI(result);
         return; 
     }
@@ -180,7 +254,6 @@ async function checkCardSupabase(rfidId) {
         if (data) {
             result.nama = data.nama;
             
-            // Logika BARU: Cek kolom waktu yang sesuai
             const statusMakanSaatIni = data[currentPeriod];
 
             if (statusMakanSaatIni === "Kantin") {
@@ -193,12 +266,11 @@ async function checkCardSupabase(rfidId) {
             }
         }
         
-        // Selalu melakukan log absensi
+        // Log absensi ke Supabase
         const { error: logError } = await db.from("log_absen").insert({
             card: rfidId,
             nama: result.nama,
             status: result.status_log,
-            // Opsional: Tambahkan kolom periode waktu ke log_absen
             periode: currentPeriod 
         });
 
@@ -210,6 +282,9 @@ async function checkCardSupabase(rfidId) {
         result.nama = 'Kesalahan Koneksi';
         result.status_log = "Gagal (Error)";
     }
+    
+    // PENTING: Update counter sebelum update UI
+    updateLogCounters(rfidId, result.success);
 
     updateUI(result);
     // isProcessing akan direset di updateUI setelah timeout
