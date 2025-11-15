@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin Data Karyawan (Sinkronisasi Penuh)</title>
+    <title>Panel Admin Data Karyawan (Edit Absensi)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -127,10 +127,43 @@
         <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg transform transition-all duration-300 scale-95 opacity-0" id="form-content">
             <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-4">Tambah Karyawan Baru</h3>
             <form id="crud-form">
-                <div class="mb-4"><label for="form-card" class="block text-sm font-medium text-gray-700">Card ID</label><input type="text" id="form-card" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"></div>
-                <div class="mb-4"><label for="form-nik" class="block text-sm font-medium text-gray-700">NIK</label><input type="text" id="form-nik" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"></div>
-                <div class="mb-4"><label for="form-nama" class="block text-sm font-medium text-gray-700">Nama</label><input type="text" id="form-nama" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"></div>
-                <div class="mb-6"><label for="form-departemen" class="block text-sm font-medium text-gray-700">Departemen</label><input type="text" id="form-departemen" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"></div>
+                <div class="mb-4">
+                    <label for="form-card" class="block text-sm font-medium text-gray-700">Card ID</label>
+                    <input type="text" id="form-card" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="mb-4">
+                    <label for="form-nik" class="block text-sm font-medium text-gray-700">NIK</label>
+                    <input type="text" id="form-nik" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="mb-4">
+                    <label for="form-nama" class="block text-sm font-medium text-gray-700">Nama</label>
+                    <input type="text" id="form-nama" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="mb-6">
+                    <label for="form-departemen" class="block text-sm font-medium text-gray-700">Departemen</label>
+                    <input type="text" id="form-departemen" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
+                <div class="border-t border-gray-200 my-6"></div>
+                <h4 class="text-xl font-bold text-gray-800 mb-4">Data Absensi/Makan</h4>
+                
+                <div class="mb-4">
+                    <label for="form-pagi" class="block text-sm font-medium text-gray-700">Pagi</label>
+                    <input type="text" id="form-pagi" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                </div>
+                <div class="mb-4">
+                    <label for="form-siang" class="block text-sm font-medium text-gray-700">Siang</label>
+                    <input type="text" id="form-siang" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                </div>
+                <div class="mb-4">
+                    <label for="form-sore" class="block text-sm font-medium text-gray-700">Sore</label>
+                    <input type="text" id="form-sore" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                </div>
+                <div class="mb-6">
+                    <label for="form-malam" class="block text-sm font-medium text-gray-700">Malam</label>
+                    <input type="text" id="form-malam" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                </div>
+                
                 <div class="flex justify-end space-x-3">
                     <button type="button" onclick="closeFormModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Batal</button>
                     <button type="submit" id="submit-button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-150 btn-primary">Simpan</button>
@@ -159,9 +192,8 @@
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        // Variabel global untuk Sinkronisasi Penuh
-        let parsedImportData = []; // Data untuk UPSERT
-        let activeCardIds = [];    // List Card ID aktif untuk DELETE check
+        let parsedImportData = []; 
+        let activeCardIds = [];    
         let currentMode = 'create';
         let cardIdToDelete = null;
 
@@ -171,7 +203,7 @@
             document.getElementById('import-form').addEventListener('submit', handleImportSubmit);
         });
 
-        // --- Fungsi Helper UI (Tidak Berubah) ---
+        // --- Fungsi Helper UI ---
 
         function showGlobalMessage(message, type = 'success') {
             const msgEl = document.getElementById('global-message');
@@ -181,7 +213,7 @@
             else if (type === 'error') { msgEl.classList.add('bg-red-100', 'text-red-800'); } 
             else { msgEl.classList.add('bg-blue-100', 'text-blue-800'); }
             msgEl.classList.remove('hidden');
-            setTimeout(() => { msgEl.classList.add('hidden'); }, 8000); // Pesan penting ditampilkan lebih lama
+            setTimeout(() => { msgEl.classList.add('hidden'); }, 8000); 
         }
         
         function formatTime(textValue) {
@@ -189,7 +221,8 @@
             return String(textValue).trim() || '-';
         }
 
-        // --- 3. LOGIKA CRUD & FETCH DATA (Tidak Berubah) ---
+        // --- 3. LOGIKA CRUD & FETCH DATA ---
+
         async function fetchData() {
             const { data, error } = await supabaseClient
                 .from(TABLE_NAME)
@@ -232,15 +265,24 @@
             }
         }
         
-        // ... (Fungsi openFormModal, closeFormModal, handleFormSubmit, openDeleteModal, closeDeleteModal, executeDelete) tetap sama
+        /** Membuka Modal Form CRUD (Diperbarui) */
         async function openFormModal(mode, cardId = null) {
             currentMode = mode;
             const modal = document.getElementById('form-modal');
             const content = document.getElementById('form-content');
+            
+            // Data Master
             const formCard = document.getElementById('form-card');
             const formNik = document.getElementById('form-nik');
             const formNama = document.getElementById('form-nama');
             const formDepartemen = document.getElementById('form-departemen');
+            
+            // Data Absensi
+            const formPagi = document.getElementById('form-pagi');
+            const formSiang = document.getElementById('form-siang');
+            const formSore = document.getElementById('form-sore');
+            const formMalam = document.getElementById('form-malam');
+
             const modalTitle = document.getElementById('modal-title');
             
             document.getElementById('crud-form').reset();
@@ -249,21 +291,49 @@
             if (mode === 'create') {
                 modalTitle.textContent = 'Tambah Karyawan Baru';
                 document.getElementById('submit-button').textContent = 'Simpan Data';
-            } else {
-                modalTitle.textContent = 'Edit Data Karyawan';
+                
+                // Set nilai absensi ke string kosong agar tersimpan di Supabase jika tidak diisi
+                formPagi.value = '';
+                formSiang.value = '';
+                formSore.value = '';
+                formMalam.value = '';
+                
+            } else { // mode === 'edit'
+                modalTitle.textContent = 'Edit Data Karyawan & Absensi';
                 document.getElementById('submit-button').textContent = 'Update Data';
                 formCard.value = cardId;
                 formCard.readOnly = true;
 
-                const { data, error } = await supabaseClient.from(TABLE_NAME).select('card, nik, nama, departemen').eq('card', cardId).single();
-                if (error || !data) { showGlobalMessage('Gagal memuat data untuk diedit.', 'error'); closeFormModal(); return; }
+                // Ambil SEMUA DATA (termasuk absensi)
+                const { data, error } = await supabaseClient
+                    .from(TABLE_NAME)
+                    .select('*') 
+                    .eq('card', cardId)
+                    .single();
 
+                if (error || !data) {
+                    showGlobalMessage('Gagal memuat data untuk diedit.', 'error');
+                    closeFormModal();
+                    return;
+                }
+
+                // Isi data Master
                 formNik.value = data.nik;
                 formNama.value = data.nama;
                 formDepartemen.value = data.departemen;
+                
+                // Isi data Absensi
+                formPagi.value = data.pagi || '';
+                formSiang.value = data.siang || '';
+                formSore.value = data.sore || '';
+                formMalam.value = data.malam || '';
             }
+
             modal.classList.remove('hidden');
-            setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 50);
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 50);
         }
 
         function closeFormModal() {
@@ -273,22 +343,36 @@
             setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
+        /** Handle Submit Form (Diperbarui untuk Create dan Edit) */
         async function handleFormSubmit(event) {
             event.preventDefault();
+
+            // Ambil semua data dari form (Master & Absensi)
             const card = document.getElementById('form-card').value.trim();
             const nik = document.getElementById('form-nik').value.trim();
             const nama = document.getElementById('form-nama').value.trim();
             const departemen = document.getElementById('form-departemen').value.trim();
-            const payload = { card, nik, nama, departemen };
+            
+            // Kolom Absensi
+            const pagi = document.getElementById('form-pagi').value.trim();
+            const siang = document.getElementById('form-siang').value.trim();
+            const sore = document.getElementById('form-sore').value.trim();
+            const malam = document.getElementById('form-malam').value.trim();
+
+            const payload = { card, nik, nama, departemen, pagi, siang, sore, malam };
             let error;
             let message;
 
             if (currentMode === 'create') {
+                // INSERT menggunakan SEMUA kolom
                 const result = await supabaseClient.from(TABLE_NAME).insert([payload]);
                 error = result.error;
                 message = 'Data karyawan berhasil ditambahkan.';
             } else {
-                const updateData = { nik, nama, departemen };
+                // UPDATE menggunakan SEMUA kolom (Master dan Absensi)
+                const updateData = payload; 
+                delete updateData.card; // Hapus Card ID dari data update 
+                
                 const result = await supabaseClient.from(TABLE_NAME).update(updateData).eq('card', card);
                 error = result.error;
                 message = 'Data karyawan berhasil diupdate.';
@@ -331,7 +415,7 @@
         }
 
 
-        // --- 4. LOGIKA IMPORT EXCEL (SINKRONISASI PENUH) ---
+        // --- 4. LOGIKA IMPORT EXCEL (SINKRONISASI PENUH) - Tidak Berubah ---
         
         function openImportModal() {
             document.getElementById('excel-file-input').value = '';
@@ -339,9 +423,9 @@
             document.getElementById('step-review').classList.add('hidden');
             document.getElementById('review-button').classList.remove('hidden');
             document.getElementById('import-submit-button').classList.add('hidden');
-            document.getElementById('deletion-warning').classList.add('hidden'); // Sembunyikan warning awal
+            document.getElementById('deletion-warning').classList.add('hidden'); 
             parsedImportData = [];
-            activeCardIds = []; // Reset list ID aktif
+            activeCardIds = []; 
             
             const modal = document.getElementById('import-modal');
             const content = document.getElementById('import-content');
@@ -387,7 +471,6 @@
             reader.readAsArrayBuffer(file);
         }
 
-        /** Logika untuk memproses data mentah dari Excel */
         function processExcelData(data) {
             parsedImportData = [];
             activeCardIds = [];
@@ -403,7 +486,6 @@
                 if (index !== -1) { headerMap[requiredHeader.toLowerCase()] = index; }
             });
 
-            // Pastikan semua kolom Master Data dan Absensi ditemukan
             const requiredFields = ['card id', 'nik', 'nama', 'departemen', 'pagi', 'siang', 'sore', 'malam'];
             const missingFields = requiredFields.filter(field => typeof headerMap[field] === 'undefined');
             
@@ -436,12 +518,11 @@
                         malam: formatTime(row[headerMap['malam']] || ''),
                     };
                     
-                    parsedImportData.push(payload); // Data untuk UPSERT
-                    activeCardIds.push(cardId);      // Card ID untuk DELETE check
+                    parsedImportData.push(payload);
+                    activeCardIds.push(cardId);      
                     validCount++;
                 }
 
-                // Tampilkan di tabel review
                 const rowEl = reviewBody.insertRow();
                 rowEl.innerHTML = `
                     <td>${cardId || '-'}</td>
@@ -465,14 +546,13 @@
                 document.getElementById('review-button').classList.add('hidden');
                 document.getElementById('import-submit-button').classList.remove('hidden');
                 document.getElementById('import-submit-button').disabled = false;
-                document.getElementById('deletion-warning').classList.remove('hidden'); // Tampilkan warning delete
+                document.getElementById('deletion-warning').classList.remove('hidden');
             } else {
                 document.getElementById('import-submit-button').disabled = true;
                 showGlobalMessage('Tidak ada data valid yang ditemukan untuk disinkronisasi.', 'error');
             }
         }
 
-        /** Handle Submit Sinkronisasi Penuh (UPSERT + DELETE) */
         async function handleImportSubmit(event) {
             event.preventDefault();
             
@@ -486,7 +566,6 @@
             let upsertError = null;
 
             // --- FASE 1: UPSERT (Update/Insert) Data Aktif ---
-            // On Conflict: Supabase menggunakan primary key 'card' untuk UPSERT
             const { data: upsertData, error: upsertErrorResult } = await supabaseClient
                 .from(TABLE_NAME)
                 .upsert(parsedImportData, { onConflict: 'card' })
@@ -499,10 +578,9 @@
 
             // --- FASE 2: DELETE Data Inaktif ---
             if (!upsertError && activeCardIds.length > 0) {
-                // Hapus baris di database yang Card ID-nya TIDAK ada dalam list Card ID aktif dari Excel
                 const { error: deleteErrorResult, count: deletedRows } = await supabaseClient
                     .from(TABLE_NAME)
-                    .delete({ count: 'exact' }) // Meminta jumlah baris yang dihapus
+                    .delete({ count: 'exact' })
                     .not('card', 'in', activeCardIds); 
 
                 if (deleteErrorResult) {
@@ -516,7 +594,6 @@
                 showGlobalMessage(`Sinkronisasi GAGAL pada tahap Update/Insert: ${upsertError.message}`, 'error');
             }
 
-
             closeImportModal();
             document.getElementById('import-submit-button').textContent = 'Sinkronisasi & Hapus Inaktif';
 
@@ -528,7 +605,7 @@
                 showGlobalMessage(`Sinkronisasi BERHASIL! Diperbarui/Ditambahkan: ${updateCount} baris. Dihapus (Inaktif): ${deleteCount} baris. Total perubahan: ${totalChange} baris.`, 'success');
             }
             
-            fetchData(); // Refresh data utama
+            fetchData(); 
         }
     </script>
 
