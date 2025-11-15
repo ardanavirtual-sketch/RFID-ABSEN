@@ -19,6 +19,10 @@
         .btn-primary { transition: all 0.15s; }
         .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
         .tab-active { border-bottom: 3px solid #1e3a8a; font-weight: bold; color: #1e3a8a; }
+        /* Warna untuk Admin Report */
+        .text-primary-blue { color: #1e3a8a; }
+        .text-success-green { color: #10b981; }
+        .text-error-red { color: #ef4444; }
     </style>
 </head>
 <body>
@@ -100,8 +104,16 @@
             <div class="bg-white p-6 rounded-xl shadow-2xl">
                 <h2 class="text-3xl font-extrabold text-gray-800 mb-6">Laporan Absensi Harian</h2>
                 
+                <div class="flex items-center space-x-4 mb-8 p-4 bg-gray-50 rounded-lg border">
+                    <label for="report-date" class="font-medium text-gray-700 whitespace-nowrap">Pilih Tanggal Laporan:</label>
+                    <input type="date" id="report-date" class="p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                    <button onclick="loadAbsensiReport()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300 btn-primary">
+                        Tampilkan Laporan
+                    </button>
+                </div>
+
                 <div id="summary-section" class="mb-10">
-                    <h3 class="text-2xl font-semibold mb-4 border-b pb-2">Ringkasan Absensi Hari Ini</h3>
+                    <h3 class="text-2xl font-semibold mb-4 border-b pb-2">Ringkasan Absensi <span id="summary-date-display" class="text-indigo-600">Hari Ini</span></h3>
                     <div id="summary-cards" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                         <div class="col-span-4 text-center py-10 text-gray-500" id="summary-loading">Memuat ringkasan absensi...</div>
                     </div>
@@ -248,7 +260,7 @@
         const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
         const TABLE_NAME = 'data_master';
-        const LOG_TABLE_NAME = 'log_absen'; // Tabel Absensi
+        const LOG_TABLE_NAME = 'log_absen'; 
         const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; 
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -259,7 +271,8 @@
         let cardIdToDelete = null;
 
         document.addEventListener('DOMContentLoaded', () => {
-            fetchData(); // Load default view (Data Karyawan)
+            initializeDateInput(); // NEW: Inisialisasi input tanggal
+            fetchData();
             document.getElementById('crud-form').addEventListener('submit', handleFormSubmit);
             document.getElementById('import-form').addEventListener('submit', handleImportSubmit);
         });
@@ -279,34 +292,71 @@
             } else if (viewId === 'laporan-absen') {
                 document.getElementById('laporan-absen-view').classList.remove('hidden');
                 document.getElementById('tab-laporan-absen').classList.add('tab-active');
-                loadAbsensiReport(); // Panggil fungsi baru
+                loadAbsensiReport(); // Muat laporan dengan tanggal yang sudah terpilih
             }
         }
 
+        // --- FUNGSI BARU/MODIFIKASI: LAPORAN ABSENSI (Anti-Duplikasi & Berdasarkan Tanggal) ---
 
-        // --- FUNGSI BARU: LAPORAN ABSENSI (Anti-Duplikasi) ---
+        /**
+         * Menginisialisasi input tanggal ke tanggal hari ini.
+         */
+        function initializeDateInput() {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            // Perlu ditambahkan 1 karena bulan dimulai dari 0 (Januari)
+            const mm = String(today.getMonth() + 1).padStart(2, '0'); 
+            const dd = String(today.getDate()).padStart(2, '0');
+            const todayString = `${yyyy}-${mm}-${dd}`;
+            
+            const dateInput = document.getElementById('report-date');
+            if(dateInput) {
+                dateInput.value = todayString;
+            }
+        }
 
-        function getTodayDateRange() {
-            const today = new Date().toISOString().split('T')[0];
+        /**
+         * Mendapatkan range ISO string (awal dan akhir hari) dari tanggal yang dipilih.
+         * @param {string} dateString - Tanggal dalam format "YYYY-MM-DD"
+         * @returns {object} {start: string, end: string}
+         */
+        function getDateRange(dateString) {
+            if (!dateString) {
+                // Gunakan tanggal hari ini sebagai fallback jika kosong
+                const now = new Date();
+                dateString = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            }
+
+            // Membangun string tanggal ISO yang aman
+            const date = new Date(dateString + 'T00:00:00Z'); 
+            
+            // Set waktu ke 00:00:00.000 UTC
+            const startOfDay = new Date(date);
+            
+            // Set waktu ke 23:59:59.999 UTC
+            const endOfDay = new Date(date);
+            endOfDay.setDate(endOfDay.getDate() + 1);
+            endOfDay.setMilliseconds(endOfDay.getMilliseconds() - 1); 
+
             return {
-                start: `${today}T00:00:00+00:00`,
-                end: `${today}T23:59:59+00:00`
+                start: startOfDay.toISOString(),
+                end: endOfDay.toISOString()
             };
         }
         
         /**
          * Mengambil dan memproses data log absensi hari ini dengan logika anti-duplikasi.
-         * Absen Sukses dihitung 1x per card per periode.
          */
-        async function getAbsenSummary() {
-            const { start, end } = getTodayDateRange();
+        async function getAbsenSummary(selectedDate) {
+            const { start, end } = getDateRange(selectedDate);
             
-            // 1. Ambil semua log hari ini
+            // 1. Ambil semua log untuk tanggal yang dipilih
             const { data: logs, error } = await supabaseClient
                 .from(LOG_TABLE_NAME)
                 .select('card, status, periode, created_at, nama')
+                // Filter menggunakan range waktu yang didapat dari getDateRange
                 .gte('created_at', start)
-                .lt('created_at', end)
+                .lt('created_at', end) 
                 .order('created_at', { ascending: false });
 
             if (error) {
@@ -317,7 +367,6 @@
 
             const periods = ['pagi', 'siang', 'sore', 'malam'];
             const summary = {};
-            // Set untuk melacak tap sukses unik (anti-duplikasi)
             const uniqueSuccessTaps = new Set(); 
             
             periods.forEach(p => {
@@ -326,19 +375,16 @@
 
             // 2. Proses Log untuk Anti-Duplikasi dan Penghitungan
             logs.forEach(log => {
-                // Pastikan periode valid
                 if (!periods.includes(log.periode)) return; 
                 
-                const key = `${log.card}-${log.periode}`; // Kunci unik: Card ID + Periode
+                const key = `${log.card}-${log.periode}`; 
                 
                 if (log.status === 'Sukses') {
-                    // Hanya hitung tap sukses pertama untuk Kartu + Periode
                     if (!uniqueSuccessTaps.has(key)) {
                         summary[log.periode].success++;
                         uniqueSuccessTaps.add(key);
                     }
                 } else {
-                    // Hitung SEMUA kegagalan
                     summary[log.periode].fail++;
                 }
             });
@@ -349,7 +395,7 @@
         function renderSummaryCards(summary) {
             const periods = ['pagi', 'siang', 'sore', 'malam'];
             const container = document.getElementById('summary-cards');
-            container.innerHTML = ''; // Bersihkan loading message
+            container.innerHTML = ''; 
 
             periods.forEach(p => {
                 const data = summary[p] || { success: 0, fail: 0 };
@@ -373,17 +419,16 @@
             tbody.innerHTML = '';
             
             if (logs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-gray-500">Tidak ada data absensi hari ini.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-gray-500">Tidak ada data absensi pada tanggal ini.</td></tr>';
                 return;
             }
 
             logs.forEach(log => {
                 const statusColor = log.status === 'Sukses' ? 'text-success-green font-semibold' : 'text-error-red';
                 
-                // Format Waktu
                 const dateObj = new Date(log.created_at);
+                // Menampilkan waktu lokal, perlu disesuaikan jika server Supabase menggunakan zona waktu berbeda
                 const logTime = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                // const logDate = dateObj.toLocaleDateString('id-ID'); // Jika perlu tanggal
 
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-gray-50';
@@ -399,10 +444,22 @@
         }
 
         async function loadAbsensiReport() {
+            const selectedDate = document.getElementById('report-date').value;
+            if (!selectedDate) {
+                showGlobalMessage('Pilih tanggal laporan terlebih dahulu.', 'error');
+                return;
+            }
+
+            // Menampilkan tanggal yang dipilih di header ringkasan
+            const dateDisplay = new Date(selectedDate + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('summary-date-display').textContent = dateDisplay;
+            
             document.getElementById('summary-loading').style.display = 'block';
+            document.getElementById('summary-cards').innerHTML = '<div class="col-span-4 text-center py-10 text-gray-500" id="summary-loading">Memuat ringkasan absensi...</div>';
             document.getElementById('log-body').innerHTML = '<tr><td colspan="5" class="py-4 text-center text-gray-500">Memuat detail log...</td></tr>';
 
-            const { summary, logs } = await getAbsenSummary();
+
+            const { summary, logs } = await getAbsenSummary(selectedDate);
             
             document.getElementById('summary-loading').style.display = 'none';
 
@@ -411,11 +468,6 @@
         }
 
         // --- FUNGSI LAMA (CRUD, FETCH DATA, DLL) TETAP DI SINI ---
-        
-        // ... (Kode showGlobalMessage, formatTime, fetchData, applySearchFilter, clearSearchFilter) ...
-        // ... (Kode openFormModal, closeFormModal, handleFormSubmit) ...
-        // ... (Kode openDeleteModal, closeDeleteModal, executeDelete) ...
-        // ... (Kode openImportModal, closeImportModal, parseExcelFile, processExcelData, handleImportSubmit) ...
         
         function showGlobalMessage(message, type = 'success') {
             const msgEl = document.getElementById('global-message');
