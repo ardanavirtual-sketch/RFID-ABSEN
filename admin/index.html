@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin Data Karyawan (Lengkap)</title>
+    <title>Panel Admin Data Karyawan (Edit Absensi)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -43,21 +43,6 @@
                     </div>
                 </div>
 
-                <div class="flex space-x-2 mb-4">
-                    <input type="text" id="search-card" placeholder="Cari berdasarkan Card ID..." 
-                           class="p-2 border border-gray-300 rounded-lg flex-1 focus:ring-indigo-500 focus:border-indigo-500"
-                           onkeypress="if(event.key === 'Enter') applySearchFilter()">
-                    <input type="text" id="search-nama" placeholder="Cari berdasarkan Nama..." 
-                           class="p-2 border border-gray-300 rounded-lg flex-1 focus:ring-indigo-500 focus:border-indigo-500"
-                           onkeypress="if(event.key === 'Enter') applySearchFilter()">
-                    <button onclick="applySearchFilter()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300 btn-primary">
-                        Cari
-                    </button>
-                    <button onclick="clearSearchFilter()" class="bg-gray-400 text-white px-4 py-2 rounded-lg font-semibold hover:bg-gray-500 transition duration-300">
-                        Reset
-                    </button>
-                </div>
-                
                 <div class="overflow-x-auto relative shadow-md sm:rounded-lg mt-4 max-h-[70vh]">
                     <table class="w-full text-sm text-left text-gray-500 admin-table">
                         <thead class="text-xs uppercase text-white">
@@ -236,26 +221,12 @@
             return String(textValue).trim() || '-';
         }
 
-        // --- 3. LOGIKA CRUD & FETCH DATA (Diperbarui untuk Search) ---
+        // --- 3. LOGIKA CRUD & FETCH DATA ---
 
-        /** Fungsi Utama untuk mengambil data dengan filter Card ID dan Nama */
-        async function fetchData(cardFilter = '', nameFilter = '') {
-            let query = supabaseClient
+        async function fetchData() {
+            const { data, error } = await supabaseClient
                 .from(TABLE_NAME)
-                .select('*');
-
-            // Apply Filters
-            if (cardFilter) {
-                // Pencarian Card ID: case-insensitive dan partial match
-                query = query.ilike('card', `%${cardFilter}%`);
-            }
-
-            if (nameFilter) {
-                // Pencarian Nama: case-insensitive dan partial match
-                query = query.ilike('nama', `%${nameFilter}%`);
-            }
-            
-            const { data, error } = await query
+                .select('*')
                 .order('nama', { ascending: true });
 
             const tbody = document.getElementById('data-table-body');
@@ -271,12 +242,11 @@
             }
 
             if (data.length === 0) {
-                noDataMsg.textContent = (cardFilter || nameFilter) ? 'Tidak ada data yang cocok dengan kriteria pencarian.' : 'Belum ada data karyawan yang tersimpan.';
                 noDataMsg.classList.remove('hidden');
             } else {
                 noDataMsg.classList.add('hidden');
                 data.forEach(item => {
-                    const row = tbody.insertCell().parentNode;
+                    const row = tbody.insertRow();
                     row.className = 'hover:bg-gray-50';
 
                     row.insertCell().textContent = item.card;
@@ -295,22 +265,7 @@
             }
         }
         
-        /** Fungsi Pencarian (BARU) */
-        function applySearchFilter() {
-            const card = document.getElementById('search-card').value.trim();
-            const nama = document.getElementById('search-nama').value.trim();
-            fetchData(card, nama);
-        }
-
-        /** Fungsi Reset Pencarian (BARU) */
-        function clearSearchFilter() {
-            document.getElementById('search-card').value = '';
-            document.getElementById('search-nama').value = '';
-            fetchData(); // Panggil fetchData tanpa filter untuk menampilkan semua data
-        }
-
-
-        /** Membuka Modal Form CRUD (Tidak Berubah) */
+        /** Membuka Modal Form CRUD (Diperbarui) */
         async function openFormModal(mode, cardId = null) {
             currentMode = mode;
             const modal = document.getElementById('form-modal');
@@ -337,6 +292,7 @@
                 modalTitle.textContent = 'Tambah Karyawan Baru';
                 document.getElementById('submit-button').textContent = 'Simpan Data';
                 
+                // Set nilai absensi ke string kosong agar tersimpan di Supabase jika tidak diisi
                 formPagi.value = '';
                 formSiang.value = '';
                 formSore.value = '';
@@ -348,6 +304,7 @@
                 formCard.value = cardId;
                 formCard.readOnly = true;
 
+                // Ambil SEMUA DATA (termasuk absensi)
                 const { data, error } = await supabaseClient
                     .from(TABLE_NAME)
                     .select('*') 
@@ -360,10 +317,12 @@
                     return;
                 }
 
+                // Isi data Master
                 formNik.value = data.nik;
                 formNama.value = data.nama;
                 formDepartemen.value = data.departemen;
                 
+                // Isi data Absensi
                 formPagi.value = data.pagi || '';
                 formSiang.value = data.siang || '';
                 formSore.value = data.sore || '';
@@ -384,15 +343,17 @@
             setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
-        /** Handle Submit Form (Tidak Berubah) */
+        /** Handle Submit Form (Diperbarui untuk Create dan Edit) */
         async function handleFormSubmit(event) {
             event.preventDefault();
 
+            // Ambil semua data dari form (Master & Absensi)
             const card = document.getElementById('form-card').value.trim();
             const nik = document.getElementById('form-nik').value.trim();
             const nama = document.getElementById('form-nama').value.trim();
             const departemen = document.getElementById('form-departemen').value.trim();
             
+            // Kolom Absensi
             const pagi = document.getElementById('form-pagi').value.trim();
             const siang = document.getElementById('form-siang').value.trim();
             const sore = document.getElementById('form-sore').value.trim();
@@ -403,12 +364,14 @@
             let message;
 
             if (currentMode === 'create') {
+                // INSERT menggunakan SEMUA kolom
                 const result = await supabaseClient.from(TABLE_NAME).insert([payload]);
                 error = result.error;
                 message = 'Data karyawan berhasil ditambahkan.';
             } else {
+                // UPDATE menggunakan SEMUA kolom (Master dan Absensi)
                 const updateData = payload; 
-                delete updateData.card; 
+                delete updateData.card; // Hapus Card ID dari data update 
                 
                 const result = await supabaseClient.from(TABLE_NAME).update(updateData).eq('card', card);
                 error = result.error;
