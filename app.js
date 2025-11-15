@@ -36,44 +36,50 @@ let logCounters = {
     fail: 0
 };
 
-// ===============================================
 // NEW STATE: Mencegah Hitungan Ganda per Kartu
-// ===============================================
-// Struktur: { 'rfidId': { timestamp: <Date.now()>, status: 'SUCCESS' | 'FAIL' } }
 const lastTapStatus = new Map(); 
-// Jendela waktu (dalam milidetik) untuk mencegah hitungan ganda. 
-// Contoh: 60 detik (1 menit). Anda dapat mengubah ini.
-const DEDUPLICATION_WINDOW_MS = 60000; 
+const DEDUPLICATION_WINDOW_MS = 60000; // 60 detik (Untuk hitungan Sukses/Gagal di UI)
+
 
 // ===================================
 // UTILITY/UI FUNCTIONS
 // ===================================
 
+/**
+ * Menentukan periode makan saat ini.
+ * Jika jam tidak masuk dalam kategori, akan default ke 'pagi' (atau periode terdekat)
+ * Namun, karena permintaan, kita harus mengembalikan string periode yang valid.
+ * Jika tidak masuk range, kita akan kembalikan 'none' atau 'pagi' untuk memastikan
+ * pengecekan Supabase tetap dilakukan (meskipun jatahnya kosong/gagal).
+ * Di sini kita kembalikan 'pagi' jika di luar range, dan pengecekan jatah 'Kantin' akan menangani sisanya.
+ */
 function getCurrentMealPeriod() {
     const hour = new Date().getHours();
     
-    // Asumsi: Anda bisa menyesuaikan rentang jam ini
-    if (hour >= 5 && hour < 10) { // Contoh: 05:00 - 09:59
+    // Perubahan: Hilangkan pengecekan 'di luar jam absen'.
+    // Akan selalu mengembalikan periode yang paling relevan.
+    if (hour >= 5 && hour < 10) { 
         return 'pagi';
-    } else if (hour >= 11 && hour < 14) { // Contoh: 10:00 - 13:59
+    } else if (hour >= 10 && hour < 14) { 
         return 'siang';
-    } else if (hour >= 17 && hour < 18) { // Contoh: 14:00 - 17:59
+    } else if (hour >= 14 && hour < 18) { 
         return 'sore';
-    } else if (hour >= 18 && hour < 22) { // Contoh: 18:00 - 22:59
+    } else if (hour >= 18 && hour < 23) { 
         return 'malam';
     } else {
-        return 'di luar jam absen'; // Di luar jam yang ditentukan
+        // Jika di luar semua range di atas (misal jam 00-04), 
+        // kita paksa ke periode 'pagi' sebagai default.
+        // Logika pengecekan "Kantin" akan menangani apakah ada jatah atau tidak.
+        return 'pagi'; 
     }
 }
 
-// FUNGSI UPDATE BARU: Hanya memperbarui counter jika ini adalah TAP YANG UNIK
 function updateLogCounters(rfidId, isSuccess) {
     const statusKey = isSuccess ? 'SUCCESS' : 'FAIL';
     
-    // Cek tap sebelumnya
     const previousTap = lastTapStatus.get(rfidId);
     
-    // 1. Jika belum ada tap sebelumnya, atau tap sebelumnya sudah kadaluarsa (di luar window deduplication)
+    // 1. Jika belum ada tap sebelumnya, atau tap sebelumnya sudah kadaluarsa
     if (!previousTap || (Date.now() - previousTap.timestamp) > DEDUPLICATION_WINDOW_MS) {
         
         // Lakukan penghitungan
@@ -92,24 +98,19 @@ function updateLogCounters(rfidId, isSuccess) {
         // Update UI
         logSuksesElement.textContent = logCounters.success;
         logGagalElement.textContent = logCounters.fail;
-        return true; // Berhasil dihitung
+        return true; 
     
-    // 2. Jika tap sebelumnya masih dalam window dan statusnya SAMA (Sukses -> Sukses, atau Gagal -> Gagal)
+    // 2. Jika tap sebelumnya masih dalam window dan statusnya SAMA
     } else if (previousTap.status === statusKey) {
         // Jangan dihitung, tapi perbarui timestamp untuk memperpanjang window
         lastTapStatus.set(rfidId, {
             timestamp: Date.now(),
             status: statusKey
         });
-        return false; // Tidak dihitung (duplikat)
+        return false; 
         
-    // 3. Jika tap sebelumnya masih dalam window TAPI statusnya BERBEDA (Gagal -> Sukses, atau Sukses -> Gagal)
+    // 3. Jika tap sebelumnya masih dalam window TAPI statusnya BERBEDA
     } else if (previousTap.status !== statusKey) {
-        // Ini adalah perubahan status (misal: gagal karena di luar jam, lalu tap lagi saat jam sudah masuk). 
-        // Logikanya, kita harus mencabut hitungan status lama dan menambahkan hitungan status baru.
-        // ---
-        // Namun, agar sederhana sesuai permintaan Anda (hanya hitung 1x per ID), kita asumsikan 
-        // jika ada perubahan status, kita harus menghitungnya sebagai tap unik BARU.
         
         // Cabut hitungan lama
         if (previousTap.status === 'SUCCESS') {
@@ -134,21 +135,50 @@ function updateLogCounters(rfidId, isSuccess) {
         // Update UI
         logSuksesElement.textContent = logCounters.success;
         logGagalElement.textContent = logCounters.fail;
-        return true; // Berhasil dihitung (karena perubahan status)
+        return true; 
     }
     
-    return false; // Default: Tidak dihitung
+    return false; 
 }
 
+// Fungsi untuk menampilkan status "Sudah Tap" (Warna Biru)
+function showAlreadyTappedStatus(rfidId, nama) {
+    appContainer.classList.add('scale-105'); 
+    appContainer.classList.remove('bg-success-green/20', 'bg-error-red/20'); 
+    appContainer.classList.add('bg-blue-200/50'); // Latar belakang biru muda
+
+    statusCard.classList.replace('bg-warning-yellow/20', 'bg-blue-100'); 
+    statusIcon.classList.replace('bg-warning-yellow', 'bg-primary-blue'); 
+    statusIcon.classList.remove('animate-spin'); 
+    statusIcon.innerHTML = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`; // Ikon Info
+    
+    statusMessage.textContent = 'Anda Sudah Melakukan Tap Kartu!';
+    statusMessage.classList.replace('text-warning-yellow', 'text-primary-blue');
+    
+    hasilTitle.textContent = 'Informasi Absensi';
+    hasilNama.textContent = nama || 'Terdaftar';
+    hasilID.textContent = rfidId;
+    hasilWaktu.textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    hasilContainer.classList.remove('hidden');
+
+    // Reset setelah delay
+    setTimeout(() => {
+        isProcessing = false;
+        appContainer.classList.remove('bg-blue-200/50'); 
+        resetStatus();
+    }, 5000); 
+}
+
+
 function resetStatus() {
-    appContainer.classList.remove('scale-105', 'bg-success-green/20', 'bg-error-red/20');
-    statusCard.classList.remove('bg-success-green/20', 'bg-error-red/20', 'bg-warning-yellow/20');
+    appContainer.classList.remove('scale-105', 'bg-success-green/20', 'bg-error-red/20', 'bg-blue-200/50'); 
+    statusCard.classList.remove('bg-success-green/20', 'bg-error-red/20', 'bg-warning-yellow/20', 'bg-blue-100'); 
     statusIcon.classList.remove('bg-success-green', 'bg-error-red', 'bg-warning-yellow', 'animate-none');
 
     statusCard.classList.add('bg-blue-50');
     statusIcon.classList.add('bg-primary-blue/80', 'status-icon');
     statusIcon.innerHTML = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>`;
-    statusMessage.classList.remove('text-success-green', 'text-error-red', 'text-warning-yellow');
+    statusMessage.classList.remove('text-success-green', 'text-error-red', 'text-warning-yellow', 'text-primary-blue'); 
     statusMessage.classList.add('text-primary-blue');
 
     hasilContainer.classList.add('hidden');
@@ -156,7 +186,6 @@ function resetStatus() {
     hasilID.textContent = '-';
     hasilWaktu.textContent = '-';
     
-    // Pesan status baru untuk HID Listener
     statusMessage.textContent = 'Reader Siap. Tap Kartu.';
     readerStatusHint.textContent = 'Listener Keyboard (HID) aktif. Tempelkan kartu.';
 }
@@ -171,13 +200,15 @@ function showProcessingStatus() {
     hasilContainer.classList.add('hidden');
 }
 
-
 function updateUI({ success, message, rfidId, nama, status_log }) {
     
-    // Update Log Counters DENGAN LOGIKA DEDUPLIKASI
-    // updateLogCounters(rfidId, success); // Panggil di sini
-    
+    updateLogCounters(rfidId, success);
+
     const currentTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    // Hapus class biru jika ada
+    appContainer.classList.remove('bg-blue-200/50');
+    statusCard.classList.remove('bg-blue-100');
 
     if (success) {
         appContainer.classList.add('scale-105', 'bg-success-green/20');
@@ -216,12 +247,12 @@ function updateUI({ success, message, rfidId, nama, status_log }) {
 // ===================================
 
 async function checkCardSupabase(rfidId) {
-    if (isProcessing) return; // Mencegah pemrosesan ganda
+    if (isProcessing) return; 
     isProcessing = true;
 
     showProcessingStatus();
     
-    const currentPeriod = getCurrentMealPeriod();
+    const currentPeriod = getCurrentMealPeriod(); // Akan selalu mengembalikan 'pagi', 'siang', 'sore', atau 'malam'
 
     let result = {
         success: false,
@@ -231,42 +262,60 @@ async function checkCardSupabase(rfidId) {
         status_log: "Gagal (Unknown Card)"
     };
     
-    if (currentPeriod === 'di luar jam absen') {
-        result.message = 'Di luar jam absensi yang ditentukan!';
-        result.status_log = "Gagal (Outside Time)";
-        
-        // PENTING: Update counter sebelum update UI
-        updateLogCounters(rfidId, result.success); 
-        
-        updateUI(result);
-        return; 
-    }
+    // Perubahan: Hilangkan blok pengecekan 'di luar jam absen' di sini.
+    // Jika jam di luar range yang didefinisikan, ia akan default ke 'pagi' dan
+    // logika pengecekan jatah 'Kantin' di bawah akan menentukan sukses/gagal.
 
     try {
-        const { data, error } = await db
+        // 1. Cek apakah kartu sudah terdaftar di data_master
+        const { data: userData, error: userError } = await db
             .from("data_master")
-            .select("*")
+            .select("nama, pagi, siang, sore, malam")
             .eq("card", rfidId)
             .maybeSingle();
 
-        if (error) throw error;
+        if (userError) throw userError;
 
-        if (data) {
-            result.nama = data.nama;
+        if (userData) {
+            result.nama = userData.nama;
             
-            const statusMakanSaatIni = data[currentPeriod];
+            // 2. Cek apakah kartu sudah melakukan presensi sukses hari ini untuk periode ini
+            const today = new Date().toISOString().split('T')[0];
+            
+            const { data: logData, error: logError } = await db
+                .from("log_absen")
+                .select("id")
+                .eq("card", rfidId)
+                .eq("periode", currentPeriod)
+                .eq("status", "Sukses")
+                .gte("created_at", `${today}T00:00:00+00:00`) // Gunakan ISO format lengkap untuk presisi
+                .lt("created_at", `${today}T23:59:59+00:00`);
+
+            if (logError) throw logError;
+            
+            // LOGIKA PENCEGAHAN TAP GANDA DARI DATABASE (TAP SUKSES KE-2)
+            if (logData && logData.length > 0) {
+                isProcessing = true; 
+                // Tampilkan pesan "Anda Sudah Tap" dengan warna biru
+                showAlreadyTappedStatus(rfidId, userData.nama);
+                return; 
+            }
+
+
+            // 3. Jika belum tap, cek jatah makannya (Logika yang sudah ada)
+            const statusMakanSaatIni = userData[currentPeriod];
 
             if (statusMakanSaatIni === "Kantin") {
                 result.success = true;
-                result.message = `Absensi ${currentPeriod.toUpperCase()} Berhasil!`;
-                result.status_log = `Sukses (${currentPeriod.toUpperCase()})`;
+                result.message = `Absensi ${currentPeriod.toUpperCase()} Berhasil! Selamat Makan!`;
+                result.status_log = `Sukses`;
             } else {
-                result.message = `Absensi ${currentPeriod.toUpperCase()} Gagal: Status bukan Kantin!`;
+                result.message = `Absensi ${currentPeriod.toUpperCase()} Gagal: Status **${statusMakanSaatIni || 'KOSONG'}**!`;
                 result.status_log = `Gagal (Not Kantin for ${currentPeriod.toUpperCase()})`;
             }
         }
         
-        // Log absensi ke Supabase
+        // 4. Log absensi ke Supabase (Hanya jika belum Tap atau Gagal)
         const { error: logError } = await db.from("log_absen").insert({
             card: rfidId,
             nama: result.nama,
@@ -283,11 +332,9 @@ async function checkCardSupabase(rfidId) {
         result.status_log = "Gagal (Error)";
     }
     
-    // PENTING: Update counter sebelum update UI
+    // PENTING: Update counter dan UI
     updateLogCounters(rfidId, result.success);
-
     updateUI(result);
-    // isProcessing akan direset di updateUI setelah timeout
 }
 
 // ===================================
@@ -350,6 +397,3 @@ window.onload = () => {
     // Mulai mendengarkan input keyboard/HID reader
     setupHIDListener();
 };
-
-
-
