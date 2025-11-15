@@ -21,14 +21,53 @@ const hasilID = document.getElementById('hasil-id');
 const hasilWaktu = document.getElementById('hasil-waktu');
 const appContainer = document.getElementById('app-container');
 const readerStatusHint = document.getElementById('reader-status-hint');
+// New DOM Elements for Log Counters
+const logSuksesElement = document.getElementById('log-sukses');
+const logGagalElement = document.getElementById('log-gagal');
+
 
 // State untuk HID Listener
 let currentRFID = ''; // Buffer untuk menampung input ID kartu
 let isProcessing = false; // Mencegah double tap saat proses masih berjalan
 
+// New State for Log Counters
+let logCounters = {
+    success: 0,
+    fail: 0
+};
+
+
 // ===================================
-// UTILITY/UI FUNCTIONS (TETAP SAMA)
+// UTILITY/UI FUNCTIONS
 // ===================================
+
+// New function to determine the meal period based on current time
+function getCurrentMealPeriod() {
+    const hour = new Date().getHours();
+    
+    // Asumsi: Anda bisa menyesuaikan rentang jam ini
+    if (hour >= 5 && hour < 10) { // Contoh: 05:00 - 09:59
+        return 'pagi';
+    } else if (hour >= 10 && hour < 14) { // Contoh: 10:00 - 13:59
+        return 'siang';
+    } else if (hour >= 14 && hour < 18) { // Contoh: 14:00 - 17:59
+        return 'sore';
+    } else if (hour >= 18 && hour < 23) { // Contoh: 18:00 - 22:59
+        return 'malam';
+    } else {
+        return 'di luar jam absen'; // Di luar jam yang ditentukan
+    }
+}
+
+function updateLogCounters(isSuccess) {
+    if (isSuccess) {
+        logCounters.success++;
+        logSuksesElement.textContent = logCounters.success;
+    } else {
+        logCounters.fail++;
+        logGagalElement.textContent = logCounters.fail;
+    }
+}
 
 function resetStatus() {
     appContainer.classList.remove('scale-105', 'bg-success-green/20', 'bg-error-red/20');
@@ -63,7 +102,10 @@ function showProcessingStatus() {
 
 
 function updateUI({ success, message, rfidId, nama, status_log }) {
-    // ... (Fungsi updateUI tetap sama) ...
+    
+    // Update Log Counters
+    updateLogCounters(success); 
+    
     const currentTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
     if (success) {
@@ -108,6 +150,9 @@ async function checkCardSupabase(rfidId) {
 
     showProcessingStatus();
     
+    // Dapatkan periode makan saat ini
+    const currentPeriod = getCurrentMealPeriod();
+
     let result = {
         success: false,
         message: 'Kartu Tidak Dikenal!',
@@ -115,6 +160,13 @@ async function checkCardSupabase(rfidId) {
         nama: 'Pengguna tidak terdaftar',
         status_log: "Gagal (Unknown Card)"
     };
+    
+    if (currentPeriod === 'di luar jam absen') {
+        result.message = 'Di luar jam absensi yang ditentukan!';
+        result.status_log = "Gagal (Outside Time)";
+        updateUI(result);
+        return; 
+    }
 
     try {
         const { data, error } = await db
@@ -128,26 +180,26 @@ async function checkCardSupabase(rfidId) {
         if (data) {
             result.nama = data.nama;
             
-            const dapatMakan =
-                data.pagi === "Kantin" ||
-                data.siang === "Kantin" ||
-                data.sore === "Kantin" ||
-                data.malam === "Kantin";
+            // Logika BARU: Cek kolom waktu yang sesuai
+            const statusMakanSaatIni = data[currentPeriod];
 
-            if (dapatMakan) {
+            if (statusMakanSaatIni === "Kantin") {
                 result.success = true;
-                result.message = 'Absensi Berhasil!';
-                result.status_log = "Sukses";
+                result.message = `Absensi ${currentPeriod.toUpperCase()} Berhasil!`;
+                result.status_log = `Sukses (${currentPeriod.toUpperCase()})`;
             } else {
-                result.message = `Tidak ada jatah makan!`;
-                result.status_log = "Gagal (No Jatah)";
+                result.message = `Absensi ${currentPeriod.toUpperCase()} Gagal: Status bukan Kantin!`;
+                result.status_log = `Gagal (Not Kantin for ${currentPeriod.toUpperCase()})`;
             }
         }
         
+        // Selalu melakukan log absensi
         const { error: logError } = await db.from("log_absen").insert({
             card: rfidId,
             nama: result.nama,
-            status: result.status_log
+            status: result.status_log,
+            // Opsional: Tambahkan kolom periode waktu ke log_absen
+            periode: currentPeriod 
         });
 
         if (logError) console.error("Gagal log absensi:", logError);
@@ -164,7 +216,7 @@ async function checkCardSupabase(rfidId) {
 }
 
 // ===================================
-// HID KEYBOARD LISTENER LOGIC (BARU)
+// HID KEYBOARD LISTENER LOGIC
 // ===================================
 
 function setupHIDListener() {
@@ -216,6 +268,10 @@ function setupHIDListener() {
 // ===================================
 
 window.onload = () => {
+    // Pastikan log counter di UI sesuai state awal
+    logSuksesElement.textContent = logCounters.success;
+    logGagalElement.textContent = logCounters.fail;
+    
     // Mulai mendengarkan input keyboard/HID reader
     setupHIDListener();
 };
