@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Admin Data Karyawan</title>
-    <!-- Memuat Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Memuat Supabase Client SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         /* Custom styles for better aesthetics */
@@ -44,15 +42,12 @@
 <body>
 
     <div id="admin-app" class="min-h-screen flex flex-col items-center p-4 sm:p-8">
-        <!-- Header -->
         <header class="w-full container mx-auto mb-8 bg-white p-4 rounded-lg shadow-lg">
             <h1 class="text-3xl font-bold text-gray-800">Panel Administrasi Sistem Absensi</h1>
         </header>
 
-        <!-- Area Pesan Global -->
         <div id="global-message" class="w-full container mx-auto mb-4 p-3 rounded-lg text-center font-medium hidden"></div>
         
-        <!-- View: Panel Admin (CRUD) -->
         <div id="admin-panel-view" class="w-full container mx-auto">
             <div class="bg-white p-6 rounded-xl shadow-2xl">
                 <div class="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0">
@@ -67,7 +62,6 @@
                     </div>
                 </div>
 
-                <!-- Tabel Data Karyawan -->
                 <div class="overflow-x-auto relative shadow-md sm:rounded-lg mt-4 max-h-[70vh]">
                     <table class="w-full text-sm text-left text-gray-500 admin-table">
                         <thead class="text-xs uppercase text-white">
@@ -84,8 +78,7 @@
                             </tr>
                         </thead>
                         <tbody id="data-table-body" class="bg-white divide-y divide-gray-200">
-                            <!-- Data akan diisi di sini oleh JS -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
 
@@ -96,33 +89,27 @@
         </div>
     </div>
 
-    <!-- MODAL FORM CRUD (EXISTING) -->
     <div id="form-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg transform transition-all duration-300 scale-95 opacity-0" id="form-content">
             <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-4">Tambah Karyawan Baru</h3>
             <form id="crud-form">
-                <!-- Bidang Card ID (ReadOnly untuk Edit) -->
                 <div class="mb-4">
                     <label for="form-card" class="block text-sm font-medium text-gray-700">Card ID</label>
                     <input type="text" id="form-card" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
-                <!-- Bidang NIK -->
                 <div class="mb-4">
                     <label for="form-nik" class="block text-sm font-medium text-gray-700">NIK</label>
                     <input type="text" id="form-nik" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
-                <!-- Bidang Nama -->
                 <div class="mb-4">
                     <label for="form-nama" class="block text-sm font-medium text-gray-700">Nama</label>
                     <input type="text" id="form-nama" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
-                <!-- Bidang Departemen -->
                 <div class="mb-6">
                     <label for="form-departemen" class="block text-sm font-medium text-gray-700">Departemen</label>
                     <input type="text" id="form-departemen" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
 
-                <!-- Tombol Aksi -->
                 <div class="flex justify-end space-x-3">
                     <button type="button" onclick="closeFormModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Batal</button>
                     <button type="submit" id="submit-button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-150 btn-primary">Simpan</button>
@@ -131,7 +118,6 @@
         </div>
     </div>
 
-    <!-- MODAL IMPORT DATA (NEW) -->
     <div id="import-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg transform transition-all duration-300 scale-95 opacity-0" id="import-content">
             <h3 class="text-2xl font-bold text-gray-800 mb-4">Import Data Absensi Harian</h3>
@@ -153,7 +139,6 @@
         </div>
     </div>
 
-    <!-- Modal Konfirmasi Hapus (EXISTING) -->
     <div id="delete-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md transform transition-all duration-300 scale-95 opacity-0" id="delete-content">
             <h3 class="text-2xl font-bold text-red-600 mb-4">Konfirmasi Penghapusan</h3>
@@ -167,28 +152,15 @@
 
     <script>
         // --- 1. KONFIGURASI SUPABASE ---
-        // PENTING: Anda HARUS mengganti kedua nilai placeholder di bawah ini dengan kredensial Supabase Anda yang sebenarnya.
-        // PASTIKAN ANDA MENGHAPUS KARAKTER KURUNG SIKU [] SAAT MENGGANTI NILAI INI.
-        // Format SUPABASE_URL harus seperti: 'https://[project-ref].supabase.co'
-        const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; // WAJIB DIGANTI!
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; // WAJIB DIGANTI!
-        const TABLE_NAME = 'absensi';
+        // PENTING: Ganti kedua nilai placeholder di bawah ini dengan kredensial Supabase Anda yang sebenarnya.
+        const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
+        const TABLE_NAME = 'data_master'; // TELAH DIGANTI DARI 'absensi' MENJADI 'data_master'
         
-        // Tambahkan log untuk menunjukkan URL yang digunakan, ini akan membantu debug jika URL masih salah.
         console.log('Menggunakan Supabase URL:', SUPABASE_URL);
 
         // Inisialisasi Supabase Client
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // ** KRITIS: Pengecekan placeholder langsung untuk menampilkan error yang jelas **
-        window.SUPABASE_CONFIG_INVALID = false;
-        if (SUPABASE_URL.includes('[') || SUPABASE_URL.includes('URL_PROYEK_ANDA_DI_SINI')) {
-             // Set flag dan tampilkan pesan kesalahan di UI
-             window.SUPABASE_CONFIG_INVALID = true;
-             showGlobalMessage('KRITIS: Harap ganti SUPABASE_URL dan SUPABASE_ANON_KEY dengan kredensial asli Anda. Aplikasi tidak dapat berfungsi.', 'error');
-             console.error("Fetch Data dihentikan: Konfigurasi Supabase tidak valid.");
-        } 
-
 
         // --- 2. LOGIKA UTAMA APLIKASI ---
 
@@ -199,7 +171,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             fetchData(); // Muat data saat Panel Admin dibuka
             document.getElementById('crud-form').addEventListener('submit', handleFormSubmit);
-            document.getElementById('import-form').addEventListener('submit', handleImportSubmit); // NEW: Listener untuk form Import
+            document.getElementById('import-form').addEventListener('submit', handleImportSubmit);
         });
 
         // --- Fungsi Helper UI ---
@@ -226,7 +198,10 @@
         /** Fungsi untuk memformat timestamp (ISO string) menjadi format waktu lokal */
         function formatTime(isoString) {
             if (!isoString) return '-';
-            const date = new Date(isoString);
+            const date = new Date(isoString); 
+            if (isNaN(date.getTime())) {
+                return 'Invalid Time';
+            }
             return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
         }
 
@@ -235,14 +210,6 @@
 
         /** Memuat data dari Supabase dan menampilkannya di tabel */
         async function fetchData() {
-            // Guard clause: Hentikan eksekusi jika konfigurasi Supabase tidak valid
-            if (window.SUPABASE_CONFIG_INVALID) {
-                const noDataMsg = document.getElementById('no-data-message');
-                noDataMsg.textContent = 'Gagal memuat data. Mohon periksa konsol untuk instruksi konfigurasi Supabase.';
-                noDataMsg.classList.remove('hidden');
-                return;
-            }
-
             const { data, error } = await supabaseClient
                 .from(TABLE_NAME)
                 .select('*')
@@ -254,7 +221,7 @@
 
             if (error) {
                 console.error("Error fetching data:", error);
-                showGlobalMessage('Gagal memuat data dari Supabase.', 'error');
+                showGlobalMessage(`Gagal memuat data dari Supabase: ${error.message}. Periksa RLS dan koneksi.`, 'error');
                 noDataMsg.textContent = 'Gagal memuat data.';
                 noDataMsg.classList.remove('hidden');
                 return;
@@ -293,12 +260,6 @@
 
         /** Membuka Modal Form CRUD */
         async function openFormModal(mode, cardId = null) {
-            // Guard clause: Hentikan eksekusi jika konfigurasi Supabase tidak valid
-            if (window.SUPABASE_CONFIG_INVALID) {
-                showGlobalMessage('Aksi dibatalkan: Konfigurasi Supabase tidak valid. Mohon perbaiki kredensial Anda.', 'error');
-                return;
-            }
-
             currentMode = mode;
             const modal = document.getElementById('form-modal');
             const content = document.getElementById('form-content');
@@ -359,13 +320,6 @@
 
         /** Handle Submit Form (Create atau Update) */
         async function handleFormSubmit(event) {
-             // Guard clause: Hentikan eksekusi jika konfigurasi Supabase tidak valid
-            if (window.SUPABASE_CONFIG_INVALID) {
-                event.preventDefault(); // Mencegah submit form
-                showGlobalMessage('Aksi dibatalkan: Konfigurasi Supabase tidak valid. Mohon perbaiki kredensial Anda.', 'error');
-                return;
-            }
-
             event.preventDefault();
 
             const card = document.getElementById('form-card').value.trim();
@@ -393,7 +347,7 @@
             if (error) {
                 console.error("CRUD Error:", error);
                 // Menangani error jika Card ID sudah ada (khusus mode create)
-                const errorMessage = error.code === '23505' ? 'Gagal: Card ID sudah terdaftar.' : error.message;
+                const errorMessage = error.code === '23505' ? 'Gagal: Card ID sudah terdaftar (Primary Key Constraint).' : error.message;
                 showGlobalMessage(`Gagal ${currentMode === 'create' ? 'menambah' : 'mengupdate'} data: ${errorMessage}`, 'error');
             } else {
                 showGlobalMessage(message, 'success');
@@ -404,12 +358,6 @@
 
         /** Membuka Modal Konfirmasi Hapus */
         function openDeleteModal(cardId) {
-            // Guard clause: Hentikan eksekusi jika konfigurasi Supabase tidak valid
-            if (window.SUPABASE_CONFIG_INVALID) {
-                showGlobalMessage('Aksi dibatalkan: Konfigurasi Supabase tidak valid. Mohon perbaiki kredensial Anda.', 'error');
-                return;
-            }
-
             cardIdToDelete = cardId;
             document.getElementById('delete-card-id').textContent = cardId;
 
@@ -437,15 +385,7 @@
         /** Eksekusi Penghapusan Data */
         async function executeDelete() {
             if (!cardIdToDelete) return;
-
-            // Guard clause: Hentikan eksekusi jika konfigurasi Supabase tidak valid
-            if (window.SUPABASE_CONFIG_INVALID) {
-                showGlobalMessage('Aksi dibatalkan: Konfigurasi Supabase tidak valid. Mohon perbaiki kredensial Anda.', 'error');
-                closeDeleteModal();
-                return;
-            }
-
-
+            
             const { error } = await supabaseClient
                 .from(TABLE_NAME)
                 .delete()
@@ -465,12 +405,6 @@
         
         /** Membuka Modal Import */
         function openImportModal() {
-            // Guard clause: Hentikan eksekusi jika konfigurasi Supabase tidak valid
-            if (window.SUPABASE_CONFIG_INVALID) {
-                showGlobalMessage('Aksi dibatalkan: Konfigurasi Supabase tidak valid. Mohon perbaiki kredensial Anda.', 'error');
-                return;
-            }
-
             document.getElementById('import-form').reset(); // Reset textarea
             const modal = document.getElementById('import-modal');
             const content = document.getElementById('import-content');
@@ -495,13 +429,6 @@
 
         /** Handle Submit Form Import */
         async function handleImportSubmit(event) {
-            // Guard clause: Hentikan eksekusi jika konfigurasi Supabase tidak valid
-            if (window.SUPABASE_CONFIG_INVALID) {
-                event.preventDefault(); // Mencegah submit form
-                showGlobalMessage('Aksi dibatalkan: Konfigurasi Supabase tidak valid. Mohon perbaiki kredensial Anda.', 'error');
-                return;
-            }
-
             event.preventDefault();
             const rawData = document.getElementById('import-data-textarea').value.trim();
             if (!rawData) {
@@ -512,12 +439,12 @@
             const lines = rawData.split('\n').filter(line => line.trim() !== '');
             const updates = [];
             let errorCount = 0;
-            const cardIdsToUpdate = [];
 
             // 1. Parsing Data dan Validasi
             for (const line of lines) {
                 const parts = line.split(',').map(p => p.trim());
-                if (parts.length < 5) {
+                // Minimal 5 bagian: Card ID, pagi, siang, sore, malam (meskipun kosong)
+                if (parts.length < 5) { 
                     console.warn(`Baris dilewati karena format tidak lengkap: ${line}`);
                     errorCount++;
                     continue;
@@ -533,17 +460,17 @@
                 
                 // Construct update payload, use null for empty time strings
                 const payload = {};
-                if (pagi) payload.pagi = pagi; else payload.pagi = null;
-                if (siang) payload.siang = siang; else payload.siang = null;
-                if (sore) payload.sore = sore; else payload.sore = null;
-                if (malam) payload.malam = malam; else payload.malam = null;
+                // Jika string kosong, Supabase akan menafsirkan sebagai NULL 
+                payload.pagi = pagi || null;
+                payload.siang = siang || null;
+                payload.sore = sore || null;
+                payload.malam = malam || null;
 
                 // Push update object to array
                 updates.push({
                     card: cardId,
                     ...payload
                 });
-                cardIdsToUpdate.push(cardId);
             }
 
             if (updates.length === 0) {
@@ -552,12 +479,10 @@
             }
 
             // 2. Eksekusi Batch Update
-            // Catatan: Supabase tidak memiliki fungsi batch update built-in
-            // Kita akan menggunakan loop sederhana untuk UPDATE per baris.
             let successCount = 0;
 
             for (const item of updates) {
-                const { error } = await supabaseClient
+                const { error, count } = await supabaseClient
                     .from(TABLE_NAME)
                     .update({
                         pagi: item.pagi,
@@ -565,12 +490,19 @@
                         sore: item.sore,
                         malam: item.malam
                     })
-                    .eq('card', item.card);
+                    .eq('card', item.card)
+                    .select() 
+                    .maybeSingle(); 
 
                 if (error) {
                     console.error(`Gagal update Card ID ${item.card}:`, error);
                     errorCount++;
-                } else {
+                } else if (!count) {
+                    // Card ID tidak ditemukan di database (tidak ada baris yang diupdate)
+                    console.warn(`Gagal update Card ID ${item.card}: Card ID tidak ditemukan di database.`);
+                    errorCount++; 
+                }
+                else {
                     successCount++;
                 }
             }
@@ -578,13 +510,12 @@
             closeImportModal();
 
             // 3. Tampilkan Hasil
-            if (successCount > 0) {
+            if (successCount > 0 && errorCount === 0) {
                 showGlobalMessage(`Import berhasil! ${successCount} data karyawan berhasil diupdate.`, 'success');
-            }
-            if (errorCount > 0) {
-                 // Gunakan warna info/biru jika ada sukses dan error, atau merah jika semua error
-                const type = successCount > 0 ? 'info' : 'error';
-                showGlobalMessage(`Peringatan: ${errorCount} data gagal diupdate (mungkin Card ID tidak ditemukan atau format salah).`, type);
+            } else if (successCount > 0 && errorCount > 0) {
+                showGlobalMessage(`Import sebagian berhasil. ${successCount} data berhasil diupdate, tetapi ${errorCount} data gagal (mungkin Card ID tidak ditemukan).`, 'info');
+            } else if (errorCount > 0 && successCount === 0) {
+                showGlobalMessage(`Import gagal total. ${errorCount} data gagal diupdate.`, 'error');
             }
             
             fetchData(); // Refresh data
