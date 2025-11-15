@@ -55,11 +55,11 @@ function getCurrentMealPeriod() {
     // Asumsi: Anda bisa menyesuaikan rentang jam ini
     if (hour >= 5 && hour < 10) { // Contoh: 05:00 - 09:59
         return 'pagi';
-    } else if (hour >= 10 && hour < 14) { // Contoh: 10:00 - 13:59
+    } else if (hour >= 11 && hour < 14) { // Contoh: 10:00 - 13:59
         return 'siang';
-    } else if (hour >= 14 && hour < 18) { // Contoh: 14:00 - 17:59
+    } else if (hour >= 17 && hour < 18) { // Contoh: 14:00 - 17:59
         return 'sore';
-    } else if (hour >= 18 && hour < 23) { // Contoh: 18:00 - 22:59
+    } else if (hour >= 18 && hour < 20) { // Contoh: 18:00 - 22:59
         return 'malam';
     } else {
         return 'di luar jam absen'; // Di luar jam yang ditentukan
@@ -350,3 +350,4 @@ window.onload = () => {
     // Mulai mendengarkan input keyboard/HID reader
     setupHIDListener();
 };
+
