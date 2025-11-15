@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin Data Karyawan</title>
+    <title>Panel Admin Data Karyawan (Data Master)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -155,7 +155,7 @@
         // PENTING: Ganti kedua nilai placeholder di bawah ini dengan kredensial Supabase Anda yang sebenarnya.
         const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
-        const TABLE_NAME = 'data_master'; 
+        const TABLE_NAME = 'data_master'; // Nama tabel yang digunakan
         
         console.log('Menggunakan Supabase URL:', SUPABASE_URL);
 
@@ -195,12 +195,12 @@
             }, 5000);
         }
         
-        // **FUNGSI formatTime Disesuaikan untuk Tipe Data TEXT**
+        // **FUNGSI formatTime Disesuaikan untuk Tipe Data TEXT (MENGHILANGKAN "Invalid Time")**
         /** Fungsi untuk menampilkan nilai text absensi (tidak perlu parsing date) */
         function formatTime(textValue) {
             // Jika nilai null, undefined, atau string kosong setelah trim, kembalikan '-'
             if (!textValue) return '-';
-            return textValue.trim();
+            return textValue.trim() || '-';
         }
 
 
@@ -238,7 +238,7 @@
                     row.insertCell().textContent = item.nama;
                     row.insertCell().textContent = item.departemen;
                     
-                    // Tampilkan nilai text (sudah diformat di DB atau input)
+                    // Tampilkan nilai text menggunakan fungsi formatTime yang disesuaikan
                     row.insertCell().textContent = formatTime(item.pagi);
                     row.insertCell().textContent = formatTime(item.siang);
                     row.insertCell().textContent = formatTime(item.sore);
@@ -456,7 +456,7 @@
                     continue;
                 }
                 
-                // **PENTING: Gunakan string kosong ('' ) untuk kolom TEXT jika data kosong**
+                // Gunakan string kosong ('' ) untuk kolom TEXT jika data kosong
                 const payload = {};
                 payload.pagi = pagi || ''; 
                 payload.siang = siang || '';
