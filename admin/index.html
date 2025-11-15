@@ -121,13 +121,13 @@
     <div id="import-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg transform transition-all duration-300 scale-95 opacity-0" id="import-content">
             <h3 class="text-2xl font-bold text-gray-800 mb-4">Import Data Absensi Harian</h3>
-            <p class="text-sm text-gray-600 mb-4">Tempelkan data absensi harian dalam format CSV di bawah ini. Harap ikuti format: <code class="font-mono text-xs bg-gray-100 p-1 rounded">Card ID,WaktuPagi(ISO),WaktuSiang(ISO),WaktuSore(ISO),WaktuMalam(ISO)</code></p>
+            <p class="text-sm text-gray-600 mb-4">Tempelkan data absensi harian dalam format CSV di bawah ini. Harap ikuti format: <code class="font-mono text-xs bg-gray-100 p-1 rounded">Card ID,WaktuPagi(Teks),WaktuSiang(Teks),WaktuSore(Teks),WaktuMalam(Teks)</code></p>
             
             <form id="import-form">
                 <div class="mb-4">
                     <label for="import-data-textarea" class="block text-sm font-medium text-gray-700">Data CSV (per baris satu karyawan):</label>
                     <textarea id="import-data-textarea" rows="10" required 
-                              placeholder="Contoh:&#10;0001234567,2025-01-01T07:30:00.000Z,,2025-01-01T17:00:00.000Z,&#10;0009876543,,2025-01-01T13:00:00.000Z,," 
+                              placeholder="Contoh:&#10;0001234567,07:30,,17:00,&#10;0009876543,,13:00,," 
                               class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"></textarea>
                 </div>
 
@@ -155,7 +155,7 @@
         // PENTING: Ganti kedua nilai placeholder di bawah ini dengan kredensial Supabase Anda yang sebenarnya.
         const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
-        const TABLE_NAME = 'data_master'; // TELAH DIGANTI DARI 'absensi' MENJADI 'data_master'
+        const TABLE_NAME = 'data_master'; 
         
         console.log('Menggunakan Supabase URL:', SUPABASE_URL);
 
@@ -195,14 +195,12 @@
             }, 5000);
         }
         
-        /** Fungsi untuk memformat timestamp (ISO string) menjadi format waktu lokal */
-        function formatTime(isoString) {
-            if (!isoString) return '-';
-            const date = new Date(isoString); 
-            if (isNaN(date.getTime())) {
-                return 'Invalid Time';
-            }
-            return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        // **FUNGSI formatTime Disesuaikan untuk Tipe Data TEXT**
+        /** Fungsi untuk menampilkan nilai text absensi (tidak perlu parsing date) */
+        function formatTime(textValue) {
+            // Jika nilai null, undefined, atau string kosong setelah trim, kembalikan '-'
+            if (!textValue) return '-';
+            return textValue.trim();
         }
 
 
@@ -240,7 +238,7 @@
                     row.insertCell().textContent = item.nama;
                     row.insertCell().textContent = item.departemen;
                     
-                    // Format timestamp
+                    // Tampilkan nilai text (sudah diformat di DB atau input)
                     row.insertCell().textContent = formatTime(item.pagi);
                     row.insertCell().textContent = formatTime(item.siang);
                     row.insertCell().textContent = formatTime(item.sore);
@@ -458,13 +456,12 @@
                     continue;
                 }
                 
-                // Construct update payload, use null for empty time strings
+                // **PENTING: Gunakan string kosong ('' ) untuk kolom TEXT jika data kosong**
                 const payload = {};
-                // Jika string kosong, Supabase akan menafsirkan sebagai NULL 
-                payload.pagi = pagi || null;
-                payload.siang = siang || null;
-                payload.sore = sore || null;
-                payload.malam = malam || null;
+                payload.pagi = pagi || ''; 
+                payload.siang = siang || '';
+                payload.sore = sore || '';
+                payload.malam = malam || '';
 
                 // Push update object to array
                 updates.push({
