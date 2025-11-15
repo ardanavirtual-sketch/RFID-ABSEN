@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin Data Karyawan (Data Master)</title>
+    <title>Panel Admin Data Karyawan (Import Fleksibel)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         /* Custom styles for better aesthetics */
         body {
@@ -18,7 +19,7 @@
         .modal-overlay {
             background-color: rgba(0, 0, 0, 0.5);
         }
-        /* Style untuk Tabel */
+        /* Style untuk Tabel Admin Utama */
         .admin-table th, .admin-table td {
             padding: 10px;
             text-align: left;
@@ -29,6 +30,15 @@
             color: white;
             position: sticky;
             top: 0;
+        }
+        /* Style untuk Tabel Review (Lebih padat) */
+        .review-table th, .review-table td {
+            padding: 8px;
+            font-size: 0.8rem;
+            white-space: nowrap; /* Mencegah baris baru */
+        }
+        .review-table th {
+            background-color: #f3f4f6;
         }
         .btn-primary {
             transition: all 0.15s;
@@ -89,6 +99,58 @@
         </div>
     </div>
 
+    <div id="import-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-4xl transform transition-all duration-300 scale-95 opacity-0" id="import-content">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Import Data Absensi Harian (Fleksibel)</h3>
+            
+            <form id="import-form">
+                <div id="step-upload">
+                    <p class="text-sm text-gray-600 mb-4">Unggah file Excel (.xlsx atau .xls) yang berisi data absensi.</p>
+                    <p class="text-xs text-red-500 mb-4 font-semibold">
+                        Pastikan kolom di Excel urut dan memiliki header: 
+                        <code class="font-mono text-xs bg-gray-100 p-1 rounded">Card ID, NIK, Nama, Departemen, Pagi, Siang, Sore, Malam</code>.
+                        <br>**Semua data akan ditampilkan untuk verifikasi, tetapi hanya kolom Pagi, Siang, Sore, Malam yang di-UPDATE.**
+                    </p>
+                    <div class="mb-4">
+                        <label for="excel-file-input" class="block text-sm font-medium text-gray-700">Pilih File Excel:</label>
+                        <input type="file" id="excel-file-input" accept=".xlsx, .xls" required 
+                            class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+
+                <div id="step-review" class="hidden">
+                    <h4 class="text-xl font-bold text-gray-800 mb-3">Review Data Absensi Harian (Verifikasi)</h4>
+                    <div class="overflow-x-auto max-h-80 border rounded-lg p-2">
+                        <table class="w-full text-left review-table">
+                            <thead class="sticky top-0 bg-gray-100">
+                                <tr>
+                                    <th class="w-1/12">Card ID</th>
+                                    <th class="w-1/12">NIK</th>
+                                    <th class="w-2/12">Nama</th>
+                                    <th class="w-2/12">Departemen</th>
+                                    <th class="w-1/12 text-blue-600">Pagi</th>
+                                    <th class="w-1/12 text-blue-600">Siang</th>
+                                    <th class="w-1/12 text-blue-600">Sore</th>
+                                    <th class="w-1/12 text-blue-600">Malam</th>
+                                    <th class="w-1/12">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="review-table-body">
+                                </tbody>
+                        </table>
+                    </div>
+                    <p id="review-summary" class="text-sm mt-3 text-gray-700 font-medium"></p>
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeImportModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Batal</button>
+                    <button type="button" id="review-button" onclick="parseExcelFile()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-150 btn-primary">Review Data</button>
+                    <button type="submit" id="import-submit-button" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-150 btn-primary hidden" disabled>Proses Update Absensi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="form-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg transform transition-all duration-300 scale-95 opacity-0" id="form-content">
             <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-4">Tambah Karyawan Baru</h3>
@@ -109,31 +171,9 @@
                     <label for="form-departemen" class="block text-sm font-medium text-gray-700">Departemen</label>
                     <input type="text" id="form-departemen" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
-
                 <div class="flex justify-end space-x-3">
                     <button type="button" onclick="closeFormModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Batal</button>
                     <button type="submit" id="submit-button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-150 btn-primary">Simpan</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="import-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg transform transition-all duration-300 scale-95 opacity-0" id="import-content">
-            <h3 class="text-2xl font-bold text-gray-800 mb-4">Import Data Absensi Harian</h3>
-            <p class="text-sm text-gray-600 mb-4">Tempelkan data absensi harian dalam format CSV di bawah ini. Harap ikuti format: <code class="font-mono text-xs bg-gray-100 p-1 rounded">Card ID,WaktuPagi(Teks),WaktuSiang(Teks),WaktuSore(Teks),WaktuMalam(Teks)</code></p>
-            
-            <form id="import-form">
-                <div class="mb-4">
-                    <label for="import-data-textarea" class="block text-sm font-medium text-gray-700">Data CSV (per baris satu karyawan):</label>
-                    <textarea id="import-data-textarea" rows="10" required 
-                              placeholder="Contoh:&#10;0001234567,07:30,,17:00,&#10;0009876543,,13:00,," 
-                              class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"></textarea>
-                </div>
-
-                <div class="flex justify-end space-x-3">
-                    <button type="button" onclick="closeImportModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Batal</button>
-                    <button type="submit" id="import-submit-button" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-150 btn-primary">Proses Import</button>
                 </div>
             </form>
         </div>
@@ -152,35 +192,32 @@
 
     <script>
         // --- 1. KONFIGURASI SUPABASE ---
-        // PENTING: Ganti kedua nilai placeholder di bawah ini dengan kredensial Supabase Anda yang sebenarnya.
         const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
         const TABLE_NAME = 'data_master'; // Nama tabel yang digunakan
         
-        console.log('Menggunakan Supabase URL:', SUPABASE_URL);
-
+        // Header yang dicari di Excel (NIK, Nama, Departemen ditambahkan untuk review)
+        const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; 
+        
         // Inisialisasi Supabase Client
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // --- 2. LOGIKA UTAMA APLIKASI ---
-
-        // Variabel Global untuk state
-        let currentMode = 'create'; // 'create' or 'edit'
+        
+        let parsedImportData = [];
+        let currentMode = 'create';
         let cardIdToDelete = null;
 
         document.addEventListener('DOMContentLoaded', () => {
-            fetchData(); // Muat data saat Panel Admin dibuka
+            fetchData();
             document.getElementById('crud-form').addEventListener('submit', handleFormSubmit);
             document.getElementById('import-form').addEventListener('submit', handleImportSubmit);
         });
 
         // --- Fungsi Helper UI ---
 
-        /** Menampilkan pesan notifikasi global (atas) */
         function showGlobalMessage(message, type = 'success') {
             const msgEl = document.getElementById('global-message');
             msgEl.textContent = message;
-            msgEl.className = 'w-full container mx-auto mb-4 p-3 rounded-lg text-center font-medium'; // Reset classes
+            msgEl.className = 'w-full container mx-auto mb-4 p-3 rounded-lg text-center font-medium';
             
             if (type === 'success') {
                 msgEl.classList.add('bg-green-100', 'text-green-800');
@@ -195,27 +232,21 @@
             }, 5000);
         }
         
-        // **FUNGSI formatTime Disesuaikan untuk Tipe Data TEXT (MENGHILANGKAN "Invalid Time")**
-        /** Fungsi untuk menampilkan nilai text absensi (tidak perlu parsing date) */
         function formatTime(textValue) {
-            // Jika nilai null, undefined, atau string kosong setelah trim, kembalikan '-'
             if (!textValue) return '-';
-            return textValue.trim() || '-';
+            return String(textValue).trim() || '-';
         }
 
-
         // --- 3. LOGIKA CRUD (PANEL ADMIN) ---
-
-        /** Memuat data dari Supabase dan menampilkannya di tabel */
         async function fetchData() {
             const { data, error } = await supabaseClient
                 .from(TABLE_NAME)
                 .select('*')
-                .order('nama', { ascending: true }); // Urutkan berdasarkan nama
+                .order('nama', { ascending: true });
 
             const tbody = document.getElementById('data-table-body');
             const noDataMsg = document.getElementById('no-data-message');
-            tbody.innerHTML = ''; // Kosongkan tabel
+            tbody.innerHTML = '';
 
             if (error) {
                 console.error("Error fetching data:", error);
@@ -238,13 +269,11 @@
                     row.insertCell().textContent = item.nama;
                     row.insertCell().textContent = item.departemen;
                     
-                    // Tampilkan nilai text menggunakan fungsi formatTime yang disesuaikan
                     row.insertCell().textContent = formatTime(item.pagi);
                     row.insertCell().textContent = formatTime(item.siang);
                     row.insertCell().textContent = formatTime(item.sore);
                     row.insertCell().textContent = formatTime(item.malam);
 
-                    // Tombol Aksi
                     const actionCell = row.insertCell();
                     actionCell.innerHTML = `
                         <div class="flex space-x-2">
@@ -255,8 +284,7 @@
                 });
             }
         }
-
-        /** Membuka Modal Form CRUD */
+        
         async function openFormModal(mode, cardId = null) {
             currentMode = mode;
             const modal = document.getElementById('form-modal');
@@ -267,20 +295,18 @@
             const formDepartemen = document.getElementById('form-departemen');
             const modalTitle = document.getElementById('modal-title');
             
-            // Reset Form
             document.getElementById('crud-form').reset();
             formCard.readOnly = false;
 
             if (mode === 'create') {
                 modalTitle.textContent = 'Tambah Karyawan Baru';
                 document.getElementById('submit-button').textContent = 'Simpan Data';
-            } else { // Edit Mode
+            } else {
                 modalTitle.textContent = 'Edit Data Karyawan';
                 document.getElementById('submit-button').textContent = 'Update Data';
                 formCard.value = cardId;
-                formCard.readOnly = true; // Card ID tidak boleh diubah saat edit
+                formCard.readOnly = true;
 
-                // Ambil data untuk diisi
                 const { data, error } = await supabaseClient
                     .from(TABLE_NAME)
                     .select('card, nik, nama, departemen')
@@ -305,7 +331,6 @@
             }, 50);
         }
 
-        /** Menutup Modal Form CRUD */
         function closeFormModal() {
             const modal = document.getElementById('form-modal');
             const content = document.getElementById('form-content');
@@ -316,7 +341,6 @@
             }, 300);
         }
 
-        /** Handle Submit Form (Create atau Update) */
         async function handleFormSubmit(event) {
             event.preventDefault();
 
@@ -330,12 +354,10 @@
             let message;
 
             if (currentMode === 'create') {
-                // Saat membuat data baru, hanya simpan data karyawan, kolom waktu absen dibiarkan null
                 const result = await supabaseClient.from(TABLE_NAME).insert([payload]);
                 error = result.error;
                 message = 'Data karyawan berhasil ditambahkan.';
-            } else { // Edit (Update)
-                // Hanya update kolom yang relevan (nik, nama, departemen)
+            } else {
                 const updateData = { nik, nama, departemen };
                 const result = await supabaseClient.from(TABLE_NAME).update(updateData).eq('card', card);
                 error = result.error;
@@ -344,17 +366,15 @@
 
             if (error) {
                 console.error("CRUD Error:", error);
-                // Menangani error jika Card ID sudah ada (khusus mode create)
                 const errorMessage = error.code === '23505' ? 'Gagal: Card ID sudah terdaftar (Primary Key Constraint).' : error.message;
                 showGlobalMessage(`Gagal ${currentMode === 'create' ? 'menambah' : 'mengupdate'} data: ${errorMessage}`, 'error');
             } else {
                 showGlobalMessage(message, 'success');
                 closeFormModal();
-                fetchData(); // Refresh data
+                fetchData();
             }
         }
-
-        /** Membuka Modal Konfirmasi Hapus */
+        
         function openDeleteModal(cardId) {
             cardIdToDelete = cardId;
             document.getElementById('delete-card-id').textContent = cardId;
@@ -368,7 +388,6 @@
             }, 50);
         }
 
-        /** Menutup Modal Konfirmasi Hapus */
         function closeDeleteModal() {
             const modal = document.getElementById('delete-modal');
             const content = document.getElementById('delete-content');
@@ -380,7 +399,6 @@
             }, 300);
         }
 
-        /** Eksekusi Penghapusan Data */
         async function executeDelete() {
             if (!cardIdToDelete) return;
             
@@ -394,16 +412,21 @@
                 showGlobalMessage('Gagal menghapus data karyawan.', 'error');
             } else {
                 showGlobalMessage('Data karyawan berhasil dihapus.', 'success');
-                fetchData(); // Refresh data
+                fetchData();
             }
             closeDeleteModal();
         }
 
-        // --- 4. LOGIKA IMPORT DATA BARU ---
+        // --- 4. LOGIKA IMPORT EXCEL (BARU) ---
         
-        /** Membuka Modal Import */
         function openImportModal() {
-            document.getElementById('import-form').reset(); // Reset textarea
+            document.getElementById('excel-file-input').value = '';
+            document.getElementById('step-upload').classList.remove('hidden');
+            document.getElementById('step-review').classList.add('hidden');
+            document.getElementById('review-button').classList.remove('hidden');
+            document.getElementById('import-submit-button').classList.add('hidden');
+            parsedImportData = [];
+            
             const modal = document.getElementById('import-modal');
             const content = document.getElementById('import-content');
             
@@ -414,7 +437,6 @@
             }, 50);
         }
 
-        /** Menutup Modal Import */
         function closeImportModal() {
             const modal = document.getElementById('import-modal');
             const content = document.getElementById('import-content');
@@ -424,61 +446,156 @@
                 modal.classList.add('hidden');
             }, 300);
         }
+        
+        function parseExcelFile() {
+            const fileInput = document.getElementById('excel-file-input');
+            const file = fileInput.files[0];
 
-        /** Handle Submit Form Import */
-        async function handleImportSubmit(event) {
-            event.preventDefault();
-            const rawData = document.getElementById('import-data-textarea').value.trim();
-            if (!rawData) {
-                showGlobalMessage('Data yang ditempelkan kosong.', 'error');
+            if (!file) {
+                showGlobalMessage('Pilih file Excel terlebih dahulu.', 'error');
+                return;
+            }
+            
+            document.getElementById('review-button').disabled = true;
+            document.getElementById('review-button').textContent = 'Memproses...';
+
+            const reader = new FileReader();
+
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                
+                const excelData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                
+                processExcelData(excelData);
+
+                document.getElementById('review-button').disabled = false;
+                document.getElementById('review-button').textContent = 'Review Data';
+            };
+
+            reader.onerror = function(ex) {
+                showGlobalMessage('Gagal membaca file Excel.', 'error');
+                document.getElementById('review-button').disabled = false;
+                document.getElementById('review-button').textContent = 'Review Data';
+            };
+
+            reader.readAsArrayBuffer(file);
+        }
+
+        /** Logika untuk memproses data mentah dari Excel */
+        function processExcelData(data) {
+            parsedImportData = [];
+            const reviewBody = document.getElementById('review-table-body');
+            reviewBody.innerHTML = '';
+            
+            if (data.length < 2) {
+                showGlobalMessage('File Excel kosong atau hanya berisi header.', 'error');
                 return;
             }
 
-            const lines = rawData.split('\n').filter(line => line.trim() !== '');
-            const updates = [];
-            let errorCount = 0;
-
-            // 1. Parsing Data dan Validasi
-            for (const line of lines) {
-                const parts = line.split(',').map(p => p.trim());
-                // Minimal 5 bagian: Card ID, pagi, siang, sore, malam (meskipun kosong)
-                if (parts.length < 5) { 
-                    console.warn(`Baris dilewati karena format tidak lengkap: ${line}`);
-                    errorCount++;
-                    continue;
+            const rawHeaders = data[0].map(h => String(h).trim());
+            const headerMap = {};
+            
+            // Mencari indeks kolom yang sesuai
+            REQUIRED_HEADERS.forEach(requiredHeader => {
+                const index = rawHeaders.findIndex(h => h.toLowerCase() === requiredHeader.toLowerCase());
+                if (index !== -1) {
+                    headerMap[requiredHeader.toLowerCase()] = index;
                 }
+            });
 
-                const [cardId, pagi, siang, sore, malam] = parts;
-
-                if (!cardId) {
-                    console.warn(`Baris dilewati karena Card ID kosong: ${line}`);
-                    errorCount++;
-                    continue;
-                }
-                
-                // Gunakan string kosong ('' ) untuk kolom TEXT jika data kosong
-                const payload = {};
-                payload.pagi = pagi || ''; 
-                payload.siang = siang || '';
-                payload.sore = sore || '';
-                payload.malam = malam || '';
-
-                // Push update object to array
-                updates.push({
-                    card: cardId,
-                    ...payload
-                });
+            // Pastikan semua kolom utama absensi dan Card ID ditemukan
+            const requiredFields = ['card id', 'pagi', 'siang', 'sore', 'malam'];
+            const missingFields = requiredFields.filter(field => typeof headerMap[field] === 'undefined');
+            
+            if (missingFields.length > 0) {
+                 showGlobalMessage(`Gagal: Kolom wajib tidak ditemukan di Excel: ${missingFields.map(f => f.toUpperCase()).join(', ')}.`, 'error');
+                 return;
             }
 
-            if (updates.length === 0) {
+            const cardIndex = headerMap['card id']; 
+            const nikIndex = headerMap['nik']; 
+            const namaIndex = headerMap['nama']; 
+            const deptIndex = headerMap['departemen']; 
+
+            let validCount = 0;
+            let skippedCount = 0;
+
+            for (let i = 1; i < data.length; i++) {
+                const row = data[i];
+                let status = 'Valid';
+                let cardId = String(row[cardIndex] || '').trim();
+                
+                // Ambil data non-absensi (untuk ditampilkan di review)
+                const nik = String(row[nikIndex] || '').trim();
+                const nama = String(row[namaIndex] || '').trim();
+                const departemen = String(row[deptIndex] || '').trim();
+
+                if (!cardId) {
+                    status = 'Dilewati (Card ID Kosong)';
+                    skippedCount++;
+                } else {
+                    // Data yang akan dikirim ke Supabase (hanya Absensi + Card ID)
+                    const absensiPayload = {
+                        card: cardId,
+                        pagi: formatTime(row[headerMap['pagi']] || ''),
+                        siang: formatTime(row[headerMap['siang']] || ''),
+                        sore: formatTime(row[headerMap['sore']] || ''),
+                        malam: formatTime(row[headerMap['malam']] || ''),
+                    };
+                    parsedImportData.push(absensiPayload);
+                    validCount++;
+                }
+
+                // Tampilkan di tabel review (termasuk data master dari Excel)
+                const rowEl = reviewBody.insertRow();
+                rowEl.innerHTML = `
+                    <td>${cardId || '-'}</td>
+                    <td>${nik || '-'}</td>
+                    <td>${nama || '-'}</td>
+                    <td>${departemen || '-'}</td>
+                    <td>${formatTime(row[headerMap['pagi']] || '')}</td>
+                    <td>${formatTime(row[headerMap['siang']] || '')}</td>
+                    <td>${formatTime(row[headerMap['sore']] || '')}</td>
+                    <td>${formatTime(row[headerMap['malam']] || '')}</td>
+                    <td class="${status.startsWith('Dilewati') ? 'text-red-500' : 'text-green-600'}">${status}</td>
+                `;
+            }
+
+            // Tampilkan summary dan langkah berikutnya
+            document.getElementById('review-summary').textContent = 
+                `Total baris: ${data.length - 1}. Data absensi siap diupdate: ${validCount}. Baris dilewati: ${skippedCount}.`;
+
+            if (validCount > 0) {
+                document.getElementById('step-upload').classList.add('hidden');
+                document.getElementById('step-review').classList.remove('hidden');
+                document.getElementById('review-button').classList.add('hidden');
+                document.getElementById('import-submit-button').classList.remove('hidden');
+                document.getElementById('import-submit-button').disabled = false;
+            } else {
+                document.getElementById('import-submit-button').disabled = true;
+                showGlobalMessage('Tidak ada data valid yang ditemukan untuk diupdate.', 'error');
+            }
+        }
+
+        async function handleImportSubmit(event) {
+            event.preventDefault();
+            
+            if (parsedImportData.length === 0) {
                 showGlobalMessage('Tidak ada data valid untuk diimport.', 'error');
                 return;
             }
-
-            // 2. Eksekusi Batch Update
+            
+            document.getElementById('import-submit-button').disabled = true;
+            document.getElementById('import-submit-button').textContent = 'Mengirim Data...';
+            
             let successCount = 0;
+            let errorCount = 0;
 
-            for (const item of updates) {
+            for (const item of parsedImportData) {
+                // HANYA UPDATE KOLOM ABSENSI
                 const { error, count } = await supabaseClient
                     .from(TABLE_NAME)
                     .update({
@@ -495,8 +612,7 @@
                     console.error(`Gagal update Card ID ${item.card}:`, error);
                     errorCount++;
                 } else if (!count) {
-                    // Card ID tidak ditemukan di database (tidak ada baris yang diupdate)
-                    console.warn(`Gagal update Card ID ${item.card}: Card ID tidak ditemukan di database.`);
+                    console.warn(`Gagal update Card ID ${item.card}: Karyawan tidak ditemukan (pastikan Card ID ada di Supabase).`);
                     errorCount++; 
                 }
                 else {
@@ -505,17 +621,17 @@
             }
             
             closeImportModal();
+            document.getElementById('import-submit-button').textContent = 'Proses Update Absensi';
 
-            // 3. Tampilkan Hasil
             if (successCount > 0 && errorCount === 0) {
-                showGlobalMessage(`Import berhasil! ${successCount} data karyawan berhasil diupdate.`, 'success');
+                showGlobalMessage(`Import berhasil! ${successCount} data absensi berhasil diupdate.`, 'success');
             } else if (successCount > 0 && errorCount > 0) {
                 showGlobalMessage(`Import sebagian berhasil. ${successCount} data berhasil diupdate, tetapi ${errorCount} data gagal (mungkin Card ID tidak ditemukan).`, 'info');
             } else if (errorCount > 0 && successCount === 0) {
                 showGlobalMessage(`Import gagal total. ${errorCount} data gagal diupdate.`, 'error');
             }
             
-            fetchData(); // Refresh data
+            fetchData();
         }
     </script>
 
