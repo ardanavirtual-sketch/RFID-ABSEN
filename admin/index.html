@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin Sistem Absensi</title>
+    <title>Panel Admin Sistem</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -49,7 +49,8 @@
                     <h2 class="text-3xl font-extrabold text-gray-800">Data Karyawan</h2>
                     <div class="flex space-x-3">
                         <button onclick="openImportModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 btn-primary">
-                            Import Data Absensi (Sinkronisasi Terjadwal) </button>
+                            Import Data Absensi (Sinkronisasi Penuh)
+                        </button>
                         <button onclick="openFormModal('create')" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-300 btn-primary">
                             + Tambah Karyawan Baru
                         </button>
@@ -116,8 +117,7 @@
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal & Waktu</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Card ID</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Karyawan</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departemen</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Periode</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departemen</th> <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Periode</th>
                                     <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 </tr>
                             </thead>
@@ -134,12 +134,15 @@
 
     <div id="import-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-4xl transform transition-all duration-300 scale-95 opacity-0" id="import-content">
-            <h3 class="text-2xl font-bold text-gray-800 mb-4">Import Data Karyawan (Sinkronisasi Terjadwal)</h3> <form id="import-form">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Import Data Absensi Harian (Sinkronisasi Penuh)</h3>
+            
+            <form id="import-form">
                 <div id="step-upload">
                     <p class="text-sm text-gray-600 mb-4">Unggah file Excel (.xlsx atau .xls) yang berisi **SEMUA** data karyawan yang saat ini aktif.</p>
-                    <p class="text-xs text-blue-600 mb-4 font-semibold">
-                        ✅ Data ini akan **DISIMPAN SEMENTARA** dan baru akan disinkronkan ke <code class="font-mono text-xs bg-gray-100 p-1 rounded">data_master</code> secara otomatis pada pukul **00:00 (Jam 12 Malam)**.
+                    <p class="text-xs text-red-500 mb-4 font-semibold">
+                        **PENTING: Data di database akan disinkronkan dengan file ini.**
                         <br>Kolom: <code class="font-mono text-xs bg-gray-100 p-1 rounded">Card ID, NIK, Nama, Departemen, Pagi, Siang, Sore, Malam</code>.
+                        <br>Karyawan di database yang tidak ada di file Excel ini akan **dihapus/dinonaktifkan**.
                     </p>
                     <div class="mb-4">
                         <label for="excel-file-input" class="block text-sm font-medium text-gray-700">Pilih File Excel:</label>
@@ -170,13 +173,14 @@
                         </table>
                     </div>
                     <p id="review-summary" class="text-sm mt-3 text-gray-700 font-medium"></p>
-                    <p id="deletion-warning" class="text-sm text-red-600 font-semibold mt-2 hidden">⚠️ Peringatan: Sinkronisasi jam 00:00 akan menghapus data karyawan di database utama yang tidak ada di file Excel ini.</p>
+                    <p id="deletion-warning" class="text-sm text-red-600 font-semibold mt-2 hidden">⚠️ Peringatan: Proses ini akan menghapus data karyawan yang tidak ada di file Excel ini.</p>
                 </div>
 
                 <div class="flex justify-end space-x-3 mt-6">
                     <button type="button" onclick="closeImportModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Batal</button>
                     <button type="button" id="review-button" onclick="parseExcelFile()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-150 btn-primary">Review Data</button>
-                    <button type="submit" id="import-submit-button" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-150 btn-primary hidden" disabled>Simpan Data untuk Sinkronisasi Pukul 00:00</button> </div>
+                    <button type="submit" id="import-submit-button" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-150 btn-primary hidden" disabled>Sinkronisasi & Hapus Inaktif</button>
+                </div>
             </form>
         </div>
     </div>
@@ -184,17 +188,47 @@
         <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg transform transition-all duration-300 scale-95 opacity-0" id="form-content">
             <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-4">Tambah Karyawan Baru</h3>
             <form id="crud-form">
-                <div class="mb-4"><label for="form-card" class="block text-sm font-medium text-gray-700">Card ID</label><input type="text" id="form-card" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"></div>
-                <div class="mb-4"><label for="form-nik" class="block text-sm font-medium text-gray-700">NIK</label><input type="text" id="form-nik" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"></div>
-                <div class="mb-4"><label for="form-nama" class="block text-sm font-medium text-gray-700">Nama</label><input type="text" id="form-nama" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"></div>
-                <div class="mb-6"><label for="form-departemen" class="block text-sm font-medium text-gray-700">Departemen</label><input type="text" id="form-departemen" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"></div>
+                <div class="mb-4">
+                    <label for="form-card" class="block text-sm font-medium text-gray-700">Card ID</label>
+                    <input type="text" id="form-card" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="mb-4">
+                    <label for="form-nik" class="block text-sm font-medium text-gray-700">NIK</label>
+                    <input type="text" id="form-nik" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="mb-4">
+                    <label for="form-nama" class="block text-sm font-medium text-gray-700">Nama</label>
+                    <input type="text" id="form-nama" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="mb-6">
+                    <label for="form-departemen" class="block text-sm font-medium text-gray-700">Departemen</label>
+                    <input type="text" id="form-departemen" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+
                 <div class="border-t border-gray-200 my-6"></div>
                 <h4 class="text-xl font-bold text-gray-800 mb-4">Data Absensi/Makan</h4>
-                <div class="mb-4"><label for="form-pagi" class="block text-sm font-medium text-gray-700">Pagi</label><input type="text" id="form-pagi" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong"></div>
-                <div class="mb-4"><label for="form-siang" class="block text-sm font-medium text-gray-700">Siang</label><input type="text" id="form-siang" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong"></div>
-                <div class="mb-4"><label for="form-sore" class="block text-sm font-medium text-gray-700">Sore</label><input type="text" id="form-sore" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong"></div>
-                <div class="mb-6"><label for="form-malam" class="block text-sm font-medium text-gray-700">Malam</label><input type="text" id="form-malam" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong"></div>
-                <div class="flex justify-end space-x-3"><button type="button" onclick="closeFormModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Batal</button><button type="submit" id="submit-button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-150 btn-primary">Simpan</button></div>
+                
+                <div class="mb-4">
+                    <label for="form-pagi" class="block text-sm font-medium text-gray-700">Pagi</label>
+                    <input type="text" id="form-pagi" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                </div>
+                <div class="mb-4">
+                    <label for="form-siang" class="block text-sm font-medium text-gray-700">Siang</label>
+                    <input type="text" id="form-siang" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                </div>
+                <div class="mb-4">
+                    <label for="form-sore" class="block text-sm font-medium text-gray-700">Sore</label>
+                    <input type="text" id="form-sore" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                </div>
+                <div class="mb-6">
+                    <label for="form-malam" class="block text-sm font-medium text-gray-700">Malam</label>
+                    <input type="text" id="form-malam" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                </div>
+                
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeFormModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Batal</button>
+                    <button type="submit" id="submit-button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-150 btn-primary">Simpan</button>
+                </div>
             </form>
         </div>
     </div>
@@ -202,10 +236,12 @@
         <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md transform transition-all duration-300 scale-95 opacity-0" id="delete-content">
             <h3 class="text-2xl font-bold text-red-600 mb-4">Konfirmasi Penghapusan</h3>
             <p class="text-gray-700 mb-6">Anda yakin ingin menghapus data karyawan dengan Card ID: <span id="delete-card-id" class="font-bold"></span>?</p>
-            <div class="flex justify-end space-x-3"><button type="button" onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Batal</button><button type="button" onclick="executeDelete()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-150 btn-primary">Hapus</button></div>
+            <div class="flex justify-end space-x-3">
+                <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Batal</button>
+                <button type="button" onclick="executeDelete()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-150 btn-primary">Hapus</button>
+            </div>
         </div>
     </div>
-
 
     <script>
         // --- 1. KONFIGURASI SUPABASE (PASTIKAN INI SESUAI) ---
@@ -213,7 +249,6 @@
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
         const TABLE_NAME = 'data_master';
         const LOG_TABLE_NAME = 'log_absen'; 
-        const STAGING_TABLE_NAME = 'staging_data_master'; // <== BARU: Tabel penampung sementara
         const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; 
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -222,7 +257,7 @@
         let activeCardIds = [];    
         let currentMode = 'create';
         let cardIdToDelete = null;
-        let allAbsensiLogs = []; 
+        let allAbsensiLogs = []; // Untuk menyimpan data log yang akan diexport
 
         document.addEventListener('DOMContentLoaded', () => {
             fetchData();
@@ -230,10 +265,11 @@
             document.getElementById('import-form').addEventListener('submit', handleImportSubmit);
         });
 
-        // --- Navigasi View & Fungsionalitas Laporan Absensi (TIDAK BERUBAH) ---
+        // --- Navigasi View ---
         function switchView(viewId) {
             document.getElementById('data-karyawan-view').classList.add('hidden');
             document.getElementById('laporan-absen-view').classList.add('hidden');
+
             document.getElementById('tab-data-karyawan').classList.remove('tab-active');
             document.getElementById('tab-laporan-absen').classList.remove('tab-active');
 
@@ -247,64 +283,125 @@
                 loadArchivedAbsensiLog(); 
             }
         }
-        
-        // ... (Fungsi loadArchivedAbsensiLog, renderLogDetails, exportAbsensiToExcel, dan CRUD lainnya tetap sama)
-        // ... (Semua fungsi CRUD dan Fetch data lainnya tetap di sini)
-        
-        // --- FUNGSI UTAMA YANG DIUBAH: IMPORT DATA KE STAGING ---
-        
-        async function handleImportSubmit(event) {
-            event.preventDefault();
-            
-            if (parsedImportData.length === 0) { 
-                showGlobalMessage('Tidak ada data valid untuk disinkronisasi.', 'error'); 
-                return; 
-            }
-            
-            document.getElementById('import-submit-button').disabled = true;
-            document.getElementById('import-submit-button').textContent = 'Menyimpan ke Staging...';
-            
-            // --- FASE 1: HAPUS DATA LAMA DI STAGING (Pastikan hanya ada data terbaru) ---
-            // Kita hapus semua data lama di tabel staging
-            const { error: deleteError } = await supabaseClient
-                .from(STAGING_TABLE_NAME)
-                .delete()
-                .neq('card', 'INVALID_CARD_TO_DELETE_ALL'); // trik untuk delete semua data
 
-            if (deleteError) {
-                console.error("Delete Staging Error:", deleteError);
-                showGlobalMessage(`Gagal menghapus data lama di staging: ${deleteError.message}`, 'error');
-                document.getElementById('import-submit-button').textContent = 'Simpan Data untuk Sinkronisasi Pukul 00:00';
-                document.getElementById('import-submit-button').disabled = false;
+        // --- FUNGSI LOG ABSENSI ARSIP & EXPORT (UPDATED) ---
+
+        /**
+         * Mengambil dan menampilkan semua log absensi dari tabel log_absen.
+         */
+        async function loadArchivedAbsensiLog() {
+            const tbody = document.getElementById('log-body');
+            const exportButton = document.getElementById('export-excel-button');
+
+            tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-gray-500">Memuat detail log absensi...</td></tr>';
+            exportButton.disabled = true;
+            exportButton.textContent = 'Memuat Data...';
+
+            // 1. Ambil semua log, urutkan dari yang terbaru (TERMASUK DEPARTEMEN)
+            const { data: logs, error } = await supabaseClient
+                .from(LOG_TABLE_NAME)
+                .select('card, status, periode, created_at, nama, departemen') // <== UPDATED: Ambil kolom departemen
+                .order('created_at', { ascending: false });
+
+            exportButton.textContent = 'Export Log ke Excel';
+            
+            if (error) {
+                console.error("Error fetching logs:", error);
+                showGlobalMessage(`Gagal memuat log absensi: ${error.message}`, 'error');
+                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-red-500">Gagal memuat data log.</td></tr>';
                 return;
             }
 
-            // --- FASE 2: INSERT data baru ke STAGING TABLE ---
-            const { data: insertData, error: insertError } = await supabaseClient
-                .from(STAGING_TABLE_NAME)
-                .insert(parsedImportData)
-                .select(); 
+            allAbsensiLogs = logs; 
+            renderLogDetails(logs);
 
-            
-            closeImportModal();
-            document.getElementById('import-submit-button').textContent = 'Simpan Data untuk Sinkronisasi Pukul 00:00';
-
-            // --- FASE 3: Tampilkan Hasil Akhir ---
-            if (insertError) {
-                console.error("INSERT FAILED to Staging:", insertError);
-                showGlobalMessage(`Gagal menyimpan data ke tabel staging: ${insertError.message}. Sinkronisasi JAM 00:00 dibatalkan.`, 'error');
+            if (logs.length > 0) {
+                exportButton.disabled = false;
             } else {
-                showGlobalMessage(`✅ Data sebanyak ${insertData.length} baris berhasil disimpan ke tabel staging. Sinkronisasi ke data_master akan dilakukan pada pukul **00:00**.`, 'success');
+                exportButton.disabled = true;
             }
-            
-            fetchData(); // Muat ulang data master yang saat ini aktif
         }
 
-        // --- Sisanya adalah fungsi pendukung yang tidak berubah ---
+        /**
+         * Merender data log ke dalam tabel detail.
+         */
+        function renderLogDetails(logs) {
+            const tbody = document.getElementById('log-body');
+            tbody.innerHTML = '';
+            
+            if (logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-gray-500">Tidak ada data absensi yang terarsip.</td></tr>'; // <== UPDATED: colspan 6
+                return;
+            }
 
+            logs.forEach(log => {
+                const statusColor = log.status === 'Sukses' ? 'text-success-green font-semibold' : 'text-error-red';
+                
+                const dateObj = new Date(log.created_at);
+                const logDateTime = dateObj.toLocaleDateString('id-ID', {
+                    year: 'numeric', month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
+
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${logDateTime}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${log.card}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${log.nama || 'Tidak Terdaftar'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${log.departemen || '-'}</td> <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">${log.periode || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm ${statusColor}">${log.status}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        /**
+         * Mengekspor data log absensi ke file Excel.
+         */
+        function exportAbsensiToExcel() {
+            if (allAbsensiLogs.length === 0) {
+                showGlobalMessage('Tidak ada data log yang bisa diexport.', 'error');
+                return;
+            }
+            
+            const wsData = [
+                ["Tanggal & Waktu", "Card ID", "Nama Karyawan", "Departemen", "Periode", "Status Tap", "created_at (Raw)"] // <== UPDATED: Header Departemen
+            ];
+
+            allAbsensiLogs.forEach(log => {
+                const dateObj = new Date(log.created_at);
+                const logDateTime = dateObj.toLocaleDateString('id-ID', {
+                    year: 'numeric', month: 'long', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
+                
+                wsData.push([
+                    logDateTime,
+                    log.card,
+                    log.nama || 'Tidak Terdaftar',
+                    log.departemen || '-', // <== UPDATED: Data Departemen
+                    log.periode || '-',
+                    log.status,
+                    log.created_at 
+                ]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "LogAbsensi");
+
+            const date = new Date().toISOString().slice(0, 10);
+            XLSX.writeFile(wb, `Log_Absensi_Arsip_${date}.xlsx`);
+            
+            showGlobalMessage(`Berhasil mengekspor ${allAbsensiLogs.length} baris data ke Excel.`, 'success');
+        }
+
+        // --- FUNGSI LAMA (CRUD, FETCH DATA, DLL) TETAP DI SINI ---
+        
         function showGlobalMessage(message, type = 'success') {
             const msgEl = document.getElementById('global-message');
-            msgEl.innerHTML = message; // Menggunakan innerHTML karena pesan success mengandung tag bold
+            msgEl.textContent = message;
             msgEl.className = 'w-full container mx-auto mb-4 p-3 rounded-lg text-center font-medium';
             if (type === 'success') { msgEl.classList.add('bg-green-100', 'text-green-800'); } 
             else if (type === 'error') { msgEl.classList.add('bg-red-100', 'text-red-800'); } 
@@ -525,7 +622,7 @@
             document.getElementById('step-review').classList.add('hidden');
             document.getElementById('review-button').classList.remove('hidden');
             document.getElementById('import-submit-button').classList.add('hidden');
-            document.getElementById('deletion-warning').classList.remove('hidden'); // Tetap ditampilkan sebagai warning
+            document.getElementById('deletion-warning').classList.add('hidden'); 
             parsedImportData = [];
             activeCardIds = []; 
             
@@ -654,107 +751,60 @@
                 showGlobalMessage('Tidak ada data valid yang ditemukan untuk disinkronisasi.', 'error');
             }
         }
-        // ... (Fungsionalitas Laporan Absensi yang sama dari jawaban sebelumnya)
-        async function loadArchivedAbsensiLog() {
-            const tbody = document.getElementById('log-body');
-            const exportButton = document.getElementById('export-excel-button');
 
-            tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-gray-500">Memuat detail log absensi...</td></tr>';
-            exportButton.disabled = true;
-            exportButton.textContent = 'Memuat Data...';
-
-            const { data: logs, error } = await supabaseClient
-                .from(LOG_TABLE_NAME)
-                .select('card, status, periode, created_at, nama, departemen') 
-                .order('created_at', { ascending: false });
-
-            exportButton.textContent = 'Export Log ke Excel';
+        async function handleImportSubmit(event) {
+            event.preventDefault();
             
-            if (error) {
-                console.error("Error fetching logs:", error);
-                showGlobalMessage(`Gagal memuat log absensi: ${error.message}`, 'error');
-                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-red-500">Gagal memuat data log.</td></tr>';
-                return;
+            if (parsedImportData.length === 0) { showGlobalMessage('Tidak ada data valid untuk disinkronisasi.', 'error'); return; }
+            
+            document.getElementById('import-submit-button').disabled = true;
+            document.getElementById('import-submit-button').textContent = 'Melakukan Sinkronisasi...';
+            
+            let updateCount = 0;
+            let deleteCount = 0;
+            let upsertError = null;
+
+            // --- FASE 1: UPSERT (Update/Insert) Data Aktif ---
+            const { data: upsertData, error: upsertErrorResult } = await supabaseClient
+                .from(TABLE_NAME)
+                .upsert(parsedImportData, { onConflict: 'card' })
+                .select(); 
+
+            upsertError = upsertErrorResult;
+            if (upsertData) {
+                updateCount = upsertData.length;
             }
 
-            allAbsensiLogs = logs; 
-            renderLogDetails(logs);
+            // --- FASE 2: DELETE Data Inaktif ---
+            if (!upsertError && activeCardIds.length > 0) {
+                const { error: deleteErrorResult, count: deletedRows } = await supabaseClient
+                    .from(TABLE_NAME)
+                    .delete({ count: 'exact' })
+                    .not('card', 'in', activeCardIds); 
 
-            if (logs.length > 0) {
-                exportButton.disabled = false;
+                if (deleteErrorResult) {
+                    console.error("Delete Inaktif Error:", deleteErrorResult);
+                    showGlobalMessage(`Sinkronisasi berhasil (Update: ${updateCount}), tetapi GAGAL menghapus data inaktif: ${deleteErrorResult.message}`, 'error');
+                } else if (deletedRows !== null) {
+                    deleteCount = deletedRows;
+                }
+            } else if (upsertError) {
+                console.error("UPSERT FAILED:", upsertError);
+                showGlobalMessage(`Sinkronisasi GAGAL pada tahap Update/Insert: ${upsertError.message}`, 'error');
+            }
+
+            closeImportModal();
+            document.getElementById('import-submit-button').textContent = 'Sinkronisasi & Hapus Inaktif';
+
+            // --- FASE 3: Tampilkan Hasil Akhir ---
+            if (upsertError) {
+                showGlobalMessage(`Sinkronisasi GAGAL total.`, 'error');
             } else {
-                exportButton.disabled = true;
-            }
-        }
-
-        function renderLogDetails(logs) {
-            const tbody = document.getElementById('log-body');
-            tbody.innerHTML = '';
-            
-            if (logs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-gray-500">Tidak ada data absensi yang terarsip.</td></tr>'; 
-                return;
-            }
-
-            logs.forEach(log => {
-                const statusColor = log.status === 'Sukses' ? 'text-success-green font-semibold' : 'text-error-red';
-                
-                const dateObj = new Date(log.created_at);
-                const logDateTime = dateObj.toLocaleDateString('id-ID', {
-                    year: 'numeric', month: 'short', day: 'numeric',
-                    hour: '2-digit', minute: '2-digit', second: '2-digit'
-                });
-
-                const row = document.createElement('tr');
-                row.className = 'hover:bg-gray-50';
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${logDateTime}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${log.card}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${log.nama || 'Tidak Terdaftar'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${log.departemen || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">${log.periode || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm ${statusColor}">${log.status}</td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        function exportAbsensiToExcel() {
-            if (allAbsensiLogs.length === 0) {
-                showGlobalMessage('Tidak ada data log yang bisa diexport.', 'error');
-                return;
+                const totalChange = updateCount + deleteCount;
+                showGlobalMessage(`Sinkronisasi BERHASIL! Diperbarui/Ditambahkan: ${updateCount} baris. Dihapus (Inaktif): ${deleteCount} baris. Total perubahan: ${totalChange} baris.`, 'success');
             }
             
-            const wsData = [
-                ["Tanggal & Waktu", "Card ID", "Nama Karyawan", "Departemen", "Periode", "Status Tap", "created_at (Raw)"]
-            ];
-
-            allAbsensiLogs.forEach(log => {
-                const dateObj = new Date(log.created_at);
-                const logDateTime = dateObj.toLocaleDateString('id-ID', {
-                    year: 'numeric', month: 'long', day: 'numeric',
-                    hour: '2-digit', minute: '2-digit', second: '2-digit'
-                });
-                
-                wsData.push([
-                    logDateTime,
-                    log.card,
-                    log.nama || 'Tidak Terdaftar',
-                    log.departemen || '-', 
-                    log.periode || '-',
-                    log.status,
-                    log.created_at 
-                ]);
-            });
-
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "LogAbsensi");
-
-            const date = new Date().toISOString().slice(0, 10);
-            XLSX.writeFile(wb, `Log_Absensi_Arsip_${date}.xlsx`);
-            
-            showGlobalMessage(`Berhasil mengekspor ${allAbsensiLogs.length} baris data ke Excel.`, 'success');
+            fetchData(); 
         }
 
     </script>
