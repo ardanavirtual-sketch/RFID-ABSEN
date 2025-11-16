@@ -3,155 +3,83 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin Sistem Absensi</title>
+    <title>Panel Admin Sistem</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* Custom styles untuk tampilan modern dan profesional */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; } /* Light background */
-        .container { max-width: 1300px; } /* Lebarkan sedikit */
-        .modal-overlay { background-color: rgba(0, 0, 0, 0.6); } /* Lebih gelap */
-        .admin-table th, .admin-table td { padding: 12px 16px; text-align: left; }
-        .admin-table th { background-color: #1e293b; color: white; position: sticky; top: 0; font-weight: 600; } /* Darker, cleaner header */
+        /* Custom styles */
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .container { max-width: 1200px; }
+        .modal-overlay { background-color: rgba(0, 0, 0, 0.5); }
+        .admin-table th, .admin-table td { padding: 10px; text-align: left; border-bottom: 1px solid #e5e7eb; }
+        .admin-table th { background-color: #1f2937; color: white; position: sticky; top: 0; }
         .review-table th, .review-table td { padding: 8px; font-size: 0.8rem; white-space: nowrap; }
-        .review-table th { background-color: #e2e8f0; } /* Light review header */
-        .btn-primary { transition: all 0.2s ease-in-out; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15); }
-        .tab-active { border-bottom: 3px solid #1e40af; font-weight: 600; color: #1e40af; background-color: #f0f4ff; } /* Darker blue active tab */
-        .text-success-green { color: #059669; }
-        .text-error-red { color: #dc2626; }
-
-        /* Style untuk Header Log Absensi berdasarkan Gambar (MODIFIKASI: Menyesuaikan tombol export) */
-        .log-date-header {
-            background-color: #10b981; /* Green color similar to the image */
-            color: white;
-            padding: 12px 20px;
-            margin-top: 15px;
-            border-radius: 8px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: background-color 0.2s;
-        }
-        .log-date-header:hover {
-            background-color: #059669;
-        }
-        .log-icons {
-            display: flex;
-            gap: 10px;
-            align-items: center; /* Pastikan ikon sejajar vertikal */
-        }
-        /* Style untuk tombol export di header log */
-        .log-date-header button {
-            color: #10b981; /* Warna hijau */
-            background-color: #fff;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            transition: all 0.2s;
-        }
-        .log-date-header button:hover {
-            background-color: #e0f2f7; /* Hover lebih ringan */
-        }
+        .review-table th { background-color: #f3f4f6; }
+        .btn-primary { transition: all 0.15s; }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); }
+        .tab-active { border-bottom: 3px solid #1e3a8a; font-weight: bold; color: #1e3a8a; }
+        .text-success-green { color: #10b981; }
+        .text-error-red { color: #ef4444; }
     </style>
 </head>
 <body>
 
-    <div id="admin-app" class="min-h-screen flex flex-col items-center p-4 sm:p-8 bg-gray-50">
-        <header class="w-full container mx-auto mb-6 bg-white p-6 rounded-xl shadow-2xl border-t-4 border-blue-600">
-            <h1 class="text-4xl font-extrabold text-gray-900">🚀 Panel Administrasi Sistem Absensi</h1>
-            <p class="text-gray-500 mt-1">Kelola data karyawan dan arsip log absensi sistem secara terpusat.</p>
-        </header>
+    <div id="admin-app" class="min-h-screen flex flex-col items-center p-4 sm:p-8">
+        <header class="w-full container mx-auto mb-4 bg-white p-4 rounded-lg shadow-lg">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-bold text-gray-800">Panel Administrasi Sistem Absensi</h1>
+                <button id="logout-button" onclick="handleLogout()" class="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-red-600 transition duration-300">
+                    Keluar (Logout)
+                </button>
+            </div>
+            </header>
 
-        <div id="global-message" class="w-full container mx-auto mb-4 p-3 rounded-lg text-center font-medium hidden transition-all duration-300"></div>
+        <div id="global-message" class="w-full container mx-auto mb-4 p-3 rounded-lg text-center font-medium hidden"></div>
         
-        <div class="w-full container mx-auto mb-6 bg-white rounded-xl shadow-lg p-1">
-            <nav class="flex">
-                 <button id="tab-dashboard" onclick="switchView('dashboard')" class="flex-1 py-3 px-6 text-sm sm:text-base text-gray-600 transition duration-150 ease-in-out tab-active rounded-t-xl">
-                    📊 Dashboard
+        <div class="w-full container mx-auto mb-4 bg-white rounded-xl shadow-lg">
+            <nav class="flex border-b border-gray-200">
+                <button id="tab-data-karyawan" onclick="switchView('data-karyawan')" class="py-3 px-6 text-sm sm:text-base text-gray-600 transition duration-150 ease-in-out tab-active">
+                    Data Karyawan
                 </button>
-                <button id="tab-data-karyawan" onclick="switchView('data-karyawan')" class="flex-1 py-3 px-6 text-sm sm:text-base text-gray-600 transition duration-150 ease-in-out rounded-t-xl">
-                    👤 Data Karyawan
-                </button>
-                <button id="tab-laporan-absen" onclick="switchView('laporan-absen')" class="flex-1 py-3 px-6 text-sm sm:text-base text-gray-600 transition duration-150 ease-in-out rounded-t-xl">
-                    📜 Log Absensi
+                <button id="tab-laporan-absen" onclick="switchView('laporan-absen')" class="py-3 px-6 text-sm sm:text-base text-gray-600 transition duration-150 ease-in-out">
+                    Laporan Log Absensi Arsip
                 </button>
             </nav>
         </div>
 
-        <div id="dashboard-view" class="w-full container mx-auto">
-             <div class="bg-white p-8 rounded-xl shadow-2xl">
-                <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-4">Ringkasan Utama</h2>
-                
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    <div class="bg-blue-50 border-l-4 border-blue-600 p-6 rounded-lg shadow-md">
-                        <p class="text-sm font-medium text-gray-500">Total Karyawan</p>
-                        <p id="stat-karyawan" class="text-4xl font-extrabold text-gray-900 mt-1">...</p>
-                    </div>
-                    <div class="bg-green-50 border-l-4 border-green-600 p-6 rounded-lg shadow-md">
-                        <p class="text-sm font-medium text-gray-500">Absensi Hari Ini</p>
-                        <p id="stat-hadir" class="text-4xl font-extrabold text-gray-900 mt-1">...</p>
-                    </div>
-                    <div class="bg-indigo-50 border-l-4 border-indigo-600 p-6 rounded-lg shadow-md">
-                        <p class="text-sm font-medium text-gray-500">Total Log Absensi Arsip</p>
-                        <p id="stat-log" class="text-4xl font-extrabold text-gray-900 mt-1">...</p>
-                    </div>
-                </div>
-
-                <div class="mt-8">
-                     <h3 class="text-xl font-bold text-gray-800 mb-4">Aksi Cepat</h3>
-                     <div class="flex space-x-3">
-                         <button onclick="switchView('data-karyawan')" class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300 btn-primary shadow-md">
-                            Kelola Data Karyawan
+        <div id="data-karyawan-view" class="w-full container mx-auto">
+            <div class="bg-white p-6 rounded-xl shadow-2xl">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0">
+                    <h2 class="text-3xl font-extrabold text-gray-800">Data Karyawan</h2>
+                    <div class="flex space-x-3">
+                        <button onclick="openImportModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 btn-primary">
+                            Import Data Absensi (Sinkronisasi Penuh)
                         </button>
-                         <button onclick="switchView('laporan-absen')" class="bg-teal-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-teal-700 transition duration-300 btn-primary shadow-md">
-                            Lihat Log Absensi
-                        </button>
-                     </div>
-                </div>
-            </div>
-        </div>
-        
-        <div id="data-karyawan-view" class="w-full container mx-auto hidden">
-            <div class="bg-white p-8 rounded-xl shadow-2xl">
-                <div class="flex flex-col sm:flex-row justify-between items-start mb-8 space-y-4 sm:space-y-0 sm:items-center border-b pb-4">
-                    <h2 class="text-3xl font-bold text-gray-800">Daftar Karyawan Aktif</h2>
-                    <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
-                        <button onclick="openImportModal()" class="bg-blue-700 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-800 transition duration-300 btn-primary shadow-md">
-                            Import Data (Sinkronisasi Penuh)
-                        </button>
-                        <button onclick="openFormModal('create')" class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300 btn-primary shadow-md">
+                        <button onclick="openFormModal('create')" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-300 btn-primary">
                             + Tambah Karyawan Baru
                         </button>
                     </div>
                 </div>
 
-                <div class="flex flex-wrap gap-3 mb-6 p-4 bg-gray-50 rounded-lg border">
-                    <input type="text" id="search-card" placeholder="🔍 Cari berdasarkan Card ID..." 
-                           class="p-3 border border-gray-300 rounded-lg w-full sm:w-auto flex-1 min-w-[180px] focus:ring-blue-500 focus:border-blue-500"
+                <div class="flex space-x-2 mb-4">
+                    <input type="text" id="search-card" placeholder="Cari berdasarkan Card ID..." 
+                           class="p-2 border border-gray-300 rounded-lg flex-1 focus:ring-indigo-500 focus:border-indigo-500"
                            onkeypress="if(event.key === 'Enter') applySearchFilter()">
-                    <input type="text" id="search-nama" placeholder="👤 Cari berdasarkan Nama..." 
-                           class="p-3 border border-gray-300 rounded-lg w-full sm:w-auto flex-1 min-w-[180px] focus:ring-blue-500 focus:border-blue-500"
+                    <input type="text" id="search-nama" placeholder="Cari berdasarkan Nama..." 
+                           class="p-2 border border-gray-300 rounded-lg flex-1 focus:ring-indigo-500 focus:border-indigo-500"
                            onkeypress="if(event.key === 'Enter') applySearchFilter()">
-                    <button onclick="applySearchFilter()" class="bg-green-600 text-white px-4 py-3 rounded-lg font-semibold hover:bg-green-700 transition duration-300 btn-primary">
-                        Terapkan Filter
+                    <button onclick="applySearchFilter()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300 btn-primary">
+                        Cari
                     </button>
-                    <button onclick="clearSearchFilter()" class="bg-gray-400 text-white px-4 py-3 rounded-lg font-semibold hover:bg-gray-500 transition duration-300">
+                    <button onclick="clearSearchFilter()" class="bg-gray-400 text-white px-4 py-2 rounded-lg font-semibold hover:bg-gray-500 transition duration-300">
                         Reset
                     </button>
                 </div>
                 
-                <div class="overflow-x-auto relative shadow-xl sm:rounded-lg mt-4 max-h-[70vh] border border-gray-200">
-                    <table class="w-full text-sm text-left text-gray-600 admin-table">
-                        <thead class="text-xs uppercase text-white sticky top-0">
+                <div class="overflow-x-auto relative shadow-md sm:rounded-lg mt-4 max-h-[70vh]">
+                    <table class="w-full text-sm text-left text-gray-500 admin-table">
+                        <thead class="text-xs uppercase text-white">
                             <tr>
                                 <th>Card ID</th>
                                 <th>NIK</th>
@@ -164,7 +92,7 @@
                                 <th>Aksi</th>
                             </tr>
                         </thead>
-                        <tbody id="data-table-body" class="bg-white divide-y divide-gray-100">
+                        <tbody id="data-table-body" class="bg-white divide-y divide-gray-200">
                             </tbody>
                     </table>
                 </div>
@@ -176,18 +104,32 @@
         </div>
         
         <div id="laporan-absen-view" class="w-full container mx-auto hidden">
-            <div class="bg-white p-8 rounded-xl shadow-2xl">
-                <div class="flex justify-between items-center mb-6 border-b pb-4">
-                    <h2 class="text-3xl font-bold text-gray-800">Detail Log Semua Absensi (Arsip)</h2>
-                    </div>
+            <div class="bg-white p-6 rounded-xl shadow-2xl">
+                <div class="flex justify-between items-center mb-6 border-b pb-2">
+                    <h2 class="text-3xl font-extrabold text-gray-800">Detail Log Semua Absensi (Arsip)</h2>
+                    <button id="export-excel-button" onclick="exportAbsensiToExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-300 btn-primary disabled:opacity-50" disabled>
+                        Export Log ke Excel
+                    </button>
+                </div>
 
-                <p class="text-sm text-gray-500 mb-6">Menampilkan log tap kartu (sukses dan gagal) yang tersimpan di Supabase, diurutkan dari yang terbaru. Log dikelompokkan berdasarkan tanggal.</p>
+                <p class="text-sm text-gray-500 mb-4">Menampilkan log tap kartu (sukses dan gagal) yang tersimpan di Supabase, diurutkan dari yang terbaru. </p>
 
-                <div id="log-structured-container" class="space-y-3">
-                    <div id="detail-section">
-                        <div id="log-body-structured" class="space-y-4">
-                             <div class="py-10 text-center text-gray-500">Memuat detail log absensi...</div>
-                        </div>
+                <div id="detail-section">
+                    <div class="overflow-x-auto relative shadow-md sm:rounded-lg max-h-[80vh]">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal & Waktu</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Card ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Karyawan</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departemen</th> <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Periode</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="log-body" class="bg-white divide-y divide-gray-200">
+                                <tr><td colspan="6" class="py-4 text-center text-gray-500">Memuat detail log absensi...</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -196,28 +138,29 @@
         </div>
 
     <div id="import-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-xl shadow-2xl p-8 w-11/12 max-w-4xl transform transition-all duration-300 scale-95 opacity-0" id="import-content">
-            <h3 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Import Data Absensi Harian (Sinkronisasi Penuh)</h3>
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-4xl transform transition-all duration-300 scale-95 opacity-0" id="import-content">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Import Data Absensi Harian (Sinkronisasi Penuh)</h3>
             
             <form id="import-form">
                 <div id="step-upload">
                     <p class="text-sm text-gray-600 mb-4">Unggah file Excel (.xlsx atau .xls) yang berisi **SEMUA** data karyawan yang saat ini aktif.</p>
-                    <div class="p-4 bg-red-50 border-l-4 border-red-500 text-red-700 mb-6 font-medium">
-                        <p class="font-bold mb-1">⚠️ PERHATIAN PENTING:</p>
-                        <p class="text-xs">Data di database akan **disinkronkan total** dengan file ini. Kolom yang wajib ada: <code class="font-mono text-xs bg-red-100 p-1 rounded font-bold">Card ID, NIK, Nama, Departemen, Pagi, Siang, Sore, Malam</code>. Karyawan di database yang tidak ada di file Excel ini akan **dihapus/dinonaktifkan**.</p>
-                    </div>
+                    <p class="text-xs text-red-500 mb-4 font-semibold">
+                        **PENTING: Data di database akan disinkronkan dengan file ini.**
+                        <br>Kolom: <code class="font-mono text-xs bg-gray-100 p-1 rounded">Card ID, NIK, Nama, Departemen, Pagi, Siang, Sore, Malam</code>.
+                        <br>Karyawan di database yang tidak ada di file Excel ini akan **dihapus/dinonaktifkan**.
+                    </p>
                     <div class="mb-4">
-                        <label for="excel-file-input" class="block text-sm font-medium text-gray-700 mb-1">Pilih File Excel:</label>
+                        <label for="excel-file-input" class="block text-sm font-medium text-gray-700">Pilih File Excel:</label>
                         <input type="file" id="excel-file-input" accept=".xlsx, .xls" required 
-                            class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 bg-white">
+                            class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
                     </div>
                 </div>
 
                 <div id="step-review" class="hidden">
-                    <h4 class="text-xl font-bold text-gray-800 mb-4">Review Data yang Akan Diproses</h4>
-                    <div class="overflow-x-auto max-h-80 border rounded-lg p-2 bg-gray-50">
+                    <h4 class="text-xl font-bold text-gray-800 mb-3">Review Data yang Akan Diproses</h4>
+                    <div class="overflow-x-auto max-h-80 border rounded-lg p-2">
                         <table class="w-full text-left review-table">
-                            <thead class="sticky top-0 bg-gray-200">
+                            <thead class="sticky top-0 bg-gray-100">
                                 <tr>
                                     <th class="w-1/12">Card ID</th>
                                     <th class="w-1/12">NIK</th>
@@ -234,32 +177,29 @@
                                 </tbody>
                         </table>
                     </div>
-                    <p id="review-summary" class="text-sm mt-4 text-gray-700 font-semibold"></p>
-                    <p id="deletion-warning" class="text-sm text-red-600 font-bold mt-2 hidden">⚠️ Proses ini akan menghapus data karyawan yang tidak ada di file Excel ini.</p>
+                    <p id="review-summary" class="text-sm mt-3 text-gray-700 font-medium"></p>
+                    <p id="deletion-warning" class="text-sm text-red-600 font-semibold mt-2 hidden">⚠️ Peringatan: Proses ini akan menghapus data karyawan yang tidak ada di file Excel ini.</p>
                 </div>
 
-                <div class="flex justify-end space-x-3 mt-8">
-                    <button type="button" onclick="closeImportModal()" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Batal</button>
-                    <button type="button" id="review-button" onclick="parseExcelFile()" class="px-5 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-150 btn-primary">Langkah 1: Review Data</button>
-                    <button type="submit" id="import-submit-button" class="px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-150 btn-primary hidden" disabled>Langkah 2: Sinkronisasi & Hapus Inaktif</button>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeImportModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Batal</button>
+                    <button type="button" id="review-button" onclick="parseExcelFile()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-150 btn-primary">Review Data</button>
+                    <button type="submit" id="import-submit-button" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-150 btn-primary hidden" disabled>Sinkronisasi & Hapus Inaktif</button>
                 </div>
             </form>
         </div>
     </div>
-    
     <div id="form-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-xl shadow-2xl p-8 w-11/12 max-w-lg transform transition-all duration-300 scale-95 opacity-0" id="form-content">
-            <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Tambah Karyawan Baru</h3>
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg transform transition-all duration-300 scale-95 opacity-0" id="form-content">
+            <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-4">Tambah Karyawan Baru</h3>
             <form id="crud-form">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="mb-4">
-                        <label for="form-card" class="block text-sm font-medium text-gray-700">Card ID</label>
-                        <input type="text" id="form-card" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                    </div>
-                    <div class="mb-4">
-                        <label for="form-nik" class="block text-sm font-medium text-gray-700">NIK</label>
-                        <input type="text" id="form-nik" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                    </div>
+                <div class="mb-4">
+                    <label for="form-card" class="block text-sm font-medium text-gray-700">Card ID</label>
+                    <input type="text" id="form-card" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div class="mb-4">
+                    <label for="form-nik" class="block text-sm font-medium text-gray-700">NIK</label>
+                    <input type="text" id="form-nik" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                 </div>
                 <div class="mb-4">
                     <label for="form-nama" class="block text-sm font-medium text-gray-700">Nama</label>
@@ -271,42 +211,39 @@
                 </div>
 
                 <div class="border-t border-gray-200 my-6"></div>
-                <h4 class="text-xl font-bold text-gray-800 mb-4">Pengaturan Absensi/Makan</h4>
+                <h4 class="text-xl font-bold text-gray-800 mb-4">Data Absensi/Makan</h4>
                 
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="mb-4">
-                        <label for="form-pagi" class="block text-sm font-medium text-gray-700">Pagi</label>
-                        <input type="text" id="form-pagi" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
-                    </div>
-                    <div class="mb-4">
-                        <label for="form-siang" class="block text-sm font-medium text-gray-700">Siang</label>
-                        <input type="text" id="form-siang" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
-                    </div>
-                    <div class="mb-4">
-                        <label for="form-sore" class="block text-sm font-medium text-gray-700">Sore</label>
-                        <input type="text" id="form-sore" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
-                    </div>
-                    <div class="mb-6">
-                        <label for="form-malam" class="block text-sm font-medium text-gray-700">Malam</label>
-                        <input type="text" id="form-malam" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
-                    </div>
+                <div class="mb-4">
+                    <label for="form-pagi" class="block text-sm font-medium text-gray-700">Pagi</label>
+                    <input type="text" id="form-pagi" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                </div>
+                <div class="mb-4">
+                    <label for="form-siang" class="block text-sm font-medium text-gray-700">Siang</label>
+                    <input type="text" id="form-siang" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                </div>
+                <div class="mb-4">
+                    <label for="form-sore" class="block text-sm font-medium text-gray-700">Sore</label>
+                    <input type="text" id="form-sore" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                </div>
+                <div class="mb-6">
+                    <label for="form-malam" class="block text-sm font-medium text-gray-700">Malam</label>
+                    <input type="text" id="form-malam" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
                 </div>
                 
-                <div class="flex justify-end space-x-3 mt-4">
-                    <button type="button" onclick="closeFormModal()" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Batal</button>
-                    <button type="submit" id="submit-button" class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition duration-150 btn-primary">Simpan</button>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="closeFormModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Batal</button>
+                    <button type="submit" id="submit-button" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition duration-150 btn-primary">Simpan</button>
                 </div>
             </form>
         </div>
     </div>
-    
     <div id="delete-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-xl shadow-2xl p-8 w-11/12 max-w-md transform transition-all duration-300 scale-95 opacity-0" id="delete-content">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md transform transition-all duration-300 scale-95 opacity-0" id="delete-content">
             <h3 class="text-2xl font-bold text-red-600 mb-4">Konfirmasi Penghapusan</h3>
-            <p class="text-gray-700 mb-6">Anda yakin ingin menghapus data karyawan dengan Card ID: <span id="delete-card-id" class="font-bold text-lg text-red-700"></span>? Tindakan ini **tidak dapat dibatalkan**.</p>
+            <p class="text-gray-700 mb-6">Anda yakin ingin menghapus data karyawan dengan Card ID: <span id="delete-card-id" class="font-bold"></span>?</p>
             <div class="flex justify-end space-x-3">
-                <button type="button" onclick="closeDeleteModal()" class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Batal</button>
-                <button type="button" onclick="executeDelete()" class="px-5 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-150 btn-primary">Hapus Permanen</button>
+                <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition duration-150">Batal</button>
+                <button type="button" onclick="executeDelete()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition duration-150 btn-primary">Hapus</button>
             </div>
         </div>
     </div>
@@ -325,31 +262,61 @@
         let activeCardIds = [];    
         let currentMode = 'create';
         let cardIdToDelete = null;
-        let allAbsensiLogs = []; // Untuk menyimpan data log global
-        let groupedAbsensiLogs = {}; // MODIFIKASI: Untuk menyimpan data log yang sudah dikelompokkan
-        let allEmployeesCount = 0; // MODIFIKASI: Untuk Dashboard Stat
+        let allAbsensiLogs = []; // Untuk menyimpan data log yang akan diexport
 
         document.addEventListener('DOMContentLoaded', () => {
-            switchView('dashboard'); // MODIFIKASI: Default view adalah dashboard
+            checkAdminSession(); // PANGGIL FUNGSI CEK SESI UNTUK AUTENTIKASI
             document.getElementById('crud-form').addEventListener('submit', handleFormSubmit);
             document.getElementById('import-form').addEventListener('submit', handleImportSubmit);
         });
 
+        /**
+         * FUNGSI BARU: Mengecek sesi admin. Jika tidak ada, redirect ke halaman login.
+         */
+        async function checkAdminSession() {
+            // Menggunakan getSession() untuk mendapatkan data sesi yang tersimpan
+            const { data: { session }, error } = await supabaseClient.auth.getSession();
+            
+            if (error || !session) {
+                // Jika tidak ada sesi aktif, redirect ke halaman login
+                window.location.href = './admin_login.html'; 
+                return;
+            }
+            
+            // Jika sesi aktif, lanjutkan memuat konten admin panel
+            switchView('data-karyawan'); 
+        }
+
+        /**
+         * FUNGSI BARU: Menangani proses Logout.
+         */
+        async function handleLogout() {
+            const logoutBtn = document.getElementById('logout-button');
+            logoutBtn.disabled = true;
+            logoutBtn.textContent = 'Keluar...';
+            
+            const { error } = await supabaseClient.auth.signOut();
+
+            if (error) {
+                console.error("Logout Error:", error);
+                showGlobalMessage(`Gagal keluar: ${error.message}`, 'error');
+                logoutBtn.disabled = false;
+                logoutBtn.textContent = 'Keluar (Logout)';
+            } else {
+                // Redirect ke halaman login setelah logout sukses
+                window.location.href = './admin_login.html';
+            }
+        }
+
         // --- Navigasi View ---
         function switchView(viewId) {
-            document.getElementById('dashboard-view').classList.add('hidden'); // MODIFIKASI: Tambah dashboard view
             document.getElementById('data-karyawan-view').classList.add('hidden');
             document.getElementById('laporan-absen-view').classList.add('hidden');
 
-            document.getElementById('tab-dashboard').classList.remove('tab-active'); // MODIFIKASI: Tambah dashboard tab
             document.getElementById('tab-data-karyawan').classList.remove('tab-active');
             document.getElementById('tab-laporan-absen').classList.remove('tab-active');
 
-            if (viewId === 'dashboard') {
-                document.getElementById('dashboard-view').classList.remove('hidden');
-                document.getElementById('tab-dashboard').classList.add('tab-active');
-                loadDashboardStats(); // MODIFIKASI: Panggil fungsi load stats
-            } else if (viewId === 'data-karyawan') {
+            if (viewId === 'data-karyawan') {
                 document.getElementById('data-karyawan-view').classList.remove('hidden');
                 document.getElementById('tab-data-karyawan').classList.add('tab-active');
                 fetchData();
@@ -359,37 +326,6 @@
                 loadArchivedAbsensiLog(); 
             }
         }
-        
-        // --- FUNGSI DASHBOARD STAT (BARU) ---
-        async function loadDashboardStats() {
-            // Mengambil total karyawan
-            const { count: employeeCount, error: empError } = await supabaseClient
-                .from(TABLE_NAME)
-                .select('*', { count: 'exact', head: true });
-
-            // Mengambil total log absensi
-            const { count: logCount, error: logError } = await supabaseClient
-                .from(LOG_TABLE_NAME)
-                .select('*', { count: 'exact', head: true });
-                
-            // Menghitung absensi hari ini (Contoh sederhana)
-            const today = new Date().toISOString().split('T')[0];
-            const { count: todayLogCount, error: todayLogError } = await supabaseClient
-                 .from(LOG_TABLE_NAME)
-                 .select('*', { count: 'exact', head: true })
-                 .gte('created_at', today)
-                 .lt('created_at', today + 'T23:59:59.999Z');
-            
-            // Update UI
-            document.getElementById('stat-karyawan').textContent = empError ? 'Gagal' : (employeeCount || 0);
-            document.getElementById('stat-log').textContent = logError ? 'Gagal' : (logCount || 0);
-            document.getElementById('stat-hadir').textContent = todayLogError ? 'Gagal' : (todayLogCount || 0);
-
-            if (empError || logError || todayLogError) {
-                console.error("Dashboard Load Error:", empError || logError || todayLogError);
-            }
-        }
-
 
         // --- FUNGSI LOG ABSENSI ARSIP & EXPORT (UPDATED) ---
 
@@ -397,141 +333,97 @@
          * Mengambil dan menampilkan semua log absensi dari tabel log_absen.
          */
         async function loadArchivedAbsensiLog() {
-            const logContainer = document.getElementById('log-body-structured');
-            
-            logContainer.innerHTML = '<div class="py-10 text-center text-gray-500">Memuat detail log absensi...</div>';
+            const tbody = document.getElementById('log-body');
+            const exportButton = document.getElementById('export-excel-button');
 
+            tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-gray-500">Memuat detail log absensi...</td></tr>';
+            exportButton.disabled = true;
+            exportButton.textContent = 'Memuat Data...';
+
+            // 1. Ambil semua log, urutkan dari yang terbaru (TERMASUK DEPARTEMEN)
             const { data: logs, error } = await supabaseClient
                 .from(LOG_TABLE_NAME)
-                .select('card, status, periode, created_at, nama, departemen')
+                .select('card, status, periode, created_at, nama, departemen') // <== UPDATED: Ambil kolom departemen
                 .order('created_at', { ascending: false });
+
+            exportButton.textContent = 'Export Log ke Excel';
             
             if (error) {
                 console.error("Error fetching logs:", error);
                 showGlobalMessage(`Gagal memuat log absensi: ${error.message}`, 'error');
-                logContainer.innerHTML = '<div class="py-10 text-center text-red-500">Gagal memuat data log.</div>';
+                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-red-500">Gagal memuat data log.</td></tr>';
                 return;
             }
 
             allAbsensiLogs = logs; 
-            renderLogDetailsStructured(logs); 
-            attachLogHeaderListeners();
+            renderLogDetails(logs);
+
+            if (logs.length > 0) {
+                exportButton.disabled = false;
+            } else {
+                exportButton.disabled = true;
+            }
         }
 
         /**
-         * FUNGSI MODIFIKASI: Mengelompokkan dan merender data log ke dalam struktur tanggal, termasuk tombol export per tanggal.
+         * Merender data log ke dalam tabel detail.
          */
-        function renderLogDetailsStructured(logs) {
-            const logContainer = document.getElementById('log-body-structured');
-            logContainer.innerHTML = '';
+        function renderLogDetails(logs) {
+            const tbody = document.getElementById('log-body');
+            tbody.innerHTML = '';
             
             if (logs.length === 0) {
-                logContainer.innerHTML = '<div class="py-10 text-center text-gray-500">Tidak ada data absensi yang terarsip.</div>';
-                groupedAbsensiLogs = {}; // Reset global grouped log
+                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-gray-500">Tidak ada data absensi yang terarsip.</td></tr>'; // <== UPDATED: colspan 6
                 return;
             }
 
-            // 1. Kelompokkan log berdasarkan tanggal
-            const localGroupedLogs = logs.reduce((acc, log) => {
+            logs.forEach(log => {
+                const statusColor = log.status === 'Sukses' ? 'text-success-green font-semibold' : 'text-error-red';
+                
                 const dateObj = new Date(log.created_at);
-                const dateKey = dateObj.toISOString().split('T')[0]; 
-                const displayDate = dateObj.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
+                const logDateTime = dateObj.toLocaleDateString('id-ID', {
+                    year: 'numeric', month: 'short', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
 
-                if (!acc[dateKey]) {
-                    acc[dateKey] = {
-                        displayDate: displayDate,
-                        logs: []
-                    };
-                }
-                acc[dateKey].logs.push(log);
-                return acc;
-            }, {});
-
-            groupedAbsensiLogs = localGroupedLogs; // Simpan ke global
-            
-            // 2. Render setiap grup tanggal
-            Object.keys(groupedAbsensiLogs).sort((a, b) => new Date(b) - new Date(a)).forEach(dateKey => {
-                const group = groupedAbsensiLogs[dateKey];
-                const dateId = dateKey.replace(/-/g, ''); 
-
-                // Header Grup Tanggal (MODIFIKASI: Tambahkan tombol Export)
-                const groupDiv = document.createElement('div');
-                groupDiv.className = 'log-date-group';
-                groupDiv.innerHTML = `
-                    <div id="header-${dateId}" class="log-date-header">
-                        <span>🗓️ ${group.displayDate}</span>
-                        <div class="log-icons space-x-4">
-                             <button onclick="event.stopPropagation(); exportSingleDateLog('${dateKey}', '${group.displayDate}')" title="Download log absensi hanya untuk tanggal ini">
-                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M14 2H6C4.9 2 4 2.9 4 4v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM9 13v2h6v-2h-2v-2H11v2H9z"/></svg>
-                                 <span class="ml-1 hidden sm:inline">Export Tanggal Ini</span>
-                             </button>
-                             <svg class="icon-toggle cursor-pointer" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="white"><path d="M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z" fill="currentColor"/></svg>
-                        </div>
-                    </div>
-                    <div id="table-wrapper-${dateId}" class="log-table-wrapper overflow-x-auto relative shadow-xl sm:rounded-b-lg border border-gray-200" style="display: block;">
-                        <table class="min-w-full divide-y divide-gray-200 review-table">
-                            <thead class="bg-gray-100 sticky top-0">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Waktu Tap</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Card ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Nama Karyawan</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Departemen</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Periode</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-100">
-                                ${group.logs.map(log => {
-                                    const statusColor = log.status === 'Sukses' ? 'text-success-green font-semibold' : 'text-error-red font-semibold';
-                                    
-                                    const dateObj = new Date(log.created_at);
-                                    const logTime = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-
-                                    return `
-                                        <tr class="hover:bg-gray-50">
-                                            <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-700">${logTime}</td>
-                                            <td class="px-6 py-3 whitespace-nowrap text-xs text-gray-500">${log.card}</td>
-                                            <td class="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${log.nama || 'Tidak Terdaftar'}</td>
-                                            <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-600">${log.departemen || '-'}</td>
-                                            <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-600 capitalize">${log.periode || '-'}</td>
-                                            <td class="px-6 py-3 whitespace-nowrap text-sm ${statusColor}">${log.status}</td>
-                                        </tr>
-                                    `;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-gray-50';
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${logDateTime}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${log.card}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${log.nama || 'Tidak Terdaftar'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${log.departemen || '-'}</td> <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">${log.periode || '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm ${statusColor}">${log.status}</td>
                 `;
-                logContainer.appendChild(groupDiv);
+                tbody.appendChild(row);
             });
         }
 
         /**
-         * FUNGSI BARU: Mengekspor data log hanya untuk tanggal tertentu.
+         * Mengekspor data log absensi ke file Excel.
          */
-        function exportSingleDateLog(dateKey, displayDate) {
-            const group = groupedAbsensiLogs[dateKey];
-            if (!group || group.logs.length === 0) {
-                showGlobalMessage('Gagal: Tidak ada log untuk tanggal ini.', 'error');
+        function exportAbsensiToExcel() {
+            if (allAbsensiLogs.length === 0) {
+                showGlobalMessage('Tidak ada data log yang bisa diexport.', 'error');
                 return;
             }
-
-            const logsForDate = group.logs;
             
             const wsData = [
-                ["Waktu Tap", "Card ID", "Nama Karyawan", "Departemen", "Periode", "Status Tap", "created_at (Raw)"] 
+                ["Tanggal & Waktu", "Card ID", "Nama Karyawan", "Departemen", "Periode", "Status Tap", "created_at (Raw)"] // <== UPDATED: Header Departemen
             ];
 
-            logsForDate.forEach(log => {
+            allAbsensiLogs.forEach(log => {
                 const dateObj = new Date(log.created_at);
-                // Hanya ambil waktu untuk kolom Waktu Tap
-                const logTime = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                const logDateTime = dateObj.toLocaleDateString('id-ID', {
+                    year: 'numeric', month: 'long', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
                 
                 wsData.push([
-                    logTime,
+                    logDateTime,
                     log.card,
                     log.nama || 'Tidak Terdaftar',
-                    log.departemen || '-', 
+                    log.departemen || '-', // <== UPDATED: Data Departemen
                     log.periode || '-',
                     log.status,
                     log.created_at 
@@ -540,69 +432,20 @@
 
             const ws = XLSX.utils.aoa_to_sheet(wsData);
             const wb = XLSX.utils.book_new();
-            // Nama sheet dan file menggunakan tanggal
-            const fileName = `Log_Absensi_${displayDate.replace(/ /g, '_').replace(/,/g, '')}.xlsx`;
-            XLSX.utils.book_append_sheet(wb, ws, displayDate.replace(/ /g, '_'));
+            XLSX.utils.book_append_sheet(wb, ws, "LogAbsensi");
 
-            XLSX.writeFile(wb, fileName);
+            const date = new Date().toISOString().slice(0, 10);
+            XLSX.writeFile(wb, `Log_Absensi_Arsip_${date}.xlsx`);
             
-            showGlobalMessage(`Berhasil mengekspor ${logsForDate.length} log absensi untuk tanggal ${displayDate}.`, 'success');
+            showGlobalMessage(`Berhasil mengekspor ${allAbsensiLogs.length} baris data ke Excel.`, 'success');
         }
-
-
-        /**
-         * FUNGSI BARU: Menambahkan event listener untuk toggle tampilan tabel log.
-         */
-        function attachLogHeaderListeners() {
-            document.querySelectorAll('.log-date-header').forEach(header => {
-                // Pastikan event click pada tombol export tidak memicu toggle
-                const toggleArea = header.querySelector('span'); // Hanya span yang memicu toggle
-                if (toggleArea) {
-                     toggleArea.removeEventListener('click', toggleLogTable);
-                     toggleArea.addEventListener('click', toggleLogTable);
-                }
-                const toggleIcon = header.querySelector('.icon-toggle');
-                if (toggleIcon) {
-                     toggleIcon.removeEventListener('click', toggleLogTable);
-                     toggleIcon.addEventListener('click', toggleLogTable);
-                }
-            });
-        }
-
-        /**
-         * FUNGSI BARU: Logika toggle
-         */
-        function toggleLogTable(event) {
-             // Cari parent dengan class log-date-header
-            let header = event.target;
-            while (header && !header.classList.contains('log-date-header')) {
-                header = header.parentElement;
-            }
-            if (!header) return;
-
-            const headerId = header.id;
-            const dateId = headerId.replace('header-', '');
-            const tableWrapper = document.getElementById(`table-wrapper-${dateId}`);
-            const iconToggle = header.querySelector('.icon-toggle path');
-
-            if (tableWrapper.style.display === 'none') {
-                tableWrapper.style.display = 'block';
-                // Ikon panah ke atas (M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z)
-                iconToggle.setAttribute('d', 'M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z'); 
-            } else {
-                tableWrapper.style.display = 'none';
-                // Ikon panah ke bawah (M7.41,8.59L12,13.17L16.59,8.59L18,10L12,16L6,10L7.41,8.59Z)
-                iconToggle.setAttribute('d', 'M7.41,8.59L12,13.17L16.59,8.59L18,10L12,16L6,10L7.41,8.59Z'); 
-            }
-        }
-
 
         // --- FUNGSI LAMA (CRUD, FETCH DATA, DLL) TETAP DI SINI ---
         
         function showGlobalMessage(message, type = 'success') {
             const msgEl = document.getElementById('global-message');
             msgEl.textContent = message;
-            msgEl.className = 'w-full container mx-auto mb-4 p-3 rounded-lg text-center font-medium transition-all duration-300';
+            msgEl.className = 'w-full container mx-auto mb-4 p-3 rounded-lg text-center font-medium';
             if (type === 'success') { msgEl.classList.add('bg-green-100', 'text-green-800'); } 
             else if (type === 'error') { msgEl.classList.add('bg-red-100', 'text-red-800'); } 
             else { msgEl.classList.add('bg-blue-100', 'text-blue-800'); }
@@ -627,10 +470,8 @@
                 query = query.ilike('nama', `%${nameFilter}%`);
             }
             
-            const { data, error, count } = await query
+            const { data, error } = await query
                 .order('nama', { ascending: true });
-                
-            allEmployeesCount = count || (data ? data.length : 0); // Ambil count untuk stat
 
             const tbody = document.getElementById('data-table-body');
             const noDataMsg = document.getElementById('no-data-message');
@@ -664,7 +505,7 @@
                     row.insertCell().textContent = formatTime(item.malam);
 
                     const actionCell = row.insertCell();
-                    actionCell.innerHTML = `<div class="flex space-x-2"><button onclick="openFormModal('edit', '${item.card}')" class="text-blue-600 hover:text-blue-800 font-medium transition-colors">Edit</button><button onclick="openDeleteModal('${item.card}')" class="text-red-600 hover:text-red-800 font-medium transition-colors">Hapus</button></div>`;
+                    actionCell.innerHTML = `<div class="flex space-x-2"><button onclick="openFormModal('edit', '${item.card}')" class="text-blue-600 hover:text-blue-800 font-medium">Edit</button><button onclick="openDeleteModal('${item.card}')" class="text-red-600 hover:text-red-800 font-medium">Hapus</button></div>`;
                 });
             }
         }
@@ -701,13 +542,9 @@
             if (mode === 'create') {
                 document.getElementById('modal-title').textContent = 'Tambah Karyawan Baru';
                 document.getElementById('submit-button').textContent = 'Simpan Data';
-                document.getElementById('submit-button').classList.replace('bg-green-600', 'bg-indigo-600');
-                document.getElementById('submit-button').classList.replace('hover:bg-green-700', 'hover:bg-indigo-700');
             } else { // mode === 'edit'
                 document.getElementById('modal-title').textContent = 'Edit Data Karyawan & Absensi';
                 document.getElementById('submit-button').textContent = 'Update Data';
-                document.getElementById('submit-button').classList.replace('bg-indigo-600', 'bg-green-600');
-                document.getElementById('submit-button').classList.replace('hover:bg-indigo-700', 'hover:bg-green-700');
                 formCard.value = cardId;
                 formCard.readOnly = true;
 
@@ -865,13 +702,13 @@
                 processExcelData(excelData);
 
                 document.getElementById('review-button').disabled = false;
-                document.getElementById('review-button').textContent = 'Langkah 1: Review Data';
+                document.getElementById('review-button').textContent = 'Review Data';
             };
 
             reader.onerror = function(ex) {
                 showGlobalMessage('Gagal membaca file Excel.', 'error');
                 document.getElementById('review-button').disabled = false;
-                document.getElementById('review-button').textContent = 'Langkah 1: Review Data';
+                document.getElementById('review-button').textContent = 'Review Data';
             };
             reader.readAsArrayBuffer(file);
         }
@@ -943,7 +780,7 @@
             }
 
             document.getElementById('review-summary').textContent = 
-                `Total baris di file: ${data.length - 1}. Data siap disinkronisasi: ${validCount}. Baris dilewati: ${skippedCount}.`;
+                `Total baris: ${data.length - 1}. Data siap disinkronisasi: ${validCount}. Baris dilewati: ${skippedCount}.`;
 
             if (validCount > 0) {
                 document.getElementById('step-upload').classList.add('hidden');
@@ -1000,7 +837,7 @@
             }
 
             closeImportModal();
-            document.getElementById('import-submit-button').textContent = 'Langkah 2: Sinkronisasi & Hapus Inaktif';
+            document.getElementById('import-submit-button').textContent = 'Sinkronisasi & Hapus Inaktif';
 
             // --- FASE 3: Tampilkan Hasil Akhir ---
             if (upsertError) {
