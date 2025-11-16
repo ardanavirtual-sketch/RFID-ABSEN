@@ -23,7 +23,7 @@
         .text-success-green { color: #059669; }
         .text-error-red { color: #dc2626; }
 
-        /* Style untuk Header Log Absensi berdasarkan Gambar */
+        /* Style untuk Header Log Absensi berdasarkan Gambar (MODIFIKASI: Menyesuaikan tombol export) */
         .log-date-header {
             background-color: #10b981; /* Green color similar to the image */
             color: white;
@@ -36,7 +36,6 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            cursor: pointer;
             transition: background-color 0.2s;
         }
         .log-date-header:hover {
@@ -45,11 +44,22 @@
         .log-icons {
             display: flex;
             gap: 10px;
+            align-items: center; /* Pastikan ikon sejajar vertikal */
         }
-        .log-icons svg {
-            width: 18px;
-            height: 18px;
-            fill: white;
+        /* Style untuk tombol export di header log */
+        .log-date-header button {
+            color: #10b981; /* Warna hijau */
+            background-color: #fff;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s;
+        }
+        .log-date-header button:hover {
+            background-color: #e0f2f7; /* Hover lebih ringan */
         }
     </style>
 </head>
@@ -65,16 +75,52 @@
         
         <div class="w-full container mx-auto mb-6 bg-white rounded-xl shadow-lg p-1">
             <nav class="flex">
-                <button id="tab-data-karyawan" onclick="switchView('data-karyawan')" class="flex-1 py-3 px-6 text-sm sm:text-base text-gray-600 transition duration-150 ease-in-out tab-active rounded-t-xl">
+                 <button id="tab-dashboard" onclick="switchView('dashboard')" class="flex-1 py-3 px-6 text-sm sm:text-base text-gray-600 transition duration-150 ease-in-out tab-active rounded-t-xl">
+                    📊 Dashboard
+                </button>
+                <button id="tab-data-karyawan" onclick="switchView('data-karyawan')" class="flex-1 py-3 px-6 text-sm sm:text-base text-gray-600 transition duration-150 ease-in-out rounded-t-xl">
                     👤 Data Karyawan
                 </button>
                 <button id="tab-laporan-absen" onclick="switchView('laporan-absen')" class="flex-1 py-3 px-6 text-sm sm:text-base text-gray-600 transition duration-150 ease-in-out rounded-t-xl">
-                    📜 Laporan Log Absensi Arsip
+                    📜 Log Absensi
                 </button>
             </nav>
         </div>
 
-        <div id="data-karyawan-view" class="w-full container mx-auto">
+        <div id="dashboard-view" class="w-full container mx-auto">
+             <div class="bg-white p-8 rounded-xl shadow-2xl">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6 border-b pb-4">Ringkasan Utama</h2>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div class="bg-blue-50 border-l-4 border-blue-600 p-6 rounded-lg shadow-md">
+                        <p class="text-sm font-medium text-gray-500">Total Karyawan</p>
+                        <p id="stat-karyawan" class="text-4xl font-extrabold text-gray-900 mt-1">...</p>
+                    </div>
+                    <div class="bg-green-50 border-l-4 border-green-600 p-6 rounded-lg shadow-md">
+                        <p class="text-sm font-medium text-gray-500">Absensi Hari Ini</p>
+                        <p id="stat-hadir" class="text-4xl font-extrabold text-gray-900 mt-1">...</p>
+                    </div>
+                    <div class="bg-indigo-50 border-l-4 border-indigo-600 p-6 rounded-lg shadow-md">
+                        <p class="text-sm font-medium text-gray-500">Total Log Absensi Arsip</p>
+                        <p id="stat-log" class="text-4xl font-extrabold text-gray-900 mt-1">...</p>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                     <h3 class="text-xl font-bold text-gray-800 mb-4">Aksi Cepat</h3>
+                     <div class="flex space-x-3">
+                         <button onclick="switchView('data-karyawan')" class="bg-indigo-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300 btn-primary shadow-md">
+                            Kelola Data Karyawan
+                        </button>
+                         <button onclick="switchView('laporan-absen')" class="bg-teal-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-teal-700 transition duration-300 btn-primary shadow-md">
+                            Lihat Log Absensi
+                        </button>
+                     </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="data-karyawan-view" class="w-full container mx-auto hidden">
             <div class="bg-white p-8 rounded-xl shadow-2xl">
                 <div class="flex flex-col sm:flex-row justify-between items-start mb-8 space-y-4 sm:space-y-0 sm:items-center border-b pb-4">
                     <h2 class="text-3xl font-bold text-gray-800">Daftar Karyawan Aktif</h2>
@@ -133,17 +179,14 @@
             <div class="bg-white p-8 rounded-xl shadow-2xl">
                 <div class="flex justify-between items-center mb-6 border-b pb-4">
                     <h2 class="text-3xl font-bold text-gray-800">Detail Log Semua Absensi (Arsip)</h2>
-                    <button id="export-excel-button" onclick="exportAbsensiToExcel()" class="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-300 btn-primary disabled:opacity-50 shadow-md" disabled>
-                        💾 Export Log ke Excel
-                    </button>
-                </div>
+                    </div>
 
                 <p class="text-sm text-gray-500 mb-6">Menampilkan log tap kartu (sukses dan gagal) yang tersimpan di Supabase, diurutkan dari yang terbaru. Log dikelompokkan berdasarkan tanggal.</p>
 
                 <div id="log-structured-container" class="space-y-3">
                     <div id="detail-section">
                         <div id="log-body-structured" class="space-y-4">
-                            <div class="py-10 text-center text-gray-500">Memuat detail log absensi...</div>
+                             <div class="py-10 text-center text-gray-500">Memuat detail log absensi...</div>
                         </div>
                     </div>
                 </div>
@@ -282,23 +325,31 @@
         let activeCardIds = [];    
         let currentMode = 'create';
         let cardIdToDelete = null;
-        let allAbsensiLogs = []; // Untuk menyimpan data log yang akan diexport
+        let allAbsensiLogs = []; // Untuk menyimpan data log global
+        let groupedAbsensiLogs = {}; // MODIFIKASI: Untuk menyimpan data log yang sudah dikelompokkan
+        let allEmployeesCount = 0; // MODIFIKASI: Untuk Dashboard Stat
 
         document.addEventListener('DOMContentLoaded', () => {
-            fetchData();
+            switchView('dashboard'); // MODIFIKASI: Default view adalah dashboard
             document.getElementById('crud-form').addEventListener('submit', handleFormSubmit);
             document.getElementById('import-form').addEventListener('submit', handleImportSubmit);
         });
 
         // --- Navigasi View ---
         function switchView(viewId) {
+            document.getElementById('dashboard-view').classList.add('hidden'); // MODIFIKASI: Tambah dashboard view
             document.getElementById('data-karyawan-view').classList.add('hidden');
             document.getElementById('laporan-absen-view').classList.add('hidden');
 
+            document.getElementById('tab-dashboard').classList.remove('tab-active'); // MODIFIKASI: Tambah dashboard tab
             document.getElementById('tab-data-karyawan').classList.remove('tab-active');
             document.getElementById('tab-laporan-absen').classList.remove('tab-active');
 
-            if (viewId === 'data-karyawan') {
+            if (viewId === 'dashboard') {
+                document.getElementById('dashboard-view').classList.remove('hidden');
+                document.getElementById('tab-dashboard').classList.add('tab-active');
+                loadDashboardStats(); // MODIFIKASI: Panggil fungsi load stats
+            } else if (viewId === 'data-karyawan') {
                 document.getElementById('data-karyawan-view').classList.remove('hidden');
                 document.getElementById('tab-data-karyawan').classList.add('tab-active');
                 fetchData();
@@ -308,6 +359,37 @@
                 loadArchivedAbsensiLog(); 
             }
         }
+        
+        // --- FUNGSI DASHBOARD STAT (BARU) ---
+        async function loadDashboardStats() {
+            // Mengambil total karyawan
+            const { count: employeeCount, error: empError } = await supabaseClient
+                .from(TABLE_NAME)
+                .select('*', { count: 'exact', head: true });
+
+            // Mengambil total log absensi
+            const { count: logCount, error: logError } = await supabaseClient
+                .from(LOG_TABLE_NAME)
+                .select('*', { count: 'exact', head: true });
+                
+            // Menghitung absensi hari ini (Contoh sederhana)
+            const today = new Date().toISOString().split('T')[0];
+            const { count: todayLogCount, error: todayLogError } = await supabaseClient
+                 .from(LOG_TABLE_NAME)
+                 .select('*', { count: 'exact', head: true })
+                 .gte('created_at', today)
+                 .lt('created_at', today + 'T23:59:59.999Z');
+            
+            // Update UI
+            document.getElementById('stat-karyawan').textContent = empError ? 'Gagal' : (employeeCount || 0);
+            document.getElementById('stat-log').textContent = logError ? 'Gagal' : (logCount || 0);
+            document.getElementById('stat-hadir').textContent = todayLogError ? 'Gagal' : (todayLogCount || 0);
+
+            if (empError || logError || todayLogError) {
+                console.error("Dashboard Load Error:", empError || logError || todayLogError);
+            }
+        }
+
 
         // --- FUNGSI LOG ABSENSI ARSIP & EXPORT (UPDATED) ---
 
@@ -316,19 +398,13 @@
          */
         async function loadArchivedAbsensiLog() {
             const logContainer = document.getElementById('log-body-structured');
-            const exportButton = document.getElementById('export-excel-button');
-
+            
             logContainer.innerHTML = '<div class="py-10 text-center text-gray-500">Memuat detail log absensi...</div>';
-            exportButton.disabled = true;
-            exportButton.textContent = 'Memuat Data...';
 
-            // 1. Ambil semua log, urutkan dari yang terbaru
             const { data: logs, error } = await supabaseClient
                 .from(LOG_TABLE_NAME)
                 .select('card, status, periode, created_at, nama, departemen')
                 .order('created_at', { ascending: false });
-
-            exportButton.textContent = '💾 Export Log ke Excel';
             
             if (error) {
                 console.error("Error fetching logs:", error);
@@ -338,18 +414,12 @@
             }
 
             allAbsensiLogs = logs; 
-            renderLogDetailsStructured(logs); // Panggil fungsi render baru
-            attachLogHeaderListeners(); // Pasang listener setelah render
-
-            if (logs.length > 0) {
-                exportButton.disabled = false;
-            } else {
-                exportButton.disabled = true;
-            }
+            renderLogDetailsStructured(logs); 
+            attachLogHeaderListeners();
         }
 
         /**
-         * FUNGSI BARU: Mengelompokkan dan merender data log ke dalam struktur tanggal.
+         * FUNGSI MODIFIKASI: Mengelompokkan dan merender data log ke dalam struktur tanggal, termasuk tombol export per tanggal.
          */
         function renderLogDetailsStructured(logs) {
             const logContainer = document.getElementById('log-body-structured');
@@ -357,15 +427,14 @@
             
             if (logs.length === 0) {
                 logContainer.innerHTML = '<div class="py-10 text-center text-gray-500">Tidak ada data absensi yang terarsip.</div>';
+                groupedAbsensiLogs = {}; // Reset global grouped log
                 return;
             }
 
             // 1. Kelompokkan log berdasarkan tanggal
-            const groupedLogs = logs.reduce((acc, log) => {
+            const localGroupedLogs = logs.reduce((acc, log) => {
                 const dateObj = new Date(log.created_at);
-                // Format tanggal untuk pengelompokan (contoh: '2025-11-17')
                 const dateKey = dateObj.toISOString().split('T')[0]; 
-                // Format tanggal yang indah untuk tampilan (contoh: '17 November 2025')
                 const displayDate = dateObj.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' });
 
                 if (!acc[dateKey]) {
@@ -378,20 +447,25 @@
                 return acc;
             }, {});
 
+            groupedAbsensiLogs = localGroupedLogs; // Simpan ke global
+            
             // 2. Render setiap grup tanggal
-            Object.keys(groupedLogs).sort((a, b) => new Date(b) - new Date(a)).forEach(dateKey => {
-                const group = groupedLogs[dateKey];
-                const dateId = dateKey.replace(/-/g, ''); // Contoh: 20251117
+            Object.keys(groupedAbsensiLogs).sort((a, b) => new Date(b) - new Date(a)).forEach(dateKey => {
+                const group = groupedAbsensiLogs[dateKey];
+                const dateId = dateKey.replace(/-/g, ''); 
 
-                // Header Grup Tanggal
+                // Header Grup Tanggal (MODIFIKASI: Tambahkan tombol Export)
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'log-date-group';
                 groupDiv.innerHTML = `
                     <div id="header-${dateId}" class="log-date-header">
                         <span>🗓️ ${group.displayDate}</span>
-                        <div class="log-icons">
-                             <svg class="icon-toggle" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z" fill="currentColor"/></svg>
-                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/></svg>
+                        <div class="log-icons space-x-4">
+                             <button onclick="event.stopPropagation(); exportSingleDateLog('${dateKey}', '${group.displayDate}')" title="Download log absensi hanya untuk tanggal ini">
+                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M14 2H6C4.9 2 4 2.9 4 4v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM9 13v2h6v-2h-2v-2H11v2H9z"/></svg>
+                                 <span class="ml-1 hidden sm:inline">Export Tanggal Ini</span>
+                             </button>
+                             <svg class="icon-toggle cursor-pointer" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="white"><path d="M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z" fill="currentColor"/></svg>
                         </div>
                     </div>
                     <div id="table-wrapper-${dateId}" class="log-table-wrapper overflow-x-auto relative shadow-xl sm:rounded-b-lg border border-gray-200" style="display: block;">
@@ -411,7 +485,6 @@
                                     const statusColor = log.status === 'Sukses' ? 'text-success-green font-semibold' : 'text-error-red font-semibold';
                                     
                                     const dateObj = new Date(log.created_at);
-                                    // Hanya ambil waktu
                                     const logTime = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
                                     return `
@@ -434,56 +507,28 @@
         }
 
         /**
-         * FUNGSI BARU: Menambahkan event listener untuk toggle tampilan tabel log.
+         * FUNGSI BARU: Mengekspor data log hanya untuk tanggal tertentu.
          */
-        function attachLogHeaderListeners() {
-            document.querySelectorAll('.log-date-header').forEach(header => {
-                header.removeEventListener('click', toggleLogTable); // Hapus listener lama
-                header.addEventListener('click', toggleLogTable); // Tambah listener baru
-            });
-        }
-
-        /**
-         * FUNGSI BARU: Logika toggle
-         */
-        function toggleLogTable(event) {
-            const headerId = event.currentTarget.id;
-            const dateId = headerId.replace('header-', '');
-            const tableWrapper = document.getElementById(`table-wrapper-${dateId}`);
-            const iconToggle = event.currentTarget.querySelector('.icon-toggle');
-
-            if (tableWrapper.style.display === 'none') {
-                tableWrapper.style.display = 'block';
-                iconToggle.innerHTML = '<path d="M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z" fill="currentColor"/>'; // Ikon panah ke atas
-            } else {
-                tableWrapper.style.display = 'none';
-                iconToggle.innerHTML = '<path d="M7.41,8.59L12,13.17L16.59,8.59L18,10L12,16L6,10L7.41,8.59Z" fill="currentColor"/>'; // Ikon panah ke bawah
-            }
-        }
-
-
-        /**
-         * Mengekspor data log absensi ke file Excel. (TIDAK BERUBAH)
-         */
-        function exportAbsensiToExcel() {
-            if (allAbsensiLogs.length === 0) {
-                showGlobalMessage('Tidak ada data log yang bisa diexport.', 'error');
+        function exportSingleDateLog(dateKey, displayDate) {
+            const group = groupedAbsensiLogs[dateKey];
+            if (!group || group.logs.length === 0) {
+                showGlobalMessage('Gagal: Tidak ada log untuk tanggal ini.', 'error');
                 return;
             }
+
+            const logsForDate = group.logs;
             
             const wsData = [
-                ["Tanggal & Waktu", "Card ID", "Nama Karyawan", "Departemen", "Periode", "Status Tap", "created_at (Raw)"] 
+                ["Waktu Tap", "Card ID", "Nama Karyawan", "Departemen", "Periode", "Status Tap", "created_at (Raw)"] 
             ];
 
-            allAbsensiLogs.forEach(log => {
+            logsForDate.forEach(log => {
                 const dateObj = new Date(log.created_at);
-                const logDateTime = dateObj.toLocaleDateString('id-ID', {
-                    year: 'numeric', month: 'long', day: 'numeric',
-                    hour: '2-digit', minute: '2-digit', second: '2-digit'
-                });
+                // Hanya ambil waktu untuk kolom Waktu Tap
+                const logTime = dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                 
                 wsData.push([
-                    logDateTime,
+                    logTime,
                     log.card,
                     log.nama || 'Tidak Terdaftar',
                     log.departemen || '-', 
@@ -495,13 +540,62 @@
 
             const ws = XLSX.utils.aoa_to_sheet(wsData);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "LogAbsensi");
+            // Nama sheet dan file menggunakan tanggal
+            const fileName = `Log_Absensi_${displayDate.replace(/ /g, '_').replace(/,/g, '')}.xlsx`;
+            XLSX.utils.book_append_sheet(wb, ws, displayDate.replace(/ /g, '_'));
 
-            const date = new Date().toISOString().slice(0, 10);
-            XLSX.writeFile(wb, `Log_Absensi_Arsip_${date}.xlsx`);
+            XLSX.writeFile(wb, fileName);
             
-            showGlobalMessage(`Berhasil mengekspor ${allAbsensiLogs.length} baris data ke Excel.`, 'success');
+            showGlobalMessage(`Berhasil mengekspor ${logsForDate.length} log absensi untuk tanggal ${displayDate}.`, 'success');
         }
+
+
+        /**
+         * FUNGSI BARU: Menambahkan event listener untuk toggle tampilan tabel log.
+         */
+        function attachLogHeaderListeners() {
+            document.querySelectorAll('.log-date-header').forEach(header => {
+                // Pastikan event click pada tombol export tidak memicu toggle
+                const toggleArea = header.querySelector('span'); // Hanya span yang memicu toggle
+                if (toggleArea) {
+                     toggleArea.removeEventListener('click', toggleLogTable);
+                     toggleArea.addEventListener('click', toggleLogTable);
+                }
+                const toggleIcon = header.querySelector('.icon-toggle');
+                if (toggleIcon) {
+                     toggleIcon.removeEventListener('click', toggleLogTable);
+                     toggleIcon.addEventListener('click', toggleLogTable);
+                }
+            });
+        }
+
+        /**
+         * FUNGSI BARU: Logika toggle
+         */
+        function toggleLogTable(event) {
+             // Cari parent dengan class log-date-header
+            let header = event.target;
+            while (header && !header.classList.contains('log-date-header')) {
+                header = header.parentElement;
+            }
+            if (!header) return;
+
+            const headerId = header.id;
+            const dateId = headerId.replace('header-', '');
+            const tableWrapper = document.getElementById(`table-wrapper-${dateId}`);
+            const iconToggle = header.querySelector('.icon-toggle path');
+
+            if (tableWrapper.style.display === 'none') {
+                tableWrapper.style.display = 'block';
+                // Ikon panah ke atas (M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z)
+                iconToggle.setAttribute('d', 'M7.41,15.41L12,10.83L16.59,15.41L18,14L12,8L6,14L7.41,15.41Z'); 
+            } else {
+                tableWrapper.style.display = 'none';
+                // Ikon panah ke bawah (M7.41,8.59L12,13.17L16.59,8.59L18,10L12,16L6,10L7.41,8.59Z)
+                iconToggle.setAttribute('d', 'M7.41,8.59L12,13.17L16.59,8.59L18,10L12,16L6,10L7.41,8.59Z'); 
+            }
+        }
+
 
         // --- FUNGSI LAMA (CRUD, FETCH DATA, DLL) TETAP DI SINI ---
         
@@ -533,8 +627,10 @@
                 query = query.ilike('nama', `%${nameFilter}%`);
             }
             
-            const { data, error } = await query
+            const { data, error, count } = await query
                 .order('nama', { ascending: true });
+                
+            allEmployeesCount = count || (data ? data.length : 0); // Ambil count untuk stat
 
             const tbody = document.getElementById('data-table-body');
             const noDataMsg = document.getElementById('no-data-message');
@@ -887,8 +983,6 @@
 
             // --- FASE 2: DELETE Data Inaktif ---
             if (!upsertError && activeCardIds.length > 0) {
-                // Catatan: Jika activeCardIds sangat banyak, metode 'not' dan 'in' bisa mencapai batas URL/payload.
-                // Namun, untuk kasus umum, ini efektif.
                 const { error: deleteErrorResult, count: deletedRows } = await supabaseClient
                     .from(TABLE_NAME)
                     .delete({ count: 'exact' })
