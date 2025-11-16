@@ -26,6 +26,10 @@ const readerStatusHint = document.getElementById('reader-status-hint');
 const logSuksesElement = document.getElementById('log-sukses');
 const logGagalElement = document.getElementById('log-gagal');
 
+// Tambahkan elemen audio
+const audioSuccess = document.getElementById('audio-success');
+const audioFail = document.getElementById('audio-fail');
+
 // State untuk HID Listener
 let currentRFID = ''; // Buffer untuk menampung input ID kartu
 let isProcessing = false; // Mencegah double tap saat proses masih berjalan
@@ -170,6 +174,13 @@ function updateUI({ success, message, rfidId, nama, status_log }) {
         statusMessage.classList.replace('text-warning-yellow', 'text-success-green');
         hasilTitle.textContent = 'Detail Presensi Sukses';
 
+        // --- PEMUTARAN SUARA SUKSES ---
+        if (audioSuccess) {
+            audioSuccess.currentTime = 0; // Mulai dari awal
+            audioSuccess.play().catch(e => console.error("Gagal memutar audio sukses:", e));
+        }
+        // -----------------------------
+
     } else {
         appContainer.classList.add('scale-105', 'bg-error-red/20');
         statusCard.classList.replace('bg-warning-yellow/20', 'bg-error-red/20');
@@ -178,6 +189,13 @@ function updateUI({ success, message, rfidId, nama, status_log }) {
         statusMessage.textContent = message;
         statusMessage.classList.replace('text-warning-yellow', 'text-error-red');
         hasilTitle.textContent = 'Detail Kegagalan';
+
+        // --- PEMUTARAN SUARA GAGAL ---
+        if (audioFail) {
+            audioFail.currentTime = 0; // Mulai dari awal
+            audioFail.play().catch(e => console.error("Gagal memutar audio gagal:", e));
+        }
+        // -----------------------------
     }
 
     hasilNama.textContent = nama;
