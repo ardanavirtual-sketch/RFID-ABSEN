@@ -21,6 +21,9 @@
         .tab-active { border-bottom: 3px solid #1e3a8a; font-weight: bold; color: #1e3a8a; }
         .text-success-green { color: #10b981; }
         .text-error-red { color: #ef4444; }
+        
+        /* Tambahan untuk sticky header log absensi */
+        .log-table-header { position: sticky; top: 0; z-index: 10; background-color: #f9fafb; }
     </style>
 </head>
 <body>
@@ -106,32 +109,17 @@
         <div id="laporan-absen-view" class="w-full container mx-auto hidden">
             <div class="bg-white p-6 rounded-xl shadow-2xl">
                 <div class="flex justify-between items-center mb-6 border-b pb-2">
-                    <h2 class="text-3xl font-extrabold text-gray-800">Detail Log Semua Absensi (Arsip)</h2>
-                    <button id="export-excel-button" onclick="exportAbsensiToExcel()" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-300 btn-primary disabled:opacity-50" disabled>
-                        Export Log ke Excel
-                    </button>
+                    <h2 class="text-3xl font-extrabold text-gray-800">Detail Log Semua Absensi (Arsip 7 Hari)</h2>
+                    <p id="deletion-status" class="text-sm text-gray-500 font-medium"></p>
                 </div>
 
-                <p class="text-sm text-gray-500 mb-4">Menampilkan log tap kartu (sukses dan gagal) yang tersimpan di Supabase, diurutkan dari yang terbaru. </p>
-
-                <div id="detail-section">
-                    <div class="overflow-x-auto relative shadow-md sm:rounded-lg max-h-[80vh]">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50 sticky top-0">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal & Waktu</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Card ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Karyawan</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departemen</th> <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Periode</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="log-body" class="bg-white divide-y divide-gray-200">
-                                <tr><td colspan="6" class="py-4 text-center text-gray-500">Memuat detail log absensi...</td></tr>
-                            </tbody>
-                        </table>
+                <p class="text-sm text-gray-500 mb-4">Menampilkan log tap kartu (sukses dan gagal) yang tersimpan untuk **7 hari terakhir**.</p>
+                
+                <div id="log-per-tanggal-container" class="space-y-4">
                     </div>
-                </div>
+                
+                <div id="loading-log-message" class="py-4 text-center text-gray-500">Memuat detail log absensi...</div>
+                <div id="no-log-message" class="py-4 text-center text-gray-500 hidden">Tidak ada data absensi yang terarsip dalam 7 hari terakhir.</div>
 
             </div>
         </div>
@@ -265,25 +253,52 @@
         let allAbsensiLogs = []; // Untuk menyimpan data log yang akan diexport
 
         document.addEventListener('DOMContentLoaded', () => {
-            checkAdminSession(); // PANGGIL FUNGSI CEK SESI UNTUK AUTENTIKASI
+            checkAdminSession(); 
             document.getElementById('crud-form').addEventListener('submit', handleFormSubmit);
             document.getElementById('import-form').addEventListener('submit', handleImportSubmit);
         });
 
+        // FUNGSI BARU: Mendapatkan tanggal hari N hari yang lalu
+        function getDateNDaysAgo(n) {
+            const date = new Date();
+            date.setDate(date.getDate() - n);
+            // Format YYYY-MM-DD HH:MM:SS (Supabase timestamp format)
+            return date.toISOString(); 
+        }
+
+        /**
+         * FUNGSI BARU: Menghapus log yang lebih lama dari 7 hari.
+         */
+        async function autoDeleteOldLogs() {
+            const sevenDaysAgo = getDateNDaysAgo(7); // Dapatkan timestamp 7 hari yang lalu
+            const deletionStatusEl = document.getElementById('deletion-status');
+            deletionStatusEl.textContent = 'Memeriksa dan menghapus log lama...';
+
+            // Hapus data di mana created_at lebih kecil dari (lebih tua dari) 7 hari yang lalu
+            const { count, error } = await supabaseClient
+                .from(LOG_TABLE_NAME)
+                .delete({ count: 'exact' })
+                .lt('created_at', sevenDaysAgo); 
+            
+            if (error) {
+                console.error("Auto Delete Log Error:", error);
+                deletionStatusEl.textContent = `⚠️ Gagal menghapus log lama: ${error.message}`;
+            } else {
+                deletionStatusEl.textContent = `✅ Log lama (${count} baris sebelum ${new Date(sevenDaysAgo).toLocaleDateString('id-ID')}) berhasil dihapus.`;
+            }
+        }
+        
         /**
          * FUNGSI BARU: Mengecek sesi admin. Jika tidak ada, redirect ke halaman login.
          */
         async function checkAdminSession() {
-            // Menggunakan getSession() untuk mendapatkan data sesi yang tersimpan
             const { data: { session }, error } = await supabaseClient.auth.getSession();
             
             if (error || !session) {
-                // Jika tidak ada sesi aktif, redirect ke halaman login
                 window.location.href = './admin_login.html'; 
                 return;
             }
             
-            // Jika sesi aktif, lanjutkan memuat konten admin panel
             switchView('data-karyawan'); 
         }
 
@@ -303,7 +318,6 @@
                 logoutBtn.disabled = false;
                 logoutBtn.textContent = 'Keluar (Logout)';
             } else {
-                // Redirect ke halaman login setelah logout sukses
                 window.location.href = './admin_login.html';
             }
         }
@@ -323,107 +337,206 @@
             } else if (viewId === 'laporan-absen') {
                 document.getElementById('laporan-absen-view').classList.remove('hidden');
                 document.getElementById('tab-laporan-absen').classList.add('tab-active');
-                loadArchivedAbsensiLog(); 
+                autoDeleteOldLogs(); // Hapus yang lama dulu
+                loadArchivedAbsensiLog(); // Kemudian muat yang tersisa (7 hari terbaru)
             }
         }
 
         // --- FUNGSI LOG ABSENSI ARSIP & EXPORT (UPDATED) ---
 
         /**
-         * Mengambil dan menampilkan semua log absensi dari tabel log_absen.
+         * Mengambil dan menampilkan semua log absensi 7 hari terakhir.
          */
         async function loadArchivedAbsensiLog() {
-            const tbody = document.getElementById('log-body');
-            const exportButton = document.getElementById('export-excel-button');
+            const container = document.getElementById('log-per-tanggal-container');
+            const loadingMsg = document.getElementById('loading-log-message');
+            const noLogMsg = document.getElementById('no-log-message');
 
-            tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-gray-500">Memuat detail log absensi...</td></tr>';
-            exportButton.disabled = true;
-            exportButton.textContent = 'Memuat Data...';
+            container.innerHTML = '';
+            loadingMsg.classList.remove('hidden');
+            noLogMsg.classList.add('hidden');
 
-            // 1. Ambil semua log, urutkan dari yang terbaru (TERMASUK DEPARTEMEN)
+            const sevenDaysAgo = getDateNDaysAgo(7);
+
+            // Ambil log 7 hari terakhir (created_at >= 7 hari yang lalu)
             const { data: logs, error } = await supabaseClient
                 .from(LOG_TABLE_NAME)
-                .select('card, status, periode, created_at, nama, departemen') // <== UPDATED: Ambil kolom departemen
+                .select('card, status, periode, created_at, nama, departemen')
+                .gte('created_at', sevenDaysAgo) // Hanya ambil yang terbaru dari 7 hari
                 .order('created_at', { ascending: false });
 
-            exportButton.textContent = 'Export Log ke Excel';
+            loadingMsg.classList.add('hidden');
             
             if (error) {
                 console.error("Error fetching logs:", error);
                 showGlobalMessage(`Gagal memuat log absensi: ${error.message}`, 'error');
-                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-red-500">Gagal memuat data log.</td></tr>';
+                container.innerHTML = '<p class="text-center py-4 text-red-500">Gagal memuat data log.</p>';
                 return;
             }
 
             allAbsensiLogs = logs; 
-            renderLogDetails(logs);
+            renderGroupedLogDetails(logs);
 
-            if (logs.length > 0) {
-                exportButton.disabled = false;
-            } else {
-                exportButton.disabled = true;
+            if (logs.length === 0) {
+                noLogMsg.classList.remove('hidden');
             }
         }
 
         /**
-         * Merender data log ke dalam tabel detail.
+         * Mengelompokkan log berdasarkan tanggal (YYYY-MM-DD)
          */
-        function renderLogDetails(logs) {
-            const tbody = document.getElementById('log-body');
-            tbody.innerHTML = '';
-            
-            if (logs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-gray-500">Tidak ada data absensi yang terarsip.</td></tr>'; // <== UPDATED: colspan 6
-                return;
-            }
-
+        function groupLogsByDate(logs) {
+            const grouped = {};
             logs.forEach(log => {
-                const statusColor = log.status === 'Sukses' ? 'text-success-green font-semibold' : 'text-error-red';
+                // Ambil tanggal dalam format lokal (e.g., '2025-11-17')
+                const dateKey = new Date(log.created_at).toISOString().split('T')[0];
+                if (!grouped[dateKey]) {
+                    grouped[dateKey] = [];
+                }
+                grouped[dateKey].push(log);
+            });
+            return grouped;
+        }
+
+        /**
+         * Merender data log yang sudah dikelompokkan ke dalam struktur per tanggal.
+         */
+        function renderGroupedLogDetails(logs) {
+            const container = document.getElementById('log-per-tanggal-container');
+            container.innerHTML = '';
+            
+            if (logs.length === 0) return;
+
+            const groupedLogs = groupLogsByDate(logs);
+            const sortedDates = Object.keys(groupedLogs).sort((a, b) => new Date(b) - new Date(a)); // Urutkan tanggal terbaru di atas
+
+            sortedDates.forEach(dateKey => {
+                const logsForDate = groupedLogs[dateKey];
                 
-                const dateObj = new Date(log.created_at);
-                const logDateTime = dateObj.toLocaleDateString('id-ID', {
-                    year: 'numeric', month: 'short', day: 'numeric',
-                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                // Format tanggal untuk tampilan
+                const dateForDisplay = new Date(dateKey + 'T00:00:00').toLocaleDateString('id-ID', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                });
+                
+                // Div container untuk setiap tanggal (seperti gambar)
+                const dateSection = document.createElement('div');
+                dateSection.className = 'bg-white border border-green-500 rounded-xl shadow-md overflow-hidden';
+                
+                // Header Hijau
+                const header = document.createElement('div');
+                header.className = 'bg-green-600 text-white p-3 flex justify-between items-center';
+                header.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <span class="text-lg font-bold">☰ ${dateForDisplay}</span>
+                        <span class="text-xs ml-2">(${logsForDate.length} log)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="exportSingleDayLogToExcel('${dateKey}')" class="bg-green-700 text-white px-3 py-1 rounded-lg font-medium text-sm hover:bg-green-800 transition duration-300 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                            Export Data
+                        </button>
+                        <button onclick="toggleLogDetails(this, 'log-table-${dateKey}')" class="text-white text-sm focus:outline-none p-1 rounded hover:bg-green-500">
+                            <svg class="w-5 h-5 transition-transform duration-300" data-toggle="collapse" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                        </button>
+                    </div>
+                `;
+                dateSection.appendChild(header);
+
+                // Kontainer detail log (collapsed secara default)
+                const detailContainer = document.createElement('div');
+                detailContainer.id = `log-table-${dateKey}`;
+                detailContainer.className = 'overflow-x-auto max-h-80 hidden'; 
+
+                const table = document.createElement('table');
+                table.className = 'min-w-full divide-y divide-gray-200';
+                table.innerHTML = `
+                    <thead class="log-table-header">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Waktu</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Card ID</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Karyawan</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Departemen</th> 
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Periode</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                    </tbody>
+                `;
+
+                const tbody = table.querySelector('tbody');
+                logsForDate.forEach(log => {
+                    const statusColor = log.status === 'Sukses' ? 'text-success-green font-semibold' : 'text-error-red';
+                    
+                    const dateObj = new Date(log.created_at);
+                    const logTime = dateObj.toLocaleTimeString('id-ID', {
+                        hour: '2-digit', minute: '2-digit', second: '2-digit'
+                    });
+
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50';
+                    row.innerHTML = `
+                        <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500">${logTime}</td>
+                        <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-400">${log.card}</td>
+                        <td class="px-6 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${log.nama || 'Tidak Terdaftar'}</td>
+                        <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500">${log.departemen || '-'}</td> 
+                        <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-500 capitalize">${log.periode || '-'}</td>
+                        <td class="px-6 py-3 whitespace-nowrap text-sm ${statusColor}">${log.status}</td>
+                    `;
+                    tbody.appendChild(row);
                 });
 
-                const row = document.createElement('tr');
-                row.className = 'hover:bg-gray-50';
-                row.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${logDateTime}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${log.card}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${log.nama || 'Tidak Terdaftar'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${log.departemen || '-'}</td> <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">${log.periode || '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm ${statusColor}">${log.status}</td>
-                `;
-                tbody.appendChild(row);
+                detailContainer.appendChild(table);
+                dateSection.appendChild(detailContainer);
+                container.appendChild(dateSection);
             });
+        }
+        
+        // FUNGSI BARU: Untuk toggle expand/collapse detail log
+        function toggleLogDetails(button, tableId) {
+            const detailElement = document.getElementById(tableId);
+            const svg = button.querySelector('svg');
+            
+            if (detailElement.classList.contains('hidden')) {
+                // Expand
+                detailElement.classList.remove('hidden');
+                svg.style.transform = 'rotate(180deg)';
+            } else {
+                // Collapse
+                detailElement.classList.add('hidden');
+                svg.style.transform = 'rotate(0deg)';
+            }
         }
 
         /**
-         * Mengekspor data log absensi ke file Excel.
+         * Mengekspor data log absensi untuk satu hari tertentu ke file Excel.
          */
-        function exportAbsensiToExcel() {
-            if (allAbsensiLogs.length === 0) {
-                showGlobalMessage('Tidak ada data log yang bisa diexport.', 'error');
+        function exportSingleDayLogToExcel(dateKey) {
+            const logsToExport = allAbsensiLogs.filter(log => {
+                return new Date(log.created_at).toISOString().split('T')[0] === dateKey;
+            });
+            
+            if (logsToExport.length === 0) {
+                showGlobalMessage(`Tidak ada data log untuk tanggal ${dateKey}.`, 'error');
                 return;
             }
             
             const wsData = [
-                ["Tanggal & Waktu", "Card ID", "Nama Karyawan", "Departemen", "Periode", "Status Tap", "created_at (Raw)"] // <== UPDATED: Header Departemen
+                ["Tanggal & Waktu", "Card ID", "Nama Karyawan", "Departemen", "Periode", "Status Tap", "created_at (Raw)"] 
             ];
 
-            allAbsensiLogs.forEach(log => {
+            logsToExport.forEach(log => {
                 const dateObj = new Date(log.created_at);
                 const logDateTime = dateObj.toLocaleDateString('id-ID', {
                     year: 'numeric', month: 'long', day: 'numeric',
                     hour: '2-digit', minute: '2-digit', second: '2-digit'
-                });
+                }) + ' ' + dateObj.toLocaleTimeString('id-ID'); // Gabung tanggal dan waktu dengan format lengkap
                 
                 wsData.push([
                     logDateTime,
                     log.card,
                     log.nama || 'Tidak Terdaftar',
-                    log.departemen || '-', // <== UPDATED: Data Departemen
+                    log.departemen || '-', 
                     log.periode || '-',
                     log.status,
                     log.created_at 
@@ -432,13 +545,13 @@
 
             const ws = XLSX.utils.aoa_to_sheet(wsData);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "LogAbsensi");
+            XLSX.utils.book_append_sheet(wb, ws, `Log_${dateKey}`);
 
-            const date = new Date().toISOString().slice(0, 10);
-            XLSX.writeFile(wb, `Log_Absensi_Arsip_${date}.xlsx`);
+            XLSX.writeFile(wb, `Log_Absensi_${dateKey}.xlsx`);
             
-            showGlobalMessage(`Berhasil mengekspor ${allAbsensiLogs.length} baris data ke Excel.`, 'success');
+            showGlobalMessage(`Berhasil mengekspor ${logsToExport.length} log untuk tanggal ${dateKey} ke Excel.`, 'success');
         }
+
 
         // --- FUNGSI LAMA (CRUD, FETCH DATA, DLL) TETAP DI SINI ---
         
