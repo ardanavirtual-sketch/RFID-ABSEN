@@ -1061,24 +1061,30 @@
                 return; 
             }
             
-            document.getElementById('import-submit-button').disabled = true;
-            document.getElementById('import-submit-button').innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Menjadwalkan Sinkronisasi...';
+            const submitButton = document.getElementById('import-submit-button');
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Menjadwalkan Sinkronisasi...';
             
             try {
+                // 1. Gabungkan semua data menjadi satu objek JSON string
+                const jsonPayload = JSON.stringify({
+                    action: 'save_pending_import',
+                    data: parsedImportData
+                });
+        
+                // 2. Kirim data sebagai form-data (URLSearchParams)
+                // Ini adalah kunci untuk menghindari masalah CORS preflight.
+                const dataToSend = new URLSearchParams();
+                dataToSend.append('payload', jsonPayload);
+        
                 const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'save_pending_import', // Memberi tahu GAS aksi apa yang harus dilakukan
-                        data: parsedImportData
-                    })
+                    // TIDAK PERLU HEADER 'Content-Type' di sini, URLSearchParams akan menanganinya
+                    body: dataToSend
                 });
         
                 if (!response.ok) {
-                    throw new Error(`Server Error: ${response.status} ${response.statusText}`);
+                    throw new Error(`Server Apps Script Error: ${response.status} ${response.statusText}`);
                 }
                 
                 const result = await response.json();
@@ -1086,18 +1092,18 @@
                 if (result.status === 'success') {
                     showGlobalMessage(`Sinkronisasi Dijadwalkan! ${result.message}`, 'success');
                 } else {
-                    throw new Error(result.message || 'Gagal menyimpan data sementara.');
+                    throw new Error(result.message || 'Gagal menyimpan data sementara ke Apps Script.');
                 }
         
             } catch (error) {
                 console.error("Import Scheduling Error:", error);
-                showGlobalMessage(`Gagal menjadwalkan import: ${error.message}.`, 'error');
+                // Error 'Failed to fetch' akan muncul di sini, tapi setelah perubahan ini seharusnya hilang
+                showGlobalMessage(`Gagal menjadwalkan import: ${error.message}. Cek log Apps Script Anda.`, 'error');
             } finally {
                 closeImportModal();
-                // Kembalikan tombol ke kondisi awal
-                document.getElementById('import-submit-button').innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Hapus Lama & Ganti Baru';
-                document.getElementById('import-submit-button').disabled = false;
-                fetchData(); // Muat ulang data lama sampai jadwal baru dieksekusi
+                submitButton.innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Hapus Lama & Ganti Baru';
+                submitButton.disabled = false;
+                fetchData(); 
             }
         }
         // --- AKHIR PERUBAHAN FUNGSI IMPORT ---
