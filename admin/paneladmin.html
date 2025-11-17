@@ -53,10 +53,10 @@
                 <div class="flex flex-col sm:flex-row justify-between items-center mb-6 space-y-4 sm:space-y-0">
                     <h2 class="text-3xl font-extrabold text-gray-800">Data Karyawan</h2>
                     <div class="flex space-x-3">
-                        <button id="btn-import-data" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 btn-primary">
+                        <button onclick="openImportModal()" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 btn-primary">
                             Import Data Absensi (Sinkronisasi Penuh)
                         </button>
-                        <button id="btn-tambah-karyawan" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-300 btn-primary">
+                        <button onclick="openFormModal('create')" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-300 btn-primary">
                             + Tambah Karyawan Baru
                         </button>
                     </div>
@@ -268,19 +268,6 @@
             checkAdminSession(); // PANGGIL FUNGSI CEK SESI UNTUK AUTENTIKASI
             document.getElementById('crud-form').addEventListener('submit', handleFormSubmit);
             document.getElementById('import-form').addEventListener('submit', handleImportSubmit);
-
-            // --- FIX: Menambahkan Event Listener untuk Tombol yang Error ---
-            const btnTambah = document.getElementById('btn-tambah-karyawan');
-            const btnImport = document.getElementById('btn-import-data');
-
-            if (btnTambah) {
-                btnTambah.addEventListener('click', () => openFormModal('create'));
-            }
-
-            if (btnImport) {
-                btnImport.addEventListener('click', openImportModal);
-            }
-            // -----------------------------------------------------------------
         });
 
         /**
