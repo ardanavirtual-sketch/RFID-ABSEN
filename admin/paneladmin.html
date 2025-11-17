@@ -328,6 +328,7 @@
         // --- 1. KONFIGURASI SUPABASE (PASTIKAN INI SESUAI) ---
         const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw7ALmu9Igd-eVSGqLcBcOf6emc0ycHGpLzEohZu_nIbsNsibOL00bKgmkr0fsP3C5K/exec';
         const TABLE_NAME = 'data_master';
         const LOG_TABLE_NAME = 'log_absen';
         const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; 
@@ -1048,68 +1049,56 @@
         /**
          * FUNGSI BARU: Mengganti logika UPSERT/DELETE INAKTIF menjadi HAPUS TOTAL & INSERT BARU.
          */
+        /**
+ * FUNGSI BARU (GANTI SELURUHNYA): Mengirim data import ke Google Apps Script 
+ * untuk disimpan sementara di Google Sheet.
+ */
         async function handleImportSubmit(event) {
             event.preventDefault();
             
             if (parsedImportData.length === 0) { 
-                showGlobalMessage('Tidak ada data valid untuk disinkronisasi.', 'error'); 
+                showGlobalMessage('Tidak ada data valid untuk dikirim.', 'error'); 
                 return; 
             }
             
             document.getElementById('import-submit-button').disabled = true;
-            document.getElementById('import-submit-button').innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Menghapus Data Lama...';
+            document.getElementById('import-submit-button').innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Menjadwalkan Sinkronisasi...';
             
-            let deletedCount = 0;
-            let insertedCount = 0;
-            let overallError = null;
-
-            // --- FASE 1: HAPUS SEMUA DATA LAMA ---
-            // Menggunakan filter .neq('card', 'N/A') untuk memastikan semua data dipertimbangkan untuk dihapus 
-            // tanpa membatasi Row Level Security (RLS) di Supabase.
-            const { count: deletedRows, error: deleteError } = await supabaseClient
-                .from(TABLE_NAME)
-                .delete({ count: 'exact' })
-                .neq('card', 'N/A'); 
-
-            if (deleteError) {
-                console.error("Delete All Error:", deleteError);
-                overallError = deleteError;
-            } else {
-                deletedCount = deletedRows;
-            }
-
-            // --- FASE 2: INSERT SEMUA DATA BARU ---
-            if (!overallError) {
-                document.getElementById('import-submit-button').innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memasukkan Data Baru...';
-                
-                const { data: insertData, error: insertError } = await supabaseClient
-                    .from(TABLE_NAME)
-                    .insert(parsedImportData)
-                    .select();
-
-                if (insertError) {
-                    console.error("Insert New Data Error:", insertError);
-                    overallError = insertError;
-                } else if (insertData) {
-                    insertedCount = insertData.length;
+            try {
+                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'save_pending_import', // Memberi tahu GAS aksi apa yang harus dilakukan
+                        data: parsedImportData
+                    })
+                });
+        
+                if (!response.ok) {
+                    throw new Error(`Server Error: ${response.status} ${response.statusText}`);
                 }
+                
+                const result = await response.json();
+        
+                if (result.status === 'success') {
+                    showGlobalMessage(`Sinkronisasi Dijadwalkan! ${result.message}`, 'success');
+                } else {
+                    throw new Error(result.message || 'Gagal menyimpan data sementara.');
+                }
+        
+            } catch (error) {
+                console.error("Import Scheduling Error:", error);
+                showGlobalMessage(`Gagal menjadwalkan import: ${error.message}.`, 'error');
+            } finally {
+                closeImportModal();
+                // Kembalikan tombol ke kondisi awal
+                document.getElementById('import-submit-button').innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Hapus Lama & Ganti Baru';
+                document.getElementById('import-submit-button').disabled = false;
+                fetchData(); // Muat ulang data lama sampai jadwal baru dieksekusi
             }
-
-
-            closeImportModal();
-            // Kembalikan teks tombol ke semula (disarankan ganti total)
-            document.getElementById('import-submit-button').innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Hapus Lama & Ganti Baru';
-            document.getElementById('import-submit-button').disabled = false;
-
-
-            // --- FASE 3: Tampilkan Hasil Akhir ---
-            if (overallError) {
-                showGlobalMessage(`Sinkronisasi GAGAL. Pesan Error: ${overallError.message}. Data mungkin tidak lengkap.`, 'error');
-            } else {
-                showGlobalMessage(`Sinkronisasi BERHASIL! Dihapus: ${deletedCount} baris. Ditambahkan (Baru): ${insertedCount} baris.`, 'success');
-            }
-            
-            fetchData(); // Muat ulang data karyawan untuk melihat hasil
         }
         // --- AKHIR PERUBAHAN FUNGSI IMPORT ---
 
