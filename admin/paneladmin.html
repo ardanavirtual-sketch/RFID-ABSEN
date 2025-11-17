@@ -114,7 +114,7 @@
                     <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
                         <button onclick="openImportModal()" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-blue-700 transition duration-300 btn-primary flex items-center justify-center">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                            Import Data (Sinkronisasi Penuh)
+                            Import Data (Ganti Total)
                         </button>
                         <button onclick="openFormModal('create')" class="bg-green-600 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-green-700 transition duration-300 btn-primary flex items-center justify-center">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
@@ -190,18 +190,17 @@
 
     <div id="import-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-5xl transform transition-all duration-300 scale-95 opacity-0" id="import-content">
-            <h3 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Import Data Karyawan (Sinkronisasi Penuh)</h3>
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Import Data Karyawan (Ganti Total)</h3>
             
             <form id="import-form">
                 <div id="step-upload" class="bg-gray-50 p-6 rounded-lg border border-gray-200">
                     <p class="text-sm text-gray-600 mb-4">Unggah file Excel (.xlsx atau .xls) yang berisi **SEMUA** data karyawan aktif.</p>
                     
                     <div class="p-3 bg-red-50 border border-red-300 rounded-lg mb-4">
-                        <p class="text-xs text-red-600 font-bold">⚠️ PENTING: Data di database akan **DISINKRONKAN** dengan file ini.</p>
+                        <p class="text-xs text-red-600 font-bold">⚠️ PENTING: Proses ini adalah **PENGGANTIAN TOTAL**.</p>
                         <p class="text-xs text-red-600 mt-1">Kolom Wajib: <code class="font-mono text-xs bg-red-100 p-1 rounded font-semibold">Card ID, NIK, Nama, Departemen, Pagi, Siang, Sore, Malam</code>.</p>
-                        <p class="text-xs text-red-600 mt-1">Karyawan di database yang tidak ada di file Excel ini akan **dihapus/dinonaktifkan**.</p>
+                        <p class="text-xs text-red-600 mt-1">Semua data karyawan lama di database akan **DIHAPUS** dan digantikan dengan data dari file Excel ini.</p>
                     </div>
-                    
                     <div class="mb-4">
                         <label for="excel-file-input" class="block text-sm font-medium text-gray-700 mb-2">Pilih File Excel:</label>
                         <input type="file" id="excel-file-input" accept=".xlsx, .xls" required 
@@ -231,8 +230,8 @@
                         </table>
                     </div>
                     <p id="review-summary" class="text-sm mt-4 text-gray-700 font-medium"></p>
-                    <p id="deletion-warning" class="text-sm text-red-600 font-semibold mt-2 hidden p-2 bg-red-100 rounded-md">⚠️ Peringatan Akhir: Proses ini akan menghapus data karyawan yang terdeteksi inaktif (tidak ada di file Excel) setelah sinkronisasi data aktif.</p>
-                </div>
+                    <p id="deletion-warning" class="text-sm text-red-600 font-semibold mt-2 hidden p-2 bg-red-100 rounded-md">⚠️ Peringatan Akhir: Proses ini akan **MENGHAPUS SEMUA DATA LAMA** dan menggantinya dengan data yang di-review di atas.</p>
+                    </div>
 
                 <div class="flex justify-end space-x-3 mt-6">
                     <button type="button" onclick="closeImportModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition duration-150">Batal</button>
@@ -242,9 +241,9 @@
                     </button>
                     <button type="submit" id="import-submit-button" class="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition duration-150 btn-primary hidden flex items-center" disabled>
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        Sinkronisasi & Hapus Inaktif
+                        Hapus Lama & Ganti Baru
                     </button>
-                </div>
+                    </div>
             </form>
         </div>
     </div>
@@ -1046,63 +1045,73 @@
             }
         }
 
+        /**
+         * FUNGSI BARU: Mengganti logika UPSERT/DELETE INAKTIF menjadi HAPUS TOTAL & INSERT BARU.
+         */
         async function handleImportSubmit(event) {
             event.preventDefault();
             
-            if (parsedImportData.length === 0) { showGlobalMessage('Tidak ada data valid untuk disinkronisasi.', 'error'); return; }
+            if (parsedImportData.length === 0) { 
+                showGlobalMessage('Tidak ada data valid untuk disinkronisasi.', 'error'); 
+                return; 
+            }
             
             document.getElementById('import-submit-button').disabled = true;
-            document.getElementById('import-submit-button').innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Melakukan Sinkronisasi...';
+            document.getElementById('import-submit-button').innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Menghapus Data Lama...';
             
-            let updateCount = 0;
-            let deleteCount = 0;
-            let upsertError = null;
+            let deletedCount = 0;
+            let insertedCount = 0;
+            let overallError = null;
 
-            // --- FASE 1: UPSERT (Update/Insert) Data Aktif ---
-            const { data: upsertData, error: upsertErrorResult } = await supabaseClient
+            // --- FASE 1: HAPUS SEMUA DATA LAMA ---
+            // Menggunakan filter .neq('card', 'N/A') untuk memastikan semua data dipertimbangkan untuk dihapus 
+            // tanpa membatasi Row Level Security (RLS) di Supabase.
+            const { count: deletedRows, error: deleteError } = await supabaseClient
                 .from(TABLE_NAME)
-                .upsert(parsedImportData, { onConflict: 'card' })
-                .select(); 
+                .delete({ count: 'exact' })
+                .neq('card', 'N/A'); 
 
-            upsertError = upsertErrorResult;
-            if (upsertData) {
-                updateCount = upsertData.length;
+            if (deleteError) {
+                console.error("Delete All Error:", deleteError);
+                overallError = deleteError;
+            } else {
+                deletedCount = deletedRows;
             }
 
-            // --- FASE 2: DELETE Data Inaktif ---
-            if (!upsertError && activeCardIds.length > 0) {
-                // Konversi activeCardIds ke set untuk pengecekan not in yang lebih efisien (meskipun Supabase yang melakukannya)
-                const { error: deleteErrorResult, count: deletedRows } = await supabaseClient
+            // --- FASE 2: INSERT SEMUA DATA BARU ---
+            if (!overallError) {
+                document.getElementById('import-submit-button').innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memasukkan Data Baru...';
+                
+                const { data: insertData, error: insertError } = await supabaseClient
                     .from(TABLE_NAME)
-                    .delete({ count: 'exact' })
-                    .not('card', 'in', activeCardIds); 
+                    .insert(parsedImportData)
+                    .select();
 
-                if (deleteErrorResult) {
-                    console.error("Delete Inaktif Error:", deleteErrorResult);
-                    showGlobalMessage(`Sinkronisasi berhasil (Update: ${updateCount}), tetapi GAGAL menghapus data inaktif: ${deleteErrorResult.message}`, 'error');
-                } else if (deletedRows !== null) {
-                    deleteCount = deletedRows;
+                if (insertError) {
+                    console.error("Insert New Data Error:", insertError);
+                    overallError = insertError;
+                } else if (insertData) {
+                    insertedCount = insertData.length;
                 }
-            } else if (upsertError) {
-                console.error("UPSERT FAILED:", upsertError);
-                showGlobalMessage(`Sinkronisasi GAGAL pada tahap Update/Insert: ${upsertError.message}`, 'error');
             }
+
 
             closeImportModal();
-            document.getElementById('import-submit-button').innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Sinkronisasi & Hapus Inaktif';
+            // Kembalikan teks tombol ke semula (disarankan ganti total)
+            document.getElementById('import-submit-button').innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Hapus Lama & Ganti Baru';
             document.getElementById('import-submit-button').disabled = false;
 
 
             // --- FASE 3: Tampilkan Hasil Akhir ---
-            if (upsertError) {
-                showGlobalMessage(`Sinkronisasi GAGAL total.`, 'error');
+            if (overallError) {
+                showGlobalMessage(`Sinkronisasi GAGAL. Pesan Error: ${overallError.message}. Data mungkin tidak lengkap.`, 'error');
             } else {
-                const totalChange = updateCount + deleteCount;
-                showGlobalMessage(`Sinkronisasi BERHASIL! Diperbarui/Ditambahkan: ${updateCount} baris. Dihapus (Inaktif): ${deleteCount} baris. Total perubahan: ${totalChange} baris.`, 'success');
+                showGlobalMessage(`Sinkronisasi BERHASIL! Dihapus: ${deletedCount} baris. Ditambahkan (Baru): ${insertedCount} baris.`, 'success');
             }
             
-            fetchData(); 
+            fetchData(); // Muat ulang data karyawan untuk melihat hasil
         }
+        // --- AKHIR PERUBAHAN FUNGSI IMPORT ---
 
     </script>
 
