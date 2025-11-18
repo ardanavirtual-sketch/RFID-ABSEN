@@ -23,6 +23,13 @@
       50% { transform: scale(1.05); opacity: 1; }
       100% { transform: scale(0.9); opacity: 0.7; }
     }
+    /* Style untuk kotak periode */
+    .period-box {
+        border-radius: 0.75rem; /* rounded-xl */
+        padding: 0.75rem; /* p-3 */
+        margin-bottom: 0.75rem; /* mb-3 */
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
   </style>
   <script>
     // Konfigurasi warna khusus Tailwind
@@ -50,15 +57,65 @@
       <p class="text-gray-500 mt-1">Mode Koneksi Keyboard Emulator (HID)</p>
     </div>
     
-    <div class="flex justify-between items-center text-sm mb-4">
-        <div class="flex-1 bg-success-green/10 p-2 rounded-lg mr-2">
-            <p class="text-success-green font-bold text-lg" id="log-sukses">0</p>
-            <p class="text-gray-500">Sukses</p>
+    <div class="mb-6 border-b pb-4">
+        <h2 class="text-2xl font-bold mb-4 text-gray-800">Log Presensi Harian</h2>
+        
+        <div class="period-box bg-blue-50/50">
+            <h3 class="text-lg font-semibold text-primary-blue mb-2">Pagi (05:00 - 09:59)</h3>
+            <div class="flex justify-between items-center text-sm">
+                <div class="flex-1 p-2 mr-2 border-r border-gray-200">
+                    <p class="text-success-green font-bold text-xl" id="log-sukses-pagi">0</p>
+                    <p class="text-gray-500">Sukses</p>
+                </div>
+                <div class="flex-1 p-2 ml-2">
+                    <p class="text-error-red font-bold text-xl" id="log-gagal-pagi">0</p>
+                    <p class="text-gray-500">Gagal</p>
+                </div>
+            </div>
         </div>
-        <div class="flex-1 bg-error-red/10 p-2 rounded-lg ml-2">
-            <p class="text-error-red font-bold text-lg" id="log-gagal">0</p>
-            <p class="text-gray-500">Gagal</p>
+
+        <div class="period-box bg-yellow-50/50">
+            <h3 class="text-lg font-semibold text-yellow-600 mb-2">Siang (10:00 - 13:59)</h3>
+            <div class="flex justify-between items-center text-sm">
+                <div class="flex-1 p-2 mr-2 border-r border-gray-200">
+                    <p class="text-success-green font-bold text-xl" id="log-sukses-siang">0</p>
+                    <p class="text-gray-500">Sukses</p>
+                </div>
+                <div class="flex-1 p-2 ml-2">
+                    <p class="text-error-red font-bold text-xl" id="log-gagal-siang">0</p>
+                    <p class="text-gray-500">Gagal</p>
+                </div>
+            </div>
         </div>
+
+        <div class="period-box bg-orange-50/50">
+            <h3 class="text-lg font-semibold text-orange-600 mb-2">Sore (14:00 - 17:59)</h3>
+            <div class="flex justify-between items-center text-sm">
+                <div class="flex-1 p-2 mr-2 border-r border-gray-200">
+                    <p class="text-success-green font-bold text-xl" id="log-sukses-sore">0</p>
+                    <p class="text-gray-500">Sukses</p>
+                </div>
+                <div class="flex-1 p-2 ml-2">
+                    <p class="text-error-red font-bold text-xl" id="log-gagal-sore">0</p>
+                    <p class="text-gray-500">Gagal</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="period-box bg-purple-50/50 mb-0">
+            <h3 class="text-lg font-semibold text-purple-600 mb-2">Malam (18:00 - 22:59)</h3>
+            <div class="flex justify-between items-center text-sm">
+                <div class="flex-1 p-2 mr-2 border-r border-gray-200">
+                    <p class="text-success-green font-bold text-xl" id="log-sukses-malam">0</p>
+                    <p class="text-gray-500">Sukses</p>
+                </div>
+                <div class="flex-1 p-2 ml-2">
+                    <p class="text-error-red font-bold text-xl" id="log-gagal-malam">0</p>
+                    <p class="text-gray-500">Gagal</p>
+                </div>
+            </div>
+        </div>
+
     </div>
     <div id="status-card" class="p-6 rounded-2xl transition-all duration-300 bg-blue-50">
       <div id="status-icon" class="status-icon w-16 h-16 mx-auto mb-4 flex items-center justify-center rounded-full bg-primary-blue/80 shadow-lg text-white">
@@ -91,5 +148,3 @@
   <script type="module" src="app.js"></script>
 </body>
 </html>
-
-
