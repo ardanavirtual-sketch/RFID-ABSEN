@@ -1,4 +1,4 @@
-// app.js (Kode sudah dimodifikasi untuk Keyboard Input/HID)
+// app.js (Kode sudah dimodifikasi untuk Keyboard Input/HID dan Local Storage)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -22,9 +22,19 @@ const hasilWaktu = document.getElementById('hasil-waktu');
 const appContainer = document.getElementById('app-container');
 const readerStatusHint = document.getElementById('reader-status-hint');
 
-// Tambahkan elemen counter baru (Diasumsikan sudah ada di index.html)
-const logSuksesElement = document.getElementById('log-sukses');
-const logGagalElement = document.getElementById('log-gagal');
+// Tambahkan elemen counter baru untuk setiap periode (Diasumsikan sudah ada di index.html)
+const logSuksesPagiElement = document.getElementById('log-sukses-pagi');
+const logGagalPagiElement = document.getElementById('log-gagal-pagi');
+const logSuksesSiangElement = document.getElementById('log-sukses-siang');
+const logGagalSiangElement = document.getElementById('log-gagal-siang');
+const logSuksesSoreElement = document.getElementById('log-sukses-sore');
+const logGagalSoreElement = document.getElementById('log-gagal-sore');
+const logSuksesMalamElement = document.getElementById('log-sukses-malam');
+const logGagalMalamElement = document.getElementById('log-gagal-malam');
+
+// Elemen counter lama (Dibuang karena diganti per periode)
+// const logSuksesElement = document.getElementById('log-sukses');
+// const logGagalElement = document.getElementById('log-gagal');
 
 // Tambahkan elemen audio
 const audioSuccess = document.getElementById('audio-success');
@@ -34,15 +44,28 @@ const audioFail = document.getElementById('audio-fail');
 let currentRFID = ''; // Buffer untuk menampung input ID kartu
 let isProcessing = false; // Mencegah double tap saat proses masih berjalan
 
-// State for Log Counters
+// State for Log Counters (Ganti struktur state untuk mengakomodasi per periode)
 let logCounters = {
-    success: 0,
-    fail: 0
+    // Total harian
+    total: {
+        success: 0,
+        fail: 0
+    },
+    // Per periode
+    pagi: { success: 0, fail: 0 },
+    siang: { success: 0, fail: 0 },
+    sore: { success: 0, fail: 0 },
+    malam: { success: 0, fail: 0 }
 };
 
 // State Deduplikasi (Mencegah Hitungan Ganda per Kartu di UI)
 const lastTapStatus = new Map(); 
 const DEDUPLICATION_WINDOW_MS = 60000; // 60 detik
+
+// State untuk Reset Harian
+const LOCAL_STORAGE_KEY = 'rfid_log_counters';
+const LOCAL_STORAGE_DATE_KEY = 'rfid_log_date';
+
 
 // ===================================
 // UTILITY/UI FUNCTIONS
@@ -53,11 +76,11 @@ function getCurrentMealPeriod() {
     
     if (hour >= 5 && hour < 10) { 
         return 'pagi';
-    } else if (hour >= 10 && hour < 14) { 
+    } else if (hour >= 11 && hour < 14) { 
         return 'siang';
-    } else if (hour >= 14 && hour < 18) { 
+    } else if (hour >= 16 && hour < 20) { 
         return 'sore';
-    } else if (hour >= 18 && hour < 23) { 
+    } else if (hour >= 20 && hour < 23) { 
         return 'malam';
     } else {
         // Default ke 'pagi' atau periode yang paling awal jika di luar range
@@ -65,8 +88,68 @@ function getCurrentMealPeriod() {
     }
 }
 
-function updateLogCounters(rfidId, isSuccess) {
+function getTodayDateString() {
+    return new Date().toISOString().split('T')[0];
+}
+
+function updateUILogCounters() {
+    if(logSuksesPagiElement) logSuksesPagiElement.textContent = logCounters.pagi.success;
+    if(logGagalPagiElement) logGagalPagiElement.textContent = logCounters.pagi.fail;
+    if(logSuksesSiangElement) logSuksesSiangElement.textContent = logCounters.siang.success;
+    if(logGagalSiangElement) logGagalSiangElement.textContent = logCounters.siang.fail;
+    if(logSuksesSoreElement) logSuksesSoreElement.textContent = logCounters.sore.success;
+    if(logGagalSoreElement) logGagalSoreElement.textContent = logCounters.sore.fail;
+    if(logSuksesMalamElement) logSuksesMalamElement.textContent = logCounters.malam.success;
+    if(logGagalMalamElement) logGagalMalamElement.textContent = logCounters.malam.fail;
+}
+
+function setupInitialState() {
+    const savedCounters = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const savedDate = localStorage.getItem(LOCAL_STORAGE_DATE_KEY);
+    const today = getTodayDateString();
+
+    // Reset jika tanggal berbeda
+    if (savedDate !== today) {
+        logCounters = {
+            total: { success: 0, fail: 0 },
+            pagi: { success: 0, fail: 0 },
+            siang: { success: 0, fail: 0 },
+            sore: { success: 0, fail: 0 },
+            malam: { success: 0, fail: 0 }
+        };
+        localStorage.setItem(LOCAL_STORAGE_DATE_KEY, today);
+        localStorage.removeItem(LOCAL_STORAGE_KEY); // Hapus log lama
+        console.log("Counter presensi direset karena pergantian hari.");
+    } else if (savedCounters) {
+        // Muat state jika tanggal sama
+        try {
+            logCounters = JSON.parse(savedCounters);
+            // Pastikan struktur logCounters valid
+            if (!logCounters.pagi) { 
+                throw new Error("Invalid logCounters structure, resetting.");
+            }
+        } catch (e) {
+            console.error("Gagal memuat state logCounters dari Local Storage:", e);
+            // Reset ke default jika gagal parsing
+            logCounters = {
+                total: { success: 0, fail: 0 },
+                pagi: { success: 0, fail: 0 },
+                siang: { success: 0, fail: 0 },
+                sore: { success: 0, fail: 0 },
+                malam: { success: 0, fail: 0 }
+            };
+        }
+    }
+    updateUILogCounters();
+}
+
+function saveLogCounters() {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logCounters));
+}
+
+function updateLogCounters(rfidId, isSuccess, period) {
     const statusKey = isSuccess ? 'SUCCESS' : 'FAIL';
+    const counterKey = isSuccess ? 'success' : 'fail';
     const previousTap = lastTapStatus.get(rfidId);
     
     // Logic Deduplikasi: Hanya hitung jika tap pertama, tap di luar window, atau terjadi perubahan status
@@ -74,24 +157,33 @@ function updateLogCounters(rfidId, isSuccess) {
         
         // Sesuaikan counter jika terjadi perubahan status (ex: Gagal -> Sukses)
         if (previousTap && previousTap.status !== statusKey) {
-             if (previousTap.status === 'SUCCESS') logCounters.success = Math.max(0, logCounters.success - 1);
-             else logCounters.fail = Math.max(0, logCounters.fail - 1);
+             const prevPeriod = previousTap.period;
+             const prevCounterKey = previousTap.status === 'SUCCESS' ? 'success' : 'fail';
+
+             // Kurangi hitungan lama
+             if (logCounters[prevPeriod] && logCounters[prevPeriod][prevCounterKey] > 0) {
+                 logCounters[prevPeriod][prevCounterKey]--;
+             }
         }
 
         // Tambahkan hitungan baru
-        if (isSuccess) logCounters.success++;
-        else logCounters.fail++;
+        if (logCounters[period]) {
+            logCounters[period][counterKey]++;
+        } else {
+            // Fallback jika periode tidak terdefinisi (seharusnya tidak terjadi)
+            logCounters.total[counterKey]++;
+        }
 
         // Simpan status tap baru
-        lastTapStatus.set(rfidId, { timestamp: Date.now(), status: statusKey });
+        lastTapStatus.set(rfidId, { timestamp: Date.now(), status: statusKey, period: period });
 
-        // Update UI
-        if(logSuksesElement) logSuksesElement.textContent = logCounters.success;
-        if(logGagalElement) logGagalElement.textContent = logCounters.fail;
+        // Update UI & Local Storage
+        updateUILogCounters();
+        saveLogCounters();
         return true; 
     } else if (previousTap.status === statusKey) {
         // Perpanjang window jika duplikat
-        lastTapStatus.set(rfidId, { timestamp: Date.now(), status: statusKey });
+        lastTapStatus.set(rfidId, { timestamp: Date.now(), status: statusKey, period: period });
     }
     return false;
 }
@@ -116,7 +208,7 @@ function showAlreadyTappedStatus(rfidId, nama) {
     hasilWaktu.textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     hasilContainer.classList.remove('hidden');
 
-    // Reset setelah delay
+    // Izinkan input baru setelah delay
     setTimeout(() => {
         isProcessing = false;
         appContainer.classList.remove('bg-blue-200/50'); 
@@ -156,9 +248,10 @@ function showProcessingStatus() {
     hasilContainer.classList.add('hidden');
 }
 
-function updateUI({ success, message, rfidId, nama, status_log }) {
+function updateUI({ success, message, rfidId, nama, status_log, currentPeriod }) {
     
-    updateLogCounters(rfidId, success);
+    // Panggil updateLogCounters dengan periode saat ini
+    updateLogCounters(rfidId, success, currentPeriod);
 
     const currentTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
@@ -228,7 +321,8 @@ async function checkCardSupabase(rfidId) {
         message: 'Kartu Tidak Dikenal!',
         rfidId: rfidId,
         nama: 'Pengguna tidak terdaftar',
-        status_log: "Gagal (Unknown Card)"
+        status_log: "Gagal (Unknown Card)",
+        currentPeriod: currentPeriod // Tambahkan periode ke hasil
     };
     
     try {
@@ -245,7 +339,7 @@ async function checkCardSupabase(rfidId) {
             result.nama = userData.nama;
             
             // 2. Cek apakah kartu sudah melakukan presensi sukses hari ini untuk periode ini
-            const today = new Date().toISOString().split('T')[0];
+            const today = getTodayDateString();
             
             const { data: logData, error: logError } = await db
                 .from("log_absen")
@@ -262,7 +356,7 @@ async function checkCardSupabase(rfidId) {
             if (logData && logData.length > 0) {
                 isProcessing = true; 
                 showAlreadyTappedStatus(rfidId, userData.nama);
-                return; 
+                return; // Keluar dari fungsi setelah menampilkan status tap ganda
             }
 
             // 3. Jika belum tap, cek jatah makannya
@@ -345,9 +439,9 @@ function setupHIDListener() {
 // ===================================
 
 window.onload = () => {
-    // Pastikan log counter di UI sesuai state awal
-    if(logSuksesElement) logSuksesElement.textContent = logCounters.success;
-    if(logGagalElement) logGagalElement.textContent = logCounters.fail;
+    // 1. Setup state awal (memuat dari Local Storage atau mereset harian)
+    setupInitialState(); 
     
+    // 2. Setup listener
     setupHIDListener();
 };
