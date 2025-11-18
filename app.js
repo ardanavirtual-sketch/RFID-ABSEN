@@ -71,13 +71,13 @@ const LOCAL_STORAGE_DATE_KEY = 'rfid_log_date';
 function getCurrentMealPeriod() {
     const hour = new Date().getHours();
     
-    if (hour >= 5 && hour < 10) { 
+    if (hour >= 5 && hour < 9) { 
         return 'pagi';
-    } else if (hour >= 10 && hour < 14) { 
+    } else if (hour >= 11 && hour < 15) { 
         return 'siang';
-    } else if (hour >= 14 && hour < 18) { 
+    } else if (hour >= 17 && hour < 20) { 
         return 'sore';
-    } else if (hour >= 18 && hour < 23) { 
+    } else if (hour >= 20 && hour < 23) { 
         return 'malam';
     } else {
         // Default ke 'pagi' atau periode yang paling awal jika di luar range
@@ -442,3 +442,4 @@ window.onload = () => {
     // 2. Setup listener
     setupHIDListener();
 };
+
