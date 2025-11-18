@@ -1,4 +1,4 @@
-// app.js (Kode sudah dimodifikasi untuk Keyboard Input/HID dan Local Storage)
+// app.js (Kode sudah dimodifikasi untuk Keyboard Input/HID, Local Storage, dan UI yang disederhanakan)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -18,7 +18,7 @@ const hasilContainer = document.getElementById('hasil-container');
 const hasilTitle = document.getElementById('hasil-title');
 const hasilNama = document.getElementById('hasil-nama');
 const hasilID = document.getElementById('hasil-id');
-const hasilWaktu = document.getElementById('hasil-waktu');
+const hasilWaktu = document.getElementById('hasil-waktu'); // Element ini dihapus di HTML, tapi tetap didefinisikan untuk menghindari error
 const appContainer = document.getElementById('app-container');
 const readerStatusHint = document.getElementById('reader-status-hint');
 
@@ -32,9 +32,6 @@ const logGagalSoreElement = document.getElementById('log-gagal-sore');
 const logSuksesMalamElement = document.getElementById('log-sukses-malam');
 const logGagalMalamElement = document.getElementById('log-gagal-malam');
 
-// Elemen counter lama (Dibuang karena diganti per periode)
-// const logSuksesElement = document.getElementById('log-sukses');
-// const logGagalElement = document.getElementById('log-gagal');
 
 // Tambahkan elemen audio
 const audioSuccess = document.getElementById('audio-success');
@@ -76,11 +73,11 @@ function getCurrentMealPeriod() {
     
     if (hour >= 5 && hour < 10) { 
         return 'pagi';
-    } else if (hour >= 11 && hour < 14) { 
+    } else if (hour >= 10 && hour < 14) { 
         return 'siang';
-    } else if (hour >= 16 && hour < 20) { 
+    } else if (hour >= 14 && hour < 18) { 
         return 'sore';
-    } else if (hour >= 20 && hour < 23) { 
+    } else if (hour >= 18 && hour < 23) { 
         return 'malam';
     } else {
         // Default ke 'pagi' atau periode yang paling awal jika di luar range
@@ -205,7 +202,7 @@ function showAlreadyTappedStatus(rfidId, nama) {
     hasilTitle.textContent = 'Informasi Absensi';
     hasilNama.textContent = nama || 'Terdaftar';
     hasilID.textContent = rfidId;
-    hasilWaktu.textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    // hasilWaktu.textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); // Dihilangkan dari UI
     hasilContainer.classList.remove('hidden');
 
     // Izinkan input baru setelah delay
@@ -232,7 +229,7 @@ function resetStatus() {
     hasilContainer.classList.add('hidden');
     hasilNama.textContent = '-';
     hasilID.textContent = '-';
-    hasilWaktu.textContent = '-';
+    // hasilWaktu.textContent = '-'; // Dihilangkan dari UI
     
     statusMessage.textContent = 'Reader Siap. Tap Kartu.';
     readerStatusHint.textContent = 'Listener Keyboard (HID) aktif. Tempelkan kartu.';
@@ -253,7 +250,7 @@ function updateUI({ success, message, rfidId, nama, status_log, currentPeriod })
     // Panggil updateLogCounters dengan periode saat ini
     updateLogCounters(rfidId, success, currentPeriod);
 
-    const currentTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    // const currentTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); // Variabel ini tetap ada, tapi tidak digunakan di UI
 
     appContainer.classList.remove('bg-blue-200/50');
     statusCard.classList.remove('bg-blue-100');
@@ -293,7 +290,7 @@ function updateUI({ success, message, rfidId, nama, status_log, currentPeriod })
 
     hasilNama.textContent = nama;
     hasilID.textContent = rfidId;
-    hasilWaktu.textContent = currentTime;
+    // hasilWaktu.textContent = currentTime; // Baris ini dihapus/dinonaktifkan
     hasilContainer.classList.remove('hidden');
 
     // Izinkan input baru setelah delay
