@@ -1,4 +1,4 @@
-// app.js (Kode sudah dimodifikasi untuk Keyboard Input/HID, Local Storage, dan UI yang disederhanakan)
+// app.js (Kode sudah diupdate untuk menggunakan audio duplikasi)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -18,11 +18,11 @@ const hasilContainer = document.getElementById('hasil-container');
 const hasilTitle = document.getElementById('hasil-title');
 const hasilNama = document.getElementById('hasil-nama');
 const hasilID = document.getElementById('hasil-id');
-const hasilWaktu = document.getElementById('hasil-waktu'); // Element ini dihapus di HTML, tapi tetap didefinisikan untuk menghindari error
+const hasilWaktu = document.getElementById('hasil-waktu');
 const appContainer = document.getElementById('app-container');
 const readerStatusHint = document.getElementById('reader-status-hint');
 
-// Tambahkan elemen counter baru untuk setiap periode (Diasumsikan sudah ada di index.html)
+// Tambahkan elemen counter baru untuk setiap periode
 const logSuksesPagiElement = document.getElementById('log-sukses-pagi');
 const logGagalPagiElement = document.getElementById('log-gagal-pagi');
 const logSuksesSiangElement = document.getElementById('log-sukses-siang');
@@ -36,12 +36,13 @@ const logGagalMalamElement = document.getElementById('log-gagal-malam');
 // Tambahkan elemen audio
 const audioSuccess = document.getElementById('audio-success');
 const audioFail = document.getElementById('audio-fail');
+const audioDuplicate = document.getElementById('audio-duplicate'); // BARIS BARU
 
 // State untuk HID Listener
 let currentRFID = ''; // Buffer untuk menampung input ID kartu
 let isProcessing = false; // Mencegah double tap saat proses masih berjalan
 
-// State for Log Counters (Ganti struktur state untuk mengakomodasi per periode)
+// State for Log Counters 
 let logCounters = {
     // Total harian
     total: {
@@ -71,13 +72,13 @@ const LOCAL_STORAGE_DATE_KEY = 'rfid_log_date';
 function getCurrentMealPeriod() {
     const hour = new Date().getHours();
     
-    if (hour >= 5 && hour < 9) { 
+    if (hour >= 5 && hour < 10) { 
         return 'pagi';
-    } else if (hour >= 11 && hour < 15) { 
+    } else if (hour >= 10 && hour < 14) { 
         return 'siang';
-    } else if (hour >= 17 && hour < 20) { 
+    } else if (hour >= 14 && hour < 18) { 
         return 'sore';
-    } else if (hour >= 20 && hour < 23) { 
+    } else if (hour >= 18 && hour < 23) { 
         return 'malam';
     } else {
         // Default ke 'pagi' atau periode yang paling awal jika di luar range
@@ -193,7 +194,7 @@ function showAlreadyTappedStatus(rfidId, nama) {
     statusCard.classList.replace('bg-warning-yellow/20', 'bg-blue-100'); 
     statusIcon.classList.replace('bg-warning-yellow', 'bg-primary-blue'); 
     statusIcon.classList.remove('status-icon', 'animate-spin'); 
-    statusIcon.innerHTML = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+    statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
     
     statusMessage.textContent = 'Anda Sudah Melakukan Tap Kartu!';
     statusMessage.classList.remove('text-success-green', 'text-error-red', 'text-warning-yellow');
@@ -202,7 +203,14 @@ function showAlreadyTappedStatus(rfidId, nama) {
     hasilTitle.textContent = 'Informasi Absensi';
     hasilNama.textContent = nama || 'Terdaftar';
     hasilID.textContent = rfidId;
-    // hasilWaktu.textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); // Dihilangkan dari UI
+    
+    // --- PEMUTARAN SUARA DUPLIKASI (BARU) ---
+    if (audioDuplicate) {
+        audioDuplicate.currentTime = 0; // Mulai dari awal
+        audioDuplicate.play().catch(e => console.error("Gagal memutar audio duplikasi:", e));
+    }
+    // ------------------------------------------
+
     hasilContainer.classList.remove('hidden');
 
     // Izinkan input baru setelah delay
@@ -222,7 +230,7 @@ function resetStatus() {
 
     statusCard.classList.add('bg-blue-50');
     statusIcon.classList.add('bg-primary-blue/80', 'status-icon');
-    statusIcon.innerHTML = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>`;
+    statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>`;
     statusMessage.classList.remove('text-success-green', 'text-error-red', 'text-warning-yellow', 'text-primary-blue'); 
     statusMessage.classList.add('text-primary-blue');
 
@@ -239,7 +247,7 @@ function showProcessingStatus() {
     statusCard.classList.replace('bg-blue-50', 'bg-warning-yellow/20');
     statusIcon.classList.replace('bg-primary-blue/80', 'bg-warning-yellow');
     statusIcon.classList.remove('status-icon'); 
-    statusIcon.innerHTML = `<svg class="animate-spin w-8 h-8" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+    statusIcon.innerHTML = `<svg class="animate-spin w-7 h-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
     statusMessage.textContent = 'Memproses Data Kartu...';
     statusMessage.classList.replace('text-primary-blue', 'text-warning-yellow');
     hasilContainer.classList.add('hidden');
@@ -259,7 +267,7 @@ function updateUI({ success, message, rfidId, nama, status_log, currentPeriod })
         appContainer.classList.add('scale-105', 'bg-success-green/20');
         statusCard.classList.replace('bg-warning-yellow/20', 'bg-success-green/20');
         statusIcon.classList.replace('bg-warning-yellow', 'bg-success-green');
-        statusIcon.innerHTML = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+        statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
         statusMessage.textContent = message;
         statusMessage.classList.replace('text-warning-yellow', 'text-success-green');
         hasilTitle.textContent = 'Detail Presensi Sukses';
@@ -275,7 +283,7 @@ function updateUI({ success, message, rfidId, nama, status_log, currentPeriod })
         appContainer.classList.add('scale-105', 'bg-error-red/20');
         statusCard.classList.replace('bg-warning-yellow/20', 'bg-error-red/20');
         statusIcon.classList.replace('bg-warning-yellow', 'bg-error-red');
-        statusIcon.innerHTML = `<svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+        statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
         statusMessage.textContent = message;
         statusMessage.classList.replace('text-warning-yellow', 'text-error-red');
         hasilTitle.textContent = 'Detail Kegagalan';
@@ -442,4 +450,3 @@ window.onload = () => {
     // 2. Setup listener
     setupHIDListener();
 };
-
