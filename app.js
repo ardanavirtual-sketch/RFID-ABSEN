@@ -76,9 +76,9 @@ function getCurrentMealPeriod() {
         return 'pagi';
     } else if (hour >= 10 && hour < 14) { 
         return 'siang';
-    } else if (hour >= 14 && hour < 18) { 
+    } else if (hour >= 16 && hour < 20) { 
         return 'sore';
-    } else if (hour >= 18 && hour < 23) { 
+    } else if (hour >= 20 && hour < 23) { 
         return 'malam';
     } else {
         // Default ke 'pagi' atau periode yang paling awal jika di luar range
@@ -450,3 +450,4 @@ window.onload = () => {
     // 2. Setup listener
     setupHIDListener();
 };
+
