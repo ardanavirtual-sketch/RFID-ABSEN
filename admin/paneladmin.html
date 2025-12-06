@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin Sistem - Modern Dark-Soft Elegance</title>
+    <title>Panel Admin Sistem - Modern Dark-Soft Elegance (Full Screen)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -63,7 +63,7 @@
         .review-table th { background-color: #e5e7eb; font-weight: 600; }
         
         /* Transisi dan Tombol */
-        .btn-primary { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); }
+        .btn-primary { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2p }
         .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); }
         
         .text-success-green { color: #10b981; } /* Emerald Green */
@@ -122,16 +122,16 @@
 
         <div class="flex-grow flex flex-col p-4 lg:p-8 custom-scroll">
             
-            <header class="w-full max-w-7xl mx-auto mb-6 bg-white p-4 rounded-xl shadow-lg border-t-4 primary-border flex justify-end items-center sticky top-4 z-20">
+            <header class="w-full mb-6 bg-white p-4 rounded-xl shadow-lg border-t-4 primary-border flex justify-end items-center sticky top-4 z-20">
                 <button id="logout-button" onclick="handleLogout()" class="bg-red-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-red-700 transition duration-300 btn-primary flex items-center">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                     Keluar (Logout)
                 </button>
             </header>
             
-            <div id="global-message" class="w-full max-w-7xl mx-auto mb-6 p-4 rounded-xl text-center font-medium hidden"></div>
+            <div id="global-message" class="w-full mb-6 p-4 rounded-xl text-center font-medium hidden"></div>
 
-            <main class="flex-grow w-full max-w-7xl mx-auto space-y-8">
+            <main class="flex-grow w-full space-y-8">
                 
                 <div id="data-karyawan-view" class="w-full">
                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl border border-gray-100">
@@ -368,11 +368,11 @@
 
     <script>
         // --- 1. KONFIGURASI SUPABASE (Dipertahankan) ---
-        const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; //
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; //
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyNZnz6jydzNm_AjvS8PKzirxUE6bNYY7ByU5Rgik9yUVhJM4bhK9lsql_iXyo5hVAaIA/exec'; //
-        const TABLE_NAME = 'data_master'; //
-        const LOG_TABLE_NAME = 'log_absen'; //
+        const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; // Ganti dengan URL Supabase Anda
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; // Ganti dengan Anon Key Supabase Anda
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyNZnz6jydzNm_AjvS8PKzirxUE6bNYY7ByU5Rgik9yUVhJM4bhK9lsql_iXyo5hVAaIA/exec'; // Ganti dengan URL Google Apps Script Anda
+        const TABLE_NAME = 'data_master'; // Nama tabel data master
+        const LOG_TABLE_NAME = 'log_absen'; // Nama tabel log absensi
         const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; //
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); //
@@ -470,7 +470,7 @@
         function showGlobalMessage(message, type = 'success') { 
             const msgEl = document.getElementById('global-message');
             msgEl.textContent = message; 
-            msgEl.className = 'w-full max-w-7xl mx-auto mb-6 p-4 rounded-xl text-center font-medium';
+            msgEl.className = 'w-full mb-6 p-4 rounded-xl text-center font-medium'; // <-- Ubah dari max-w-7xl mx-auto
             if (type === 'success') { 
                 msgEl.classList.add('bg-emerald-100', 'text-emerald-800', 'border', 'border-emerald-300');
             } else if (type === 'error') { 
