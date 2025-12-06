@@ -3,36 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin Sistem - Modern</title>
+    <title>Panel Admin Sistem - Modern Dark-Soft Elegance</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        /* Custom styles: Menggunakan Inter Font dari Google Fonts */
+        /* Menggunakan Inter Font dari Google Fonts */
         body { font-family: 'Inter', sans-serif; }
         
-        /* WARNA MODERN ELEGANT */
+        /* --- WARNA MODERN DARK-SOFT ELEGANT --- */
+        /* Warna Primer Baru: Teal/Cyan (Contoh: Cyan-600) */
+        .primary-color { color: #0891b2; } /* Cyan-600 */
+        .primary-bg { background-color: #0891b2; } /* Cyan-600 */
+        .primary-hover-bg:hover { background-color: #0e7490; } /* Cyan-700 */
+        .primary-border { border-color: #0891b2; }
+        .primary-ring { --tw-ring-color: #0891b2; }
+        
+        /* Latar Belakang Konten Utama (Soft Gray) */
+        .content-bg { background-color: #f7f9fb; } 
+
+        /* Sidebar (Darker Gray) */
+        .sidebar-bg { background-color: #1f2937; } /* Gray-800 */
+        
+        /* Menu Sidebar */
         .sidebar-menu-link {
             transition: all 0.2s ease-in-out;
             border-left: 4px solid transparent;
-            color: #d1d5db; /* Gray-300 */
+            color: #9ca3af; /* Gray-400 */
         }
         .sidebar-menu-link:hover {
-            background-color: #1f2937; /* Gray-800 */
+            background-color: #374151; /* Gray-700 */
             color: white;
         }
+        /* Item Aktif */
         .sidebar-active {
-            background-color: #4f46e5; /* Indigo-600 */
+            background-color: #0e7490; /* Cyan-700 untuk background aktif */
             color: white;
             font-weight: 700;
-            border-left-color: #818cf8; /* Indigo-300 untuk aksen */
+            border-left-color: #22d3ee; /* Cyan-300 untuk aksen */
         }
-
-        /* Latar belakang lebih terang untuk konten utama */
-        .content-bg { background-color: #f9fafb; } 
-
-        /* Gaya Tabel Admin (Dipertahankan) */
+        
+        /* Gaya Tabel Admin */
         .admin-table th, .admin-table td { padding: 12px 16px; text-align: left; }
         .admin-table th { 
             background-color: #374151; /* Dark Gray */
@@ -43,39 +55,46 @@
             position: sticky; top: 0; z-index: 10;
             border-top: 1px solid #4b5563;
         }
-        .admin-table tbody tr:nth-child(even) { background-color: #f9fafb; } /* Zebra striping */
+        .admin-table tbody tr:nth-child(even) { background-color: #eff6ff; } /* Light Blue Zebra striping */
+        .admin-table tbody tr:hover { background-color: #e0f2fe; } /* Hover effect */
         
-        /* Gaya Tabel Review (Dipertahankan) */
-        .review-table th, .review-table td { padding: 8px; font-size: 0.75rem; white-space: nowrap; }
+        /* Gaya Tabel Review */
+        .review-table th, .review-table td { padding: 10px 16px; font-size: 0.875rem; white-space: nowrap; }
         .review-table th { background-color: #e5e7eb; font-weight: 600; }
         
-        /* Transisi dan Tombol (Dipertahankan) */
-        .btn-primary { transition: all 0.2s ease-in-out; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15); }
+        /* Transisi dan Tombol */
+        .btn-primary { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1); }
         
-        .text-success-green { color: #059669; } /* Emerald Green */
-        .text-error-red { color: #dc2626; } /* Red-600 */
+        .text-success-green { color: #10b981; } /* Emerald Green */
+        .text-error-red { color: #ef4444; } /* Red-500 */
         
-        /* Sticky header log absensi (Dipertahankan) */
-        .log-table-header { position: sticky; top: 0; z-index: 10; background-color: #f3f4f6; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+        /* Sticky header log absensi */
+        .log-table-header { position: sticky; top: 0; z-index: 10; background-color: #f1f5f9; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08); }
         
-        /* Penyesuaian Scrollbar (Dipertahankan) */
+        /* Penyesuaian Scrollbar */
         .custom-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background-color: #9ca3af; border-radius: 4px; } /* Warna lebih gelap */
-        .custom-scroll::-webkit-scrollbar-track { background-color: #f3f4f6; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #94a3b8; border-radius: 4px; } /* Slate */
+        .custom-scroll::-webkit-scrollbar-track { background-color: #e2e8f0; } /* Light Slate */
+        
+        /* Modal Transition */
+        .modal-overlay { background-color: rgba(0, 0, 0, 0.6); }
+        .modal-content-transition {
+            transition: all 0.3s ease-in-out;
+        }
     </style>
 </head>
 <body class="content-bg">
 
     <div id="admin-app" class="flex min-h-screen">
         
-        <aside class="w-64 bg-gray-900 text-white flex-shrink-0 shadow-2xl z-30 h-screen sticky top-0">
+        <aside class="w-64 sidebar-bg text-white flex-shrink-0 shadow-2xl z-30 h-screen sticky top-0">
             <div class="flex flex-col h-full">
-                <div class="p-6 border-b border-gray-800">
-                    <h1 class="text-2xl font-extrabold text-indigo-400 tracking-wider">
+                <div class="p-6 border-b border-gray-700">
+                    <h1 class="text-2xl font-extrabold primary-color tracking-wider">
                         ADMIN <span class="text-white">PANEL</span>
                     </h1>
-                    <p class="text-xs text-gray-500 mt-1">Sistem Manajemen Data Karyawan</p>
+                    <p class="text-xs text-gray-400 mt-1">Sistem Manajemen Data Karyawan</p>
                 </div>
                 
                 <nav class="flex-grow p-4 space-y-2">
@@ -95,7 +114,7 @@
                     </a>
                 </nav>
 
-                <div class="p-6 border-t border-gray-800 text-xs text-gray-500">
+                <div class="p-6 border-t border-gray-700 text-xs text-gray-500">
                     <p>&copy; 2025 Admin System. V1.0</p>
                 </div>
             </div>
@@ -103,7 +122,7 @@
 
         <div class="flex-grow flex flex-col p-4 lg:p-8 custom-scroll">
             
-            <header class="w-full max-w-7xl mx-auto mb-6 bg-white p-4 rounded-xl shadow-lg border-t-4 border-indigo-600 flex justify-end items-center sticky top-4 z-20">
+            <header class="w-full max-w-7xl mx-auto mb-6 bg-white p-4 rounded-xl shadow-lg border-t-4 primary-border flex justify-end items-center sticky top-4 z-20">
                 <button id="logout-button" onclick="handleLogout()" class="bg-red-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-red-700 transition duration-300 btn-primary flex items-center">
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                     Keluar (Logout)
@@ -115,10 +134,10 @@
             <main class="flex-grow w-full max-w-7xl mx-auto space-y-8">
                 
                 <div id="data-karyawan-view" class="w-full">
-                    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl">
+                    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl border border-gray-100">
                         
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 space-y-4 sm:space-y-0 border-b pb-4">
-                            <h2 class="text-3xl font-extrabold text-gray-800">
+                            <h2 class="text-3xl font-extrabold text-gray-800 primary-color">
                                 Employee Data Management
                             </h2>
                             <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
@@ -135,12 +154,12 @@
 
                         <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6 p-4 bg-gray-50 rounded-lg border">
                             <input type="text" id="search-card" placeholder="Cari Card ID..." 
-                                class="p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 col-span-2 md:col-span-1"
+                                class="p-2 border border-gray-300 rounded-lg focus:ring-cyan-500 primary-ring focus:border-cyan-500 col-span-2 md:col-span-1"
                                 onkeypress="if(event.key === 'Enter') applySearchFilter()">
                             <input type="text" id="search-nama" placeholder="Cari Nama..." 
-                                class="p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 col-span-2 md:col-span-2"
+                                class="p-2 border border-gray-300 rounded-lg focus:ring-cyan-500 primary-ring focus:border-cyan-500 col-span-2 md:col-span-2"
                                 onkeypress="if(event.key === 'Enter') applySearchFilter()">
-                            <button onclick="applySearchFilter()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300 btn-primary flex items-center justify-center text-sm">
+                            <button onclick="applySearchFilter()" class="primary-bg text-white px-4 py-2 rounded-lg font-semibold primary-hover-bg transition duration-300 btn-primary flex items-center justify-center text-sm">
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                                 Cari
                             </button>
@@ -150,18 +169,18 @@
                             </button>
                         </div>
                         
-                        <div class="overflow-x-auto relative shadow-xl rounded-xl custom-scroll max-h-[70vh]">
-                            <table class="w-full text-sm text-left text-gray-500 admin-table">
+                        <div class="overflow-x-auto relative shadow-2xl rounded-xl custom-scroll max-h-[70vh] border border-gray-200">
+                            <table class="w-full text-sm text-left text-gray-700 admin-table">
                                 <thead class="text-xs uppercase">
                                     <tr>
                                         <th>Card ID</th>
                                         <th>NIK</th>
                                         <th>Nama</th>
                                         <th>Departemen</th>
-                                        <th class="text-blue-400">Pagi</th>
-                                        <th class="text-blue-400">Siang</th>
-                                        <th class="text-blue-400">Sore</th>
-                                        <th class="text-blue-400">Malam</th>
+                                        <th class="text-cyan-400">Pagi</th>
+                                        <th class="text-cyan-400">Siang</th>
+                                        <th class="text-cyan-400">Sore</th>
+                                        <th class="text-cyan-400">Malam</th>
                                         <th>Aksi</th>
                                     </tr>
                                 </thead>
@@ -177,14 +196,14 @@
                 </div>
                 
                 <div id="laporan-absen-view" class="w-full hidden">
-                    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl">
+                    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl border border-gray-100">
                         
                         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4">
-                            <h2 class="text-3xl font-extrabold text-gray-800">Log Absensi (Arsip 7 Hari)</h2>
+                            <h2 class="text-3xl font-extrabold text-gray-800 primary-color">Log Absensi (Arsip 7 Hari)</h2>
                             <p id="deletion-status" class="text-sm text-gray-500 font-medium mt-2 sm:mt-0"></p>
                         </div>
 
-                        <p class="text-sm text-gray-600 mb-6 border-l-4 border-indigo-400 pl-3 py-1 bg-indigo-50 rounded-md">
+                        <p class="text-sm text-gray-600 mb-6 border-l-4 border-cyan-400 pl-3 py-1 bg-cyan-50 rounded-md">
                             Menampilkan log tap kartu (sukses dan gagal) yang tersimpan untuk **7 hari terakhir**.
                             Data log di luar periode ini otomatis dihapus.
                         </p>
@@ -203,11 +222,11 @@
     </div>
 
     <div id="import-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-5xl transform transition-all duration-300 scale-95 opacity-0" id="import-content">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-5xl modal-content-transition transform scale-95 opacity-0" id="import-content">
             <h3 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Import Data Karyawan (Ganti Total)</h3>
             
             <form id="import-form">
-                <div id="step-upload" class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                <div id="step-upload" class="bg-gray-50 p-6 rounded-xl border border-gray-200">
                     <p class="text-sm text-gray-600 mb-4">Unggah file Excel (.xlsx atau .xls) yang berisi **SEMUA** data karyawan aktif.</p>
                     
                     <div class="p-3 bg-red-50 border border-red-300 rounded-lg mb-4">
@@ -220,24 +239,24 @@
                         <label for="excel-file-input" class="block text-sm font-medium text-gray-700 mb-2">Pilih File Excel:</label>
                         <input type="file" id="excel-file-input" accept=".xlsx, .xls" required 
                             class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 
-                            file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                            file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-cyan-100 file:text-cyan-700 hover:file:bg-cyan-200 cursor-pointer primary-ring">
                     </div>
                 </div>
 
                 <div id="step-review" class="hidden mt-6">
                     <h4 class="text-xl font-bold text-gray-800 mb-4">Review Data yang Akan Diproses</h4>
-                    <div class="overflow-x-auto max-h-96 border rounded-lg p-2 custom-scroll">
-                        <table class="w-full text-left review-table">
+                    <div class="overflow-x-auto max-h-96 border rounded-lg p-2 custom-scroll shadow-inner">
+                        <table class="w-full text-left review-table bg-white">
                             <thead class="sticky top-0">
                                 <tr>
                                     <th class="w-1/12">Card ID</th>
                                     <th class="w-1/12">NIK</th>
                                     <th class="w-2/12">Nama</th>
                                     <th class="w-2/12">Departemen</th>
-                                    <th class="w-1/12 text-blue-600">Pagi</th>
-                                    <th class="w-1/12 text-blue-600">Siang</th>
-                                    <th class="w-1/12 text-blue-600">Sore</th>
-                                    <th class="w-1/12 text-blue-600">Malam</th>
+                                    <th class="w-1/12 text-cyan-600">Pagi</th>
+                                    <th class="w-1/12 text-cyan-600">Siang</th>
+                                    <th class="w-1/12 text-cyan-600">Sore</th>
+                                    <th class="w-1/12 text-cyan-600">Malam</th>
                                     <th class="w-1/12">Status</th>
                                 </tr>
                             </thead>
@@ -246,12 +265,12 @@
                         </table>
                     </div>
                     <p id="review-summary" class="text-sm mt-4 text-gray-700 font-medium"></p>
-                    <p id="deletion-warning" class="text-sm text-red-600 font-semibold mt-2 hidden p-2 bg-red-100 rounded-md">⚠️ Peringatan Akhir: Proses ini akan **MENGHAPUS SEMUA DATA LAMA** dan menggantinya dengan data yang di-review di atas.</p>
+                    <p id="deletion-warning" class="text-sm text-red-600 font-semibold mt-2 hidden p-2 bg-red-100 rounded-md border border-red-200">⚠️ Peringatan Akhir: Proses ini akan **MENGHAPUS SEMUA DATA LAMA** dan menggantinya dengan data yang di-review di atas.</p>
                 </div>
 
                 <div class="flex justify-end space-x-3 mt-6">
                     <button type="button" onclick="closeImportModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition duration-150">Batal</button>
-                    <button type="button" id="review-button" onclick="parseExcelFile()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition duration-150 btn-primary flex items-center">
+                    <button type="button" id="review-button" onclick="parseExcelFile()" class="px-4 py-2 primary-bg text-white rounded-xl primary-hover-bg transition duration-150 btn-primary flex items-center">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                         Review Data
                     </button>
@@ -265,61 +284,61 @@
     </div>
 
     <div id="form-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg transform transition-all duration-300 scale-95 opacity-0" 
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg modal-content-transition transform scale-95 opacity-0" 
         id="form-content">
-            <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Tambah Karyawan Baru</h3>
+            <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2 primary-color">Tambah Karyawan Baru</h3>
             <form id="crud-form">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="mb-4">
                         <label for="form-card" class="block text-sm font-medium text-gray-700">Card ID</label>
-                        <input type="text" id="form-card" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100" autocomplete="off">
+                        <input type="text" id="form-card" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-cyan-500 primary-ring focus:border-cyan-500 disabled:bg-gray-100" autocomplete="off">
                     </div>
                     <div class="mb-4">
                         <label for="form-nik" class="block text-sm font-medium text-gray-700">NIK</label>
-                        <input type="text" id="form-nik" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" autocomplete="off">
+                        <input type="text" id="form-nik" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-cyan-500 primary-ring focus:border-cyan-500" autocomplete="off">
                     </div>
                 </div>
                 
                 <div class="mb-4">
                     <label for="form-nama" class="block text-sm font-medium text-gray-700">Nama</label>
-                    <input type="text" id="form-nama" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" autocomplete="off">
+                    <input type="text" id="form-nama" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-cyan-500 primary-ring focus:border-cyan-500" autocomplete="off">
                 </div>
                 
                 <div class="mb-6">
                     <label for="form-departemen" class="block text-sm font-medium text-gray-700">Departemen</label>
-                    <input type="text" id="form-departemen" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" autocomplete="off">
+                    <input type="text" id="form-departemen" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-cyan-500 primary-ring focus:border-cyan-500" autocomplete="off">
                 </div>
 
                 <div class="border-t border-gray-200 my-6"></div>
                 
-                <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center primary-color">
                     Absensi/Makan Periode 🍽️
                 </h4>
                 
                 <div class="grid grid-cols-2 gap-4">
                     <div class="mb-4">
                         <label for="form-pagi" class="block text-sm font-medium text-gray-700">Pagi</label>
-                        <input type="text" id="form-pagi" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                        <input type="text" id="form-pagi" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-cyan-500 primary-ring focus:border-cyan-500" placeholder="Contoh: Kantin atau kosong">
                     </div>
                     <div class="mb-4">
                         <label for="form-siang" class="block text-sm font-medium text-gray-700">Siang</label>
-                        <input type="text" id="form-siang" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                        <input type="text" id="form-siang" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-cyan-500 primary-ring focus:border-cyan-500" placeholder="Contoh: Kantin atau kosong">
                     </div>
                     <div class="mb-4">
                         <label for="form-sore" class="block text-sm font-medium text-gray-700">Sore</label>
-                        <input type="text" id="form-sore" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                        <input type="text" id="form-sore" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-cyan-500 primary-ring focus:border-cyan-500" placeholder="Contoh: Kantin atau kosong">
                     </div>
                     <div class="mb-6">
                         <label for="form-malam" class="block text-sm font-medium text-gray-700">Malam</label>
                         <input type="text" id="form-malam" class="mt-1 p-3 w-full border border-gray-300 
-                        rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                        rounded-lg focus:ring-cyan-500 primary-ring focus:border-cyan-500" placeholder="Contoh: Kantin atau kosong">
                     </div>
                 </div>
                 
                 <div class="flex justify-end space-x-3 mt-4">
                     <button type="button" 
                     onclick="closeFormModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition duration-150">Batal</button>
-                    <button type="submit" id="submit-button" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition duration-150 btn-primary flex items-center">
+                    <button type="submit" id="submit-button" class="px-4 py-2 primary-bg text-white rounded-xl primary-hover-bg transition duration-150 btn-primary flex items-center">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                         Simpan
                     </button>
@@ -329,8 +348,7 @@
     </div>
     
     <div id="delete-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md transform transition-all 
-        duration-300 scale-95 opacity-0" id="delete-content">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md modal-content-transition transform scale-95 opacity-0" id="delete-content">
             <h3 class="text-2xl font-bold text-red-600 mb-4 flex items-center">
                 <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                 Konfirmasi Penghapusan
@@ -511,7 +529,7 @@
 
             data.forEach(item => {
                 const row = dataTableBody.insertRow();
-                row.className = 'hover:bg-indigo-50 transition duration-100'; // Efek hover yang lebih halus
+                row.className = 'hover:bg-cyan-50 transition duration-100'; // Efek hover yang lebih halus
                 row.insertCell().textContent = item.card;
                 row.insertCell().textContent = item.nik;
                 row.insertCell().textContent = item.nama;
@@ -523,7 +541,7 @@
                 const actionCell = row.insertCell();
                 actionCell.innerHTML = `
                     <div class="flex space-x-2">
-                        <button onclick="openFormModal('edit', '${item.card}')" class="text-blue-600 hover:text-blue-800 font-medium p-1 rounded-lg hover:bg-blue-100 transition duration-150">Edit</button>
+                        <button onclick="openFormModal('edit', '${item.card}')" class="text-cyan-600 hover:text-cyan-800 font-medium p-1 rounded-lg hover:bg-cyan-100 transition duration-150">Edit</button>
                         <button onclick="openDeleteModal('${item.card}')" class="text-red-600 hover:text-red-800 font-medium p-1 rounded-lg hover:bg-red-100 transition duration-150">Hapus</button>
                     </div>
                 `;
@@ -591,7 +609,7 @@
             }
             
             modal.classList.remove('hidden');
-            setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 50);
+            content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100');
         }
 
         function closeFormModal() {
@@ -658,7 +676,7 @@
             const modal = document.getElementById('delete-modal'); 
             const content = document.getElementById('delete-content'); 
             modal.classList.remove('hidden');
-            setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 50); 
+            content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100');
         } 
         function closeDeleteModal() { //
             const modal = document.getElementById('delete-modal');
@@ -693,7 +711,7 @@
             const modal = document.getElementById('import-modal'); 
             const content = document.getElementById('import-content'); 
             modal.classList.remove('hidden'); 
-            setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 50); 
+            content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100');
         } 
         function closeImportModal() { //
             const modal = document.getElementById('import-modal'); 
@@ -809,7 +827,7 @@
                 
                 // Tampilkan di tabel review
                 const tr = reviewBody.insertRow();
-                tr.className = status === 'Gagal' ? 'bg-red-50' : 'bg-white';
+                tr.className = status === 'Gagal' ? 'bg-red-50' : 'bg-white hover:bg-gray-50';
 
                 tr.insertCell().textContent = card || '-';
                 tr.insertCell().textContent = nik || '-';
@@ -987,22 +1005,22 @@
                 
                 // Card untuk setiap tanggal
                 const dateSection = document.createElement('div');
-                dateSection.className = 'bg-white rounded-xl shadow-md border-t-4 border-indigo-400 overflow-hidden';
+                dateSection.className = 'bg-white rounded-xl shadow-xl border-t-4 border-cyan-400 overflow-hidden';
 
                 // Header Tanggal (Sticky)
                 const header = document.createElement('div');
-                header.className = 'log-table-header p-4 flex justify-between items-center bg-gray-50';
+                header.className = 'log-table-header p-4 flex justify-between items-center bg-gray-100';
                 header.innerHTML = `
                     <div class="flex items-center text-gray-800 space-x-3">
-                        <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <svg class="w-6 h-6 primary-color" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         <span class="text-lg font-bold">${dateForDisplay}</span>
-                        <span class="text-sm bg-indigo-500 px-2 py-0.5 rounded-full font-medium">(${logsForDate.length} log)</span>
+                        <span class="text-sm bg-cyan-600 px-2 py-0.5 rounded-full font-medium text-white">(${logsForDate.length} log)</span>
                     </div>
                     <div class="flex items-center space-x-3">
-                        <button onclick="exportSingleDayLogToExcel('${dateKey}')" class="bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-indigo-800 transition duration-300 flex items-center btn-primary">
+                        <button onclick="exportSingleDayLogToExcel('${dateKey}')" class="bg-cyan-700 text-white px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-cyan-800 transition duration-300 flex items-center btn-primary">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg> Export 
                         </button>
-                        <button onclick="toggleLogDetails(this, 'log-table-${dateKey}')" class="text-gray-700 hover:text-indigo-600 text-sm focus:outline-none p-1 rounded hover:bg-indigo-100">
+                        <button onclick="toggleLogDetails(this, 'log-table-${dateKey}')" class="text-gray-700 hover:text-cyan-600 text-sm focus:outline-none p-1 rounded hover:bg-cyan-100">
                             <svg class="w-5 h-5 transition-transform duration-300" data-toggle="collapse" viewBox="0 
                             0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                         </button> 
@@ -1016,7 +1034,7 @@
                 detailContainer.className = 'overflow-x-auto max-h-96 hidden custom-scroll'; 
                 
                 const table = document.createElement('table');
-                table.className = 'w-full text-sm text-left text-gray-600 review-table'; // Re-use review-table class
+                table.className = 'w-full text-sm text-left text-gray-700 review-table'; // Re-use review-table class
                 
                 const thead = table.createTHead();
                 thead.className = 'bg-gray-200';
@@ -1024,13 +1042,14 @@
                 ['Waktu', 'Card ID', 'Nama', 'Departemen', 'Periode', 'Status'].forEach(text => {
                     let th = document.createElement('th');
                     th.textContent = text;
-                    th.className = 'py-3 px-4 text-xs font-semibold uppercase tracking-wider';
+                    th.className = 'py-3 px-4 text-xs font-semibold uppercase tracking-wider text-gray-700';
                     headerRow.appendChild(th);
                 });
                 
                 const tbody = document.createElement('tbody');
                 logsForDate.forEach(log => {
                     const row = tbody.insertRow();
+                    row.className = 'hover:bg-cyan-50 transition duration-100';
                     const date = new Date(log.created_at);
                     const timeString = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
                     
