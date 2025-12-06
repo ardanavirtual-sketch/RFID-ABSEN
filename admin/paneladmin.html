@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin GA-Service</title>
+    <title>Panel Admin Sistem - Modern</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -80,12 +80,14 @@
                 
                 <nav class="flex-grow p-4 space-y-2">
                     <a id="sidebar-data-karyawan" 
+                       href="#" 
                        onclick="switchView('data-karyawan')" 
                        class="sidebar-menu-link sidebar-active flex items-center p-3 rounded-lg cursor-pointer">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2a3 3 0 00-5.356-1.857M17 20H7m4 0v-2a3 3 0 00-5.356-1.857M7 20v-2a3 3 0 015.356-1.857M7 20h10m-7-2a3 3 0 01-5.356-1.857M12 18h.01"></path></svg>
                         <span>Data Karyawan</span>
                     </a>
                     <a id="sidebar-laporan-absen" 
+                       href="#"
                        onclick="switchView('laporan-absen')" 
                        class="sidebar-menu-link flex items-center p-3 rounded-lg cursor-pointer">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
@@ -348,34 +350,34 @@
 
     <script>
         // --- 1. KONFIGURASI SUPABASE (Dipertahankan) ---
-        const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; [cite_start]// [cite: 1134]
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; [cite_start]// [cite: 1135]
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyNZnz6jydzNm_AjvS8PKzirxUE6bNYY7ByU5Rgik9yUVmJM4bhK9lsql_iXyo5hVAaIA/exec'; [cite_start]// [cite: 1135]
-        const TABLE_NAME = 'data_master'; [cite_start]// [cite: 1135]
-        const LOG_TABLE_NAME = 'log_absen'; [cite_start]// [cite: 1135]
-        const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; [cite_start]// [cite: 1136]
+        const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; //
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; //
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyNZnz6jydzNm_AjvS8PKzirxUE6bNYY7ByU5Rgik9yUVhJM4bhK9lsql_iXyo5hVAaIA/exec'; //
+        const TABLE_NAME = 'data_master'; //
+        const LOG_TABLE_NAME = 'log_absen'; //
+        const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; //
         
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); [cite_start]// [cite: 1136]
-        let parsedImportData = []; [cite_start]// [cite: 1137]
-        let activeCardIds = [];    [cite_start]// [cite: 1137]
-        let currentMode = 'create'; [cite_start]// [cite: 1137]
-        let cardIdToDelete = null; [cite_start]// [cite: 1137]
-        let allAbsensiLogs = []; [cite_start]// [cite: 1137, 1138]
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); //
+        let parsedImportData = []; //
+        let activeCardIds = [];    //
+        let currentMode = 'create'; //
+        let cardIdToDelete = null; //
+        let allAbsensiLogs = []; //
 
-        [cite_start]document.addEventListener('DOMContentLoaded', () => { // [cite: 1138]
-            checkAdminSession(); [cite_start]// [cite: 1138]
-            document.getElementById('crud-form').addEventListener('submit', handleFormSubmit); [cite_start]// [cite: 1138]
-            document.getElementById('import-form').addEventListener('submit', handleImportSubmit); [cite_start]// [cite: 1138]
+        document.addEventListener('DOMContentLoaded', () => { //
+            checkAdminSession(); //
+            document.getElementById('crud-form').addEventListener('submit', handleFormSubmit); //
+            document.getElementById('import-form').addEventListener('submit', handleImportSubmit); //
         });
 
-        [cite_start]// FUNGSI BARU: Mendapatkan tanggal hari N hari yang lalu [cite: 1139, 1140, 1141]
+        // FUNGSI BARU: Mendapatkan tanggal hari N hari yang lalu
         function getDateNDaysAgo(n) {
             const date = new Date();
             date.setDate(date.getDate() - n);
             return date.toISOString();
         }
 
-        [cite_start]// FUNGSI BARU: Menghapus log yang lebih lama dari 7 hari. [cite: 1141, 1142, 1143, 1144, 1145, 1146, 1147]
+        // FUNGSI BARU: Menghapus log yang lebih lama dari 7 hari.
         async function autoDeleteOldLogs() {
             const sevenDaysAgo = getDateNDaysAgo(7);
             const deletionStatusEl = document.getElementById('deletion-status');
@@ -393,7 +395,7 @@
             }
         }
         
-        [cite_start]// FUNGSI BARU: Mengecek sesi admin. [cite: 1147, 1148, 1149, 1150, 1151]
+        // FUNGSI BARU: Mengecek sesi admin.
         async function checkAdminSession() {
             const { data: { session }, error } = await supabaseClient.auth.getSession();
             if (error || !session) {
@@ -404,7 +406,7 @@
             switchView('data-karyawan');
         }
 
-        [cite_start]// FUNGSI BARU: Menangani proses Logout. [cite: 1151, 1152, 1153, 1154, 1155, 1156, 1157]
+        // FUNGSI BARU: Menangani proses Logout.
         async function handleLogout() {
             const logoutBtn = document.getElementById('logout-button');
             logoutBtn.disabled = true;
@@ -446,7 +448,7 @@
 
         // --- FUNGSI LAIN (Dipertahankan) ---
 
-        [cite_start]// Fungsi showGlobalMessage (Dipertahankan) [cite: 905, 906, 907, 908, 909]
+        // Fungsi showGlobalMessage (Dipertahankan)
         function showGlobalMessage(message, type = 'success') { 
             const msgEl = document.getElementById('global-message');
             msgEl.textContent = message; 
@@ -497,7 +499,7 @@
             renderTable(data);
         }
 
-        [cite_start]function renderTable(data) { // [cite: 935, 936, 937, 938]
+        function renderTable(data) { //
             const dataTableBody = document.getElementById('data-table-body');
             const noDataMessage = document.getElementById('no-data-message');
             dataTableBody.innerHTML = '';
@@ -528,18 +530,18 @@
             });
         }
 
-        [cite_start]function applySearchFilter() { // [cite: 939]
+        function applySearchFilter() { //
             const card = document.getElementById('search-card').value.trim();
             const nama = document.getElementById('search-nama').value.trim();
             fetchData(card, nama);
         }
-        [cite_start]function clearSearchFilter() { // [cite: 940]
+        function clearSearchFilter() { //
             document.getElementById('search-card').value = '';
             document.getElementById('search-nama').value = '';
             fetchData();
         }
 
-        [cite_start]// Fungsi openFormModal (Dipertahankan) [cite: 941, 942, 943, 944, 945, 946, 947, 948]
+        // Fungsi openFormModal (Dipertahankan)
         async function openFormModal(mode, cardId = null) { 
             currentMode = mode; 
             const modal = document.getElementById('form-modal'); 
@@ -600,7 +602,7 @@
             setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
-        [cite_start]// Fungsi handleFormSubmit (Dipertahankan) [cite: 974, 975, 976, 977, 978, 979]
+        // Fungsi handleFormSubmit (Dipertahankan)
         async function handleFormSubmit(event) {
             event.preventDefault();
             
@@ -650,7 +652,7 @@
             }
         }
 
-        [cite_start]function openDeleteModal(cardId) { // [cite: 979, 980]
+        function openDeleteModal(cardId) { //
             cardIdToDelete = cardId; 
             document.getElementById('delete-card-id').textContent = cardId; 
             const modal = document.getElementById('delete-modal'); 
@@ -658,14 +660,14 @@
             modal.classList.remove('hidden');
             setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 50); 
         } 
-        [cite_start]function closeDeleteModal() { // [cite: 980, 981]
+        function closeDeleteModal() { //
             const modal = document.getElementById('delete-modal');
             const content = document.getElementById('delete-content');
             content.classList.remove('scale-100', 'opacity-100');
             content.classList.add('scale-95', 'opacity-0');
             setTimeout(() => { modal.classList.add('hidden'); cardIdToDelete = null; }, 300);
         }
-        [cite_start]async function executeDelete() { // [cite: 982, 983, 984]
+        async function executeDelete() { //
             if (!cardIdToDelete) return; 
             const { error } = await supabaseClient.from(TABLE_NAME).delete().eq('card', cardIdToDelete);
             if (error) { 
@@ -678,7 +680,7 @@
             closeDeleteModal(); 
         }
 
-        [cite_start]// Fungsi openImportModal (Dipertahankan) [cite: 984, 985, 986]
+        // Fungsi openImportModal (Dipertahankan)
         function openImportModal() { 
             document.getElementById('excel-file-input').value = ''; 
             document.getElementById('step-upload').classList.remove('hidden'); 
@@ -693,7 +695,7 @@
             modal.classList.remove('hidden'); 
             setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 50); 
         } 
-        [cite_start]function closeImportModal() { // [cite: 986, 987]
+        function closeImportModal() { //
             const modal = document.getElementById('import-modal'); 
             const content = document.getElementById('import-content'); 
             content.classList.remove('scale-100', 'opacity-100'); 
@@ -701,7 +703,7 @@
             setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
-        [cite_start]// Fungsi parseExcelFile (Dipertahankan) [cite: 1007, 1008, 1009, 1010, 1011, 1012]
+        // Fungsi parseExcelFile (Dipertahankan)
         function parseExcelFile() { 
             const fileInput = document.getElementById('excel-file-input');
             const file = fileInput.files[0];
@@ -738,7 +740,7 @@
             reader.readAsArrayBuffer(file); 
         }
 
-        [cite_start]// Fungsi processExcelData (Dipertahankan) [cite: 1012, 1013, 1014, 1015, 1016, 1017, 1018, 1019, 1020, 1021, 1022, 1023, 1024, 1025, 1026, 1027, 1028, 1029, 1030, 1031, 1032, 1033, 1034, 1035, 1036, 1037, 1038, 1039]
+        // Fungsi processExcelData (Dipertahankan)
         function processExcelData(data) { 
             parsedImportData = []; 
             activeCardIds = []; 
@@ -846,7 +848,7 @@
             }
         }
 
-        [cite_start]// Fungsi handleImportSubmit (Dipertahankan) [cite: 1040, 1041, 1042, 1043, 1044, 1045, 1046, 1047, 1048, 1049, 1050]
+        // Fungsi handleImportSubmit (Dipertahankan)
         async function handleImportSubmit(event) {
             event.preventDefault(); 
             if (parsedImportData.length === 0) { 
@@ -894,7 +896,7 @@
             }
         }
 
-        [cite_start]// Fungsi fetchLogAbsensi (Dipertahankan) [cite: 847, 848, 849, 850, 851, 852, 853, 854, 855]
+        // Fungsi fetchLogAbsensi (Dipertahankan)
         async function fetchLogAbsensi() {
             const container = document.getElementById('log-per-tanggal-container');
             const loadingMsg = document.getElementById('loading-log-message');
@@ -957,7 +959,7 @@
             }
         }
 
-        [cite_start]// Fungsi groupLogsByDate (Dipertahankan) [cite: 855, 856, 857]
+        // Fungsi groupLogsByDate (Dipertahankan)
         function groupLogsByDate(logs) { 
             const grouped = {};
             logs.forEach(log => {
@@ -970,7 +972,7 @@
             return grouped; 
         } 
 
-        [cite_start]// Fungsi renderGroupedLogDetails (Dipertahankan) [cite: 857, 858, 859, 860, 861, 862, 863, 864, 865, 866, 867, 868, 869, 870]
+        // Fungsi renderGroupedLogDetails (Dipertahankan)
         function renderGroupedLogDetails(logs) { 
             const container = document.getElementById('log-per-tanggal-container'); 
             container.innerHTML = ''; 
@@ -1050,7 +1052,7 @@
             });
         }
 
-        [cite_start]// Fungsi toggleLogDetails (Dipertahankan) [cite: 897, 898]
+        // Fungsi toggleLogDetails (Dipertahankan)
         function toggleLogDetails(button, tableId) {
             const detailElement = document.getElementById(tableId);
             const svg = button.querySelector('svg');
@@ -1066,7 +1068,7 @@
             }
         }
 
-        [cite_start]// Fungsi exportSingleDayLogToExcel (Dipertahankan) [cite: 898, 899, 900, 901, 902, 903, 904]
+        // Fungsi exportSingleDayLogToExcel (Dipertahankan)
         function exportSingleDayLogToExcel(dateKey) { 
             const logsToExport = allAbsensiLogs.filter(log => { 
                 return new Date(log.created_at).toISOString().split('T')[0] === dateKey; 
