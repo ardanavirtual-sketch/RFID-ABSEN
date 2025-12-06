@@ -367,25 +367,31 @@
     </div>
 
     <script>
-        // --- 1. KONFIGURASI SUPABASE (Dipertahankan) ---
+        // --- 1. KONFIGURASI SUPABASE ---
         const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; // Ganti dengan URL Supabase Anda
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; // Ganti dengan Anon Key Supabase Anda
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyNZnz6jydzNm_AjvS8PKzirxUE6bNYY7ByU5Rgik9yUVhJM4bhK9lsql_iXyo5hVAaIA/exec'; // Ganti dengan URL Google Apps Script Anda
+        
+        // !!! PERHATIAN PENTING UNTUK MEMPERBAIKI MASALAH IMPORT DATA !!!
+        // URL di bawah ini HARUS merupakan URL Web App Deployment Google Apps Script yang:
+        // 1. Sudah di Deploy (bukan hanya disimpan).
+        // 2. Aksesnya (Who has access) diatur ke 'Anyone' (Siapa saja).
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxwRJFzLSTVEqbTN-Q18qSEOjgi3d-HGwgokELOc53nZVT5v0mJ2YKtUGyxZSCUCC4/exec'; // Ganti dengan URL Google Apps Script Anda yang benar
+        
         const TABLE_NAME = 'data_master'; // Nama tabel data master
         const LOG_TABLE_NAME = 'log_absen'; // Nama tabel log absensi
-        const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; //
+        const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; 
         
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); //
-        let parsedImportData = []; //
-        let activeCardIds = [];    //
-        let currentMode = 'create'; //
-        let cardIdToDelete = null; //
-        let allAbsensiLogs = []; //
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); 
+        let parsedImportData = []; 
+        let activeCardIds = [];    
+        let currentMode = 'create'; 
+        let cardIdToDelete = null; 
+        let allAbsensiLogs = []; 
 
-        document.addEventListener('DOMContentLoaded', () => { //
-            checkAdminSession(); //
-            document.getElementById('crud-form').addEventListener('submit', handleFormSubmit); //
-            document.getElementById('import-form').addEventListener('submit', handleImportSubmit); //
+        document.addEventListener('DOMContentLoaded', () => { 
+            checkAdminSession(); 
+            document.getElementById('crud-form').addEventListener('submit', handleFormSubmit); 
+            document.getElementById('import-form').addEventListener('submit', handleImportSubmit); 
         });
 
         // FUNGSI BARU: Mendapatkan tanggal hari N hari yang lalu
@@ -441,7 +447,7 @@
             }
         }
 
-        // --- Navigasi View (Disesuaikan untuk Sidebar) ---
+        // --- Navigasi View ---
         function switchView(viewId) {
             // Sembunyikan semua view
             document.getElementById('data-karyawan-view').classList.add('hidden');
@@ -464,13 +470,14 @@
             }
         }
 
-        // --- FUNGSI LAIN (Dipertahankan) ---
+        // --- FUNGSI LAIN ---
 
-        // Fungsi showGlobalMessage (Dipertahankan)
+        // Fungsi showGlobalMessage
         function showGlobalMessage(message, type = 'success') { 
             const msgEl = document.getElementById('global-message');
             msgEl.textContent = message; 
-            msgEl.className = 'w-full mb-6 p-4 rounded-xl text-center font-medium'; // <-- Ubah dari max-w-7xl mx-auto
+            // Fix: w-full tetap, tanpa max-w-7xl/mx-auto agar full-width sesuai layout
+            msgEl.className = 'w-full mb-6 p-4 rounded-xl text-center font-medium'; 
             if (type === 'success') { 
                 msgEl.classList.add('bg-emerald-100', 'text-emerald-800', 'border', 'border-emerald-300');
             } else if (type === 'error') { 
@@ -489,7 +496,7 @@
             return parts.length >= 2 ? `${parts[0]}:${parts[1]}` : time;
         }
 
-        // Fungsi fetchData (Dipertahankan)
+        // Fungsi fetchData
         async function fetchData(cardFilter = '', namaFilter = '') {
             const dataTableBody = document.getElementById('data-table-body');
             const noDataMessage = document.getElementById('no-data-message');
@@ -517,7 +524,7 @@
             renderTable(data);
         }
 
-        function renderTable(data) { //
+        function renderTable(data) { 
             const dataTableBody = document.getElementById('data-table-body');
             const noDataMessage = document.getElementById('no-data-message');
             dataTableBody.innerHTML = '';
@@ -548,18 +555,18 @@
             });
         }
 
-        function applySearchFilter() { //
+        function applySearchFilter() { 
             const card = document.getElementById('search-card').value.trim();
             const nama = document.getElementById('search-nama').value.trim();
             fetchData(card, nama);
         }
-        function clearSearchFilter() { //
+        function clearSearchFilter() { 
             document.getElementById('search-card').value = '';
             document.getElementById('search-nama').value = '';
             fetchData();
         }
 
-        // Fungsi openFormModal (Dipertahankan)
+        // Fungsi openFormModal
         async function openFormModal(mode, cardId = null) { 
             currentMode = mode; 
             const modal = document.getElementById('form-modal'); 
@@ -620,7 +627,7 @@
             setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
-        // Fungsi handleFormSubmit (Dipertahankan)
+        // Fungsi handleFormSubmit
         async function handleFormSubmit(event) {
             event.preventDefault();
             
@@ -670,7 +677,7 @@
             }
         }
 
-        function openDeleteModal(cardId) { //
+        function openDeleteModal(cardId) { 
             cardIdToDelete = cardId; 
             document.getElementById('delete-card-id').textContent = cardId; 
             const modal = document.getElementById('delete-modal'); 
@@ -678,14 +685,14 @@
             modal.classList.remove('hidden');
             content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100');
         } 
-        function closeDeleteModal() { //
+        function closeDeleteModal() { 
             const modal = document.getElementById('delete-modal');
             const content = document.getElementById('delete-content');
             content.classList.remove('scale-100', 'opacity-100');
             content.classList.add('scale-95', 'opacity-0');
             setTimeout(() => { modal.classList.add('hidden'); cardIdToDelete = null; }, 300);
         }
-        async function executeDelete() { //
+        async function executeDelete() { 
             if (!cardIdToDelete) return; 
             const { error } = await supabaseClient.from(TABLE_NAME).delete().eq('card', cardIdToDelete);
             if (error) { 
@@ -698,7 +705,7 @@
             closeDeleteModal(); 
         }
 
-        // Fungsi openImportModal (Dipertahankan)
+        // Fungsi openImportModal
         function openImportModal() { 
             document.getElementById('excel-file-input').value = ''; 
             document.getElementById('step-upload').classList.remove('hidden'); 
@@ -713,7 +720,7 @@
             modal.classList.remove('hidden'); 
             content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100');
         } 
-        function closeImportModal() { //
+        function closeImportModal() { 
             const modal = document.getElementById('import-modal'); 
             const content = document.getElementById('import-content'); 
             content.classList.remove('scale-100', 'opacity-100'); 
@@ -721,7 +728,7 @@
             setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
-        // Fungsi parseExcelFile (Dipertahankan)
+        // Fungsi parseExcelFile
         function parseExcelFile() { 
             const fileInput = document.getElementById('excel-file-input');
             const file = fileInput.files[0];
@@ -758,7 +765,7 @@
             reader.readAsArrayBuffer(file); 
         }
 
-        // Fungsi processExcelData (Dipertahankan)
+        // Fungsi processExcelData
         function processExcelData(data) { 
             parsedImportData = []; 
             activeCardIds = []; 
@@ -866,7 +873,7 @@
             }
         }
 
-        // Fungsi handleImportSubmit (Dipertahankan)
+        // Fungsi handleImportSubmit
         async function handleImportSubmit(event) {
             event.preventDefault(); 
             if (parsedImportData.length === 0) { 
@@ -881,6 +888,7 @@
             const dataToSend = JSON.stringify({ action: "import", data: parsedImportData });
 
             try {
+                // Baris ini yang rentan mengalami 'Failed to fetch' karena masalah CORS/Deployment Apps Script
                 const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
                     method: 'POST',
                     mode: 'cors',
@@ -892,6 +900,7 @@
                 });
         
                 if (!response.ok) {
+                    // Menangkap error level HTTP (400, 500)
                     throw new Error(`Server Apps Script Error: ${response.status} ${response.statusText}`);
                 }
                 
@@ -905,7 +914,8 @@
         
             } catch (error) {
                 console.error("Import Scheduling Error:", error);
-                showGlobalMessage(`Gagal menjadwalkan import: ${error.message}. Cek log Apps Script Anda.`, 'error');
+                // Pesan ini yang muncul ketika 'Failed to fetch' atau error lainnya
+                showGlobalMessage(`Gagal menjadwalkan import: ${error.message}. SILAKAN CEK ULANG URL DAN DEPLOYMENT APPS SCRIPT ANDA!`, 'error');
             } finally {
                 closeImportModal();
                 submitButton.innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Hapus Lama & Ganti Baru';
@@ -914,7 +924,7 @@
             }
         }
 
-        // Fungsi fetchLogAbsensi (Dipertahankan)
+        // Fungsi fetchLogAbsensi
         async function fetchLogAbsensi() {
             const container = document.getElementById('log-per-tanggal-container');
             const loadingMsg = document.getElementById('loading-log-message');
@@ -977,7 +987,7 @@
             }
         }
 
-        // Fungsi groupLogsByDate (Dipertahankan)
+        // Fungsi groupLogsByDate
         function groupLogsByDate(logs) { 
             const grouped = {};
             logs.forEach(log => {
@@ -990,7 +1000,7 @@
             return grouped; 
         } 
 
-        // Fungsi renderGroupedLogDetails (Dipertahankan)
+        // Fungsi renderGroupedLogDetails
         function renderGroupedLogDetails(logs) { 
             const container = document.getElementById('log-per-tanggal-container'); 
             container.innerHTML = ''; 
@@ -1071,7 +1081,7 @@
             });
         }
 
-        // Fungsi toggleLogDetails (Dipertahankan)
+        // Fungsi toggleLogDetails
         function toggleLogDetails(button, tableId) {
             const detailElement = document.getElementById(tableId);
             const svg = button.querySelector('svg');
@@ -1087,7 +1097,7 @@
             }
         }
 
-        // Fungsi exportSingleDayLogToExcel (Dipertahankan)
+        // Fungsi exportSingleDayLogToExcel
         function exportSingleDayLogToExcel(dateKey) { 
             const logsToExport = allAbsensiLogs.filter(log => { 
                 return new Date(log.created_at).toISOString().split('T')[0] === dateKey; 
