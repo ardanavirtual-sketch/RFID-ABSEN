@@ -24,7 +24,7 @@
             color: white;
             font-weight: 600;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            /* Penanda aktif yang lebih jelas (opsional) */
+            /* Penanda aktif yang lebih jelas */
             border-left: 4px solid #a5b4fc; /* Indigo-200 untuk highlight */
             margin-left: -4px;
         }
@@ -92,7 +92,10 @@
                     <span class="text-white">SISTEM</span> ADMIN
                 </h1>
                 <p class="text-xs text-gray-400 mt-1">Panel Dashboard</p>
-            </div>
+                
+                <img src="assets/Logo_Departemen.png" alt="Logo Perusahaan" 
+                     class="w-auto h-auto max-h-14 mt-4 mx-auto object-contain">
+                </div>
             
             <nav class="flex-1 p-4 space-y-2">
                 <a id="sidebar-data-karyawan" onclick="switchView('data-karyawan')" 
@@ -380,7 +383,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             checkAdminSession(); 
             document.getElementById('crud-form').addEventListener('submit', handleFormSubmit);
-            // Catatan: HandleImportSubmit telah diubah untuk langsung ke Supabase (tidak lagi melalui Apps Script)
             document.getElementById('import-form').addEventListener('submit', handleImportSubmit); 
         });
 
@@ -993,7 +995,7 @@
                 if (!grouped[dateKey]) {
                     grouped[dateKey] = [];
                 }
-                grouped[dateKey].push(log);
+                    grouped[dateKey].push(log);
             });
             return grouped;
         }
