@@ -215,7 +215,6 @@
             background: hsla(222, 47%, 14%, 0.5);
         }
 
-        /* ... [Sisa dari gaya CSS sebelumnya] ... */
         /* Review table */
         .review-table th, .review-table td {
             padding: 8px 12px;
@@ -481,9 +480,9 @@
         </aside>
         <main class="flex-1 relative z-10 p-4 lg:p-8 space-y-6 overflow-y-auto custom-scroll">
             
-            <div id="global-message" class="p-4 rounded-xl text-center font-medium hidden animate-slide-up max-w-7xl mx-auto"></div>
+            <div id="global-message" class="p-4 rounded-xl text-center font-medium hidden animate-slide-up"></div>
 
-            <div id="data-karyawan-view" class="light-content-area rounded-2xl p-6 md:p-8 animate-slide-up max-w-7xl mx-auto">
+            <div id="data-karyawan-view" class="light-content-area rounded-2xl p-6 md:p-8 animate-slide-up"> 
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                     <div>
                         <h2 class="text-2xl font-extrabold text-foreground">Employee Data Management</h2>
@@ -551,7 +550,7 @@
                 </div>
             </div>
             
-            <div id="laporan-absen-view" class="hidden glass rounded-2xl p-6 md:p-8 animate-slide-up max-w-7xl mx-auto">
+            <div id="laporan-absen-view" class="hidden glass rounded-2xl p-6 md:p-8 animate-slide-up">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-border/50 pb-4">
                     <div>
                         <h2 class="text-2xl font-extrabold text-foreground">Log Absensi (Arsip 7 Hari)</h2>
@@ -616,7 +615,7 @@
                     <div class="space-y-2">
                         <label for="excel-file-input" class="flex items-center gap-2 text-sm font-medium text-foreground">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                             </svg>
                             Pilih File Excel:
                         </label>
@@ -774,7 +773,8 @@
     </div>
 
     <script>
-        // --- 1. KONFIGURASI SUPABASE (PASTIKAN INI SESUAI) ---
+        // Inisialisasi Supabase (Ganti dengan kunci dan URL Anda)
+       // --- 1. KONFIGURASI SUPABASE (PASTIKAN INI SESUAI) ---
         const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
         const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbximVokhPy6c5pCO_ImuyPdMO1cDClvurpOcuyyozW3HkTBmxhVpFY6MtieFmMmaLUFiA/exec';
