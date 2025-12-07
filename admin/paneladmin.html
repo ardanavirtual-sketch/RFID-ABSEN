@@ -376,7 +376,7 @@
         const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbximVokhPy6c5pCO_ImuyPdMO1cDClvurpOcuyyozW3HkTBmxhVpFY6MtieFmMmaLUFiA/exec';
         const TABLE_NAME = 'data_master';
         const LOG_TABLE_NAME = 'log_absen';
-        const REQUIRED_HEADERS = ['Card', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; 
+        const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; 
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let parsedImportData = []; 
