@@ -145,7 +145,7 @@
                             <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
                                 <button onclick="openImportModal()" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-blue-700 transition duration-300 btn-primary flex items-center justify-center">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                    Import Data (Ganti Total)
+                                    Import Data (Pengajuan)
                                 </button>
                                 <button onclick="openFormModal('create')" class="bg-green-600 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-green-700 transition duration-300 btn-primary flex items-center justify-center">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
@@ -367,11 +367,13 @@
     </div>
 
     <script>
-        // --- 1. KONFIGURASI SUPABASE (PASTIKAN INI SESUAI) ---
-        const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co';
+        // --- 1. KONFIGURASI PENTING (HARAP GANTI DENGAN NILAI ANDA) ---
+        // GANTI NILAI DI BAWAH INI SESUAI DENGAN KONFIGURASI SUPABASE DAN APPS SCRIPT ANDA
+        const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
-        // URL Google Apps Script Anda untuk menerima data
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqjrOj5cV7nHgm38O8saraNUPr9XNalmbTssEdzsZmIXYmbDUbyzU0yQeEYnBfsRS7kw/exec';
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwThF8dRhGMewb8-7-jpHxX0evl0wawi-t4o2m_0tknetew6TbgyYHLVELUc-VYam7v5Q/exec';
+        // --- AKHIR KONFIGURASI ---
+        
         const TABLE_NAME = 'data_master';
         const LOG_TABLE_NAME = 'log_absen';
         const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; 
@@ -386,7 +388,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             checkAdminSession(); 
             document.getElementById('crud-form').addEventListener('submit', handleFormSubmit);
-            // Perhatian: handleImportSubmit kini mengurus pengiriman ke Google Sheet
             document.getElementById('import-form').addEventListener('submit', handleImportSubmit); 
         });
 
@@ -416,7 +417,8 @@
         async function checkAdminSession() {
             const { data: { session }, error } = await supabaseClient.auth.getSession();
             if (error || !session) {
-                window.location.href = './admin_login.html';
+                // Asumsikan ada halaman admin_login.html
+                window.location.href = './admin_login.html'; 
                 return;
             }
             switchView('data-karyawan');
@@ -892,7 +894,8 @@
                 showGlobalMessage('Tidak ada data valid yang ditemukan untuk diajukan.', 'error');
             }
         }
-
+        
+        // --- FUNGSI PENGIRIMAN DATA IMPORT KE GOOGLE APPS SCRIPT ---
         async function handleImportSubmit(event) {
             event.preventDefault();
             if (parsedImportData.length === 0) {
@@ -904,8 +907,8 @@
             submitButton.disabled = true;
             submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Mengirim Data...';
 
+            let rawResponseText = '';
             try {
-                // Siapkan data untuk Google Apps Script
                 const dataToSend = {
                     sheetName: "PendingImport", // Nama sheet tujuan
                     data: parsedImportData.map(item => [
@@ -917,16 +920,15 @@
                         item.siang, 
                         item.sore, 
                         item.malam,
-                        new Date().toLocaleString('id-ID'), // Tambahkan timestamp
-                        parsedImportData.length // Tambahkan jumlah data yang dikirim
+                        new Date().toLocaleString('id-ID'), 
+                        parsedImportData.length 
                     ]),
-                    // Opsional: header untuk membantu Apps Script mengidentifikasi kolom
                     headers: ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam', 'Timestamp Kirim', 'Jumlah Data']
                 };
 
                 const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
                     method: 'POST',
-                    mode: 'cors', // Penting untuk Apps Script
+                    mode: 'cors', 
                     headers: {
                         'Content-Type': 'application/json',
                     },
@@ -934,26 +936,40 @@
                 });
                 
                 if (!response.ok) {
-                    throw new Error(`Google Apps Script API Error: ${response.status} ${response.statusText}`);
+                    // Jika ada masalah koneksi/HTTP error (misalnya 404, 500)
+                    rawResponseText = await response.text();
+                    console.error("HTTP Response Error (Raw Text):", rawResponseText);
+                    throw new Error(`Google Apps Script API Error: HTTP Status ${response.status} ${response.statusText}`);
                 }
 
-                const result = await response.json();
+                // Ambil teks mentah sebelum parsing JSON untuk debugging
+                rawResponseText = await response.text();
+                console.log("Apps Script Raw Response:", rawResponseText);
+
+                const result = JSON.parse(rawResponseText);
 
                 if (result.status === 'SUCCESS') {
                     showGlobalMessage(`✅ Pengajuan Import Berhasil! ${parsedImportData.length} data karyawan telah dikirim ke Spreadsheet 'PendingImport'.`, 'success');
                 } else {
-                    // Asumsikan Apps Script mengembalikan objek error
-                    throw new Error(`Gagal mengirim data ke Spreadsheet: ${result.message || 'Respons tidak diketahui'}`);
+                    // Jika Apps Script merespons 200 OK, tapi dengan status: 'ERROR'
+                    throw new Error(`Gagal mengirim data ke Spreadsheet: ${result.message || 'Respons Apps Script tidak sesuai.'}`);
                 }
 
             } catch (error) {
-                console.error("Import to Sheet Error:", error);
-                showGlobalMessage(`❌ Gagal melakukan pengajuan import: ${error.message}. Cek log di browser console.`, 'error');
+                console.error("IMPORT FAILED:", error);
+                
+                let errorMessage = error.message;
+                if (errorMessage.includes('Failed to fetch')) {
+                     // Ini biasanya karena masalah CORS, URL salah, atau Apps Script belum di-deploy.
+                    errorMessage = "Koneksi gagal. Cek: 1. URL Apps Script, 2. Status Deploy Apps Script ('Anyone').";
+                }
+
+                showGlobalMessage(`❌ Gagal melakukan pengajuan import: ${errorMessage}`, 'error');
             } finally {
                 closeImportModal();
                 submitButton.innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Kirim ke PendingImport';
                 submitButton.disabled = false;
-                fetchData(); // Refresh data utama (Supabase)
+                fetchData(); 
             }
         }
         
