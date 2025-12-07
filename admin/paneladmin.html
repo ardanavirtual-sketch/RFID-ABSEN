@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin Sistem - Dashboard Profesional</title>
+    <title>Panel Admin Sistem - Modern</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,7 +12,7 @@
         /* Custom styles */
         body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; } 
         
-        /* Gaya Tabel Umum */
+        /* Gaya Tabel Admin */
         .admin-table th, .admin-table td { padding: 12px 16px; text-align: left; }
         .admin-table th { 
             background-color: #374151; /* Dark Gray */
@@ -25,7 +25,7 @@
         }
         .admin-table tbody tr:nth-child(even) { background-color: #f9fafb; }
 
-        /* Gaya Tabel Review/Log */
+        /* Gaya Tabel Review */
         .review-table th, .review-table td { padding: 8px; font-size: 0.75rem; white-space: nowrap; }
         .review-table th { background-color: #e5e7eb; font-weight: 600; position: sticky; top: 0; z-index: 5; }
         
@@ -89,14 +89,8 @@
 
             <nav class="flex-grow p-4 space-y-2">
                 
-                <div id="sidebar-dashboard" onclick="switchView('dashboard')" 
-                    class="sidebar-link flex items-center p-3 rounded-xl text-sm text-gray-200 sidebar-active">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
-                    Dashboard
-                </div>
-
                 <div id="sidebar-data-karyawan" onclick="switchView('data-karyawan')" 
-                    class="sidebar-link flex items-center p-3 rounded-xl text-sm text-gray-200">
+                    class="sidebar-link flex items-center p-3 rounded-xl text-sm text-gray-200 sidebar-active">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                     Data Karyawan
                 </div>
@@ -121,17 +115,13 @@
             
             <div id="global-message" class="w-full mb-6 p-4 rounded-xl text-center font-medium hidden"></div>
 
-            <header class="w-full mb-6 bg-white p-4 rounded-2xl shadow-md border-t-4 border-indigo-600 lg:hidden">
+            <header class="w-full mb-6 bg-white p-4 rounded-xl shadow-md border-t-4 border-indigo-600 lg:hidden">
                 <h1 class="text-2xl font-extrabold text-gray-900 leading-tight">
                     <span class="text-indigo-600">Admin</span> Panel 📊
                 </h1>
                 <nav class="flex border-b border-gray-100 mt-3">
-                    <button id="tab-dashboard-mobile" onclick="switchView('dashboard')" 
-                        class="tab-button py-2 px-3 text-xs sm:text-sm tab-active border-b-2 border-indigo-600 text-indigo-600 font-semibold">
-                        Dashboard
-                    </button>
                     <button id="tab-data-karyawan-mobile" onclick="switchView('data-karyawan')" 
-                        class="tab-button py-2 px-3 text-xs sm:text-sm">
+                        class="tab-button py-2 px-3 text-xs sm:text-sm tab-active border-b-2 border-indigo-600 text-indigo-600 font-semibold">
                         Karyawan
                     </button>
                     <button id="tab-laporan-absen-mobile" onclick="switchView('laporan-absen')" 
@@ -141,84 +131,7 @@
                 </nav>
             </header>
 
-            <div id="dashboard-view" class="w-full flex-grow">
-                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl h-full flex flex-col space-y-8">
-                    
-                    <div class="border-b pb-4">
-                        <h2 class="text-3xl font-extrabold text-gray-800">
-                            Ringkasan Utama (Dashboard)
-                        </h2>
-                        <p class="text-gray-500 mt-1">
-                            Data real-time absensi dan status karyawan.
-                        </p>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        
-                        <div class="bg-indigo-600 text-white p-6 rounded-xl shadow-lg transform hover:scale-[1.02] transition duration-300">
-                            <p class="text-sm font-medium opacity-80">Total Karyawan Aktif</p>
-                            <p id="stat-total-karyawan" class="text-4xl font-extrabold mt-1">--</p>
-                            <div class="flex items-center text-xs mt-3 opacity-90">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                <span class="font-semibold">Data Master</span>
-                            </div>
-                        </div>
-
-                        <div class="bg-emerald-500 text-white p-6 rounded-xl shadow-lg transform hover:scale-[1.02] transition duration-300">
-                            <p class="text-sm font-medium opacity-80">Log Sukses Hari Ini</p>
-                            <p id="stat-log-sukses" class="text-4xl font-extrabold mt-1">--</p>
-                            <div class="flex items-center text-xs mt-3 opacity-90">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <span class="font-semibold">Total Tap Berhasil</span>
-                            </div>
-                        </div>
-
-                        <div class="bg-red-500 text-white p-6 rounded-xl shadow-lg transform hover:scale-[1.02] transition duration-300">
-                            <p class="text-sm font-medium opacity-80">Log Gagal Hari Ini</p>
-                            <p id="stat-log-gagal" class="text-4xl font-extrabold mt-1">--</p>
-                            <div class="flex items-center text-xs mt-3 opacity-90">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <span class="font-semibold">Perlu Perhatian</span>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-gray-700 text-white p-6 rounded-xl shadow-lg transform hover:scale-[1.02] transition duration-300">
-                            <p class="text-sm font-medium opacity-80">Total Log 7 Hari Terakhir</p>
-                            <p id="stat-log-total-7hari" class="text-4xl font-extrabold mt-1">--</p>
-                            <div class="flex items-center text-xs mt-3 opacity-90">
-                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <span class="font-semibold">Total Tap Tersimpan</span>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <div class="flex-grow bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-md">
-                        <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                            <svg class="w-5 h-5 mr-2 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            5 Log Absensi Terbaru (Semua Status)
-                        </h3>
-                        <div class="overflow-y-auto max-h-80 custom-scroll">
-                            <table class="w-full text-sm text-left text-gray-600">
-                                <thead class="sticky top-0 bg-gray-100">
-                                    <tr>
-                                        <th class="px-4 py-2 font-medium text-gray-700">Waktu</th>
-                                        <th class="px-4 py-2 font-medium text-gray-700">Card ID</th>
-                                        <th class="px-4 py-2 font-medium text-gray-700">Nama</th>
-                                        <th class="px-4 py-2 font-medium text-gray-700">Periode</th>
-                                        <th class="px-4 py-2 font-medium text-gray-700">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="latest-logs-body" class="divide-y divide-gray-200">
-                                    <tr><td colspan="5" class="text-center py-4 text-gray-400">Memuat log terbaru...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="data-karyawan-view" class="w-full flex-grow hidden">
+            <div id="data-karyawan-view" class="w-full flex-grow">
                 <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl h-full flex flex-col">
                     
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 space-y-4 sm:space-y-0">
@@ -444,7 +357,7 @@
         // --- 1. KONFIGURASI SUPABASE (PASTIKAN INI SESUAI) ---
         const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1TgP25Wwj4eBN1KGECy1xzqxjrF9siHIEojiSFbxcHhsaHU-DHRM6MKY2gMZg1eviQ/exec';
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1TgP25Wwj4eBN1KGECy1xzqxjrF9siqHIEojiSFbxcHhsaHU-DHRM6MKY2gMZg1eviQ/exec';
         const TABLE_NAME = 'data_master';
         const LOG_TABLE_NAME = 'log_absen';
         const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; 
@@ -455,7 +368,7 @@
         let activeCardIds = [];    
         let currentMode = 'create';
         let cardIdToDelete = null;
-        let allAbsensiLogs = []; 
+        let allAbsensiLogs = []; // Untuk menyimpan data log yang akan diexport
 
         document.addEventListener('DOMContentLoaded', () => {
             checkAdminSession(); 
@@ -463,19 +376,17 @@
             document.getElementById('import-form').addEventListener('submit', handleImportSubmit);
         });
 
+        // FUNGSI BARU: Mendapatkan tanggal hari N hari yang lalu
         function getDateNDaysAgo(n) {
             const date = new Date();
             date.setDate(date.getDate() - n);
+            // Format YYYY-MM-DD HH:MM:SS (Supabase timestamp format)
             return date.toISOString(); 
         }
 
-        // FUNGSI BARU: Mendapatkan tanggal hari ini dalam format YYYY-MM-DD (untuk filtering log)
-        function getTodayDate() {
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // Reset time to start of day
-            return today.toISOString(); 
-        }
-
+        /**
+         * FUNGSI BARU: Menghapus log yang lebih lama dari 7 hari.
+         */
         async function autoDeleteOldLogs() {
             const sevenDaysAgo = getDateNDaysAgo(7);
             const deletionStatusEl = document.getElementById('deletion-status');
@@ -494,6 +405,9 @@
             }
         }
         
+        /**
+         * FUNGSI BARU: Mengecek sesi admin. Jika tidak ada, redirect ke halaman login.
+         */
         async function checkAdminSession() {
             const { data: { session }, error } = await supabaseClient.auth.getSession();
             
@@ -502,9 +416,12 @@
                 return;
             }
             
-            switchView('dashboard'); // Default view is now Dashboard
+            switchView('data-karyawan'); 
         }
 
+        /**
+         * FUNGSI BARU: Menangani proses Logout.
+         */
         async function handleLogout() {
             const logoutBtn = document.getElementById('logout-button');
             logoutBtn.disabled = true;
@@ -522,10 +439,9 @@
             }
         }
 
-        // --- Navigasi View (Diperbarui untuk Dashboard) ---
+        // --- Navigasi View (Diperbarui untuk Sidebar/Mobile Tab) ---
         function switchView(viewId) {
             // Hide all views
-            document.getElementById('dashboard-view').classList.add('hidden');
             document.getElementById('data-karyawan-view').classList.add('hidden');
             document.getElementById('laporan-absen-view').classList.add('hidden');
 
@@ -537,12 +453,7 @@
             });
 
 
-            if (viewId === 'dashboard') {
-                document.getElementById('dashboard-view').classList.remove('hidden');
-                document.getElementById('sidebar-dashboard').classList.add('sidebar-active');
-                document.getElementById('tab-dashboard-mobile').classList.add('border-b-2', 'border-indigo-600', 'text-indigo-600', 'font-semibold');
-                loadDashboardData(); // Call new dashboard function
-            } else if (viewId === 'data-karyawan') {
+            if (viewId === 'data-karyawan') {
                 document.getElementById('data-karyawan-view').classList.remove('hidden');
                 document.getElementById('sidebar-data-karyawan').classList.add('sidebar-active');
                 document.getElementById('tab-data-karyawan-mobile').classList.add('border-b-2', 'border-indigo-600', 'text-indigo-600', 'font-semibold');
@@ -556,106 +467,7 @@
             }
         }
 
-        // --- FUNGSI BARU: DASHBOARD DATA ---
-        
-        async function loadDashboardData() {
-            // Reset stats to loading state
-            document.getElementById('stat-total-karyawan').textContent = '...';
-            document.getElementById('stat-log-sukses').textContent = '...';
-            document.getElementById('stat-log-gagal').textContent = '...';
-            document.getElementById('stat-log-total-7hari').textContent = '...';
-            document.getElementById('latest-logs-body').innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-400">Memuat log terbaru...</td></tr>';
-
-            const todayStart = getTodayDate();
-            const sevenDaysAgo = getDateNDaysAgo(7);
-
-            try {
-                // 1. Total Karyawan (Count)
-                const { count: totalKaryawan, error: err1 } = await supabaseClient
-                    .from(TABLE_NAME)
-                    .select('*', { count: 'exact', head: true });
-                if (!err1) {
-                    document.getElementById('stat-total-karyawan').textContent = totalKaryawan;
-                } else {
-                    console.error("Dashboard Stat Error 1:", err1);
-                }
-
-                // 2. Log Absensi (7 Hari & Latest 5 Logs)
-                const { data: logs, count: totalLogs7Days, error: err2 } = await supabaseClient
-                    .from(LOG_TABLE_NAME)
-                    .select('status, created_at, card, periode, nama, departemen', { count: 'exact' })
-                    .gte('created_at', sevenDaysAgo)
-                    .order('created_at', { ascending: false });
-
-                if (!err2) {
-                    // Stat 4: Total Log 7 Hari
-                    document.getElementById('stat-log-total-7hari').textContent = totalLogs7Days;
-                    
-                    // Calculate today's stats
-                    let suksesHariIni = 0;
-                    let gagalHariIni = 0;
-                    // Filter logs that are from today (created_at >= todayStart)
-                    const todayLogs = logs.filter(log => log.created_at >= todayStart); 
-
-                    todayLogs.forEach(log => {
-                        if (log.status === 'Sukses') {
-                            suksesHariIni++;
-                        } else if (log.status === 'Gagal') {
-                            gagalHariIni++;
-                        }
-                    });
-
-                    // Stat 2 & 3: Log Hari Ini
-                    document.getElementById('stat-log-sukses').textContent = suksesHariIni;
-                    document.getElementById('stat-log-gagal').textContent = gagalHariIni;
-
-                    // Render Latest 5 Logs
-                    renderLatestLogs(logs.slice(0, 5));
-
-                } else {
-                    console.error("Dashboard Log Error 2:", err2);
-                    showGlobalMessage('Gagal memuat statistik dashboard log.', 'error');
-                }
-
-            } catch (error) {
-                console.error("Dashboard Load Error:", error);
-                showGlobalMessage('Terjadi kesalahan saat memuat dashboard data.', 'error');
-            }
-        }
-
-        function renderLatestLogs(latestLogs) {
-            const tbody = document.getElementById('latest-logs-body');
-            tbody.innerHTML = '';
-            
-            if (latestLogs.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">Belum ada log absensi dalam 7 hari terakhir.</td></tr>';
-                return;
-            }
-
-            latestLogs.forEach(log => {
-                const statusColor = log.status === 'Sukses' ? 'text-success-green' : 'text-error-red';
-                
-                const dateObj = new Date(log.created_at);
-                const logTime = dateObj.toLocaleTimeString('id-ID', {
-                    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
-                });
-                const logDate = dateObj.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
-
-                const row = document.createElement('tr');
-                row.className = 'hover:bg-gray-100 border-b border-gray-100';
-                row.innerHTML = `
-                    <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">${logTime} (${logDate})</td>
-                    <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-700 font-mono">${log.card}</td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${log.nama || 'N/A'}</td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm text-indigo-600 capitalize">${log.periode || '-'}</td>
-                    <td class="px-4 py-3 whitespace-nowrap text-sm ${statusColor} font-bold">${log.status}</td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-
-        // --- FUNGSI LAIN (Log Absensi Arsip, CRUD, dll) ---
+        // --- FUNGSI LOG ABSENSI ARSIP & EXPORT (TETAP SAMA) ---
 
         /**
          * Mengambil dan menampilkan semua log absensi 7 hari terakhir.
@@ -730,7 +542,6 @@
         function groupLogsByDate(logs) {
             const grouped = {};
             logs.forEach(log => {
-                // Pastikan format dateKey adalah YYYY-MM-DD
                 const dateKey = new Date(log.created_at).toISOString().split('T')[0];
                 if (!grouped[dateKey]) {
                     grouped[dateKey] = [];
@@ -831,6 +642,7 @@
             });
         }
         
+        // FUNGSI BARU: Untuk toggle expand/collapse detail log
         function toggleLogDetails(button, tableId) {
             const detailElement = document.getElementById(tableId);
             const svg = button.querySelector('svg');
@@ -846,6 +658,9 @@
             }
         }
 
+        /**
+         * Mengekspor data log absensi untuk satu hari tertentu ke file Excel.
+         */
         function exportSingleDayLogToExcel(dateKey) {
             const logsToExport = allAbsensiLogs.filter(log => {
                 return new Date(log.created_at).toISOString().split('T')[0] === dateKey;
@@ -1253,6 +1068,9 @@
             }
         }
 
+        /**
+ * FUNGSI IMPORT (SAMA PERSIS DENGAN YANG LAMA)
+ */
         async function handleImportSubmit(event) {
             event.preventDefault();
             
