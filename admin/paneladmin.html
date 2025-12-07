@@ -226,16 +226,16 @@
 
     <div id="import-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-5xl transform transition-all duration-300 scale-95 opacity-0" id="import-content">
-            <h3 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Import Data Karyawan (Ganti Total)</h3>
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Import Data Karyawan (Pengajuan)</h3>
             
             <form id="import-form">
                 <div id="step-upload" class="bg-gray-50 p-6 rounded-lg border border-gray-200">
                     <p class="text-sm text-gray-600 mb-4">Unggah file Excel (.xlsx atau .xls) yang berisi **SEMUA** data karyawan aktif.</p>
                     
-                    <div class="p-3 bg-red-50 border border-red-300 rounded-lg mb-4">
-                        <p class="text-xs text-red-600 font-bold">⚠️ PENTING: Proses ini adalah **PENGGANTIAN TOTAL**.</p>
-                        <p class="text-xs text-red-600 mt-1">Kolom Wajib: <code class="font-mono text-xs bg-red-100 p-1 rounded font-semibold">Card ID, NIK, Nama, Departemen, Pagi, Siang, Sore, Malam</code>.</p>
-                        <p class="text-xs text-red-600 mt-1">Semua data karyawan lama di database akan **DIHAPUS** dan digantikan dengan data dari file Excel ini.</p>
+                    <div class="p-3 bg-blue-50 border border-blue-300 rounded-lg mb-4">
+                        <p class="text-xs text-blue-600 font-bold">ℹ️ INFORMASI: Proses ini akan mengirim data ke Spreadsheet "PendingImport".</p>
+                        <p class="text-xs text-blue-600 mt-1">Kolom Wajib: <code class="font-mono text-xs bg-blue-100 p-1 rounded font-semibold">Card ID, NIK, Nama, Departemen, Pagi, Siang, Sore, Malam</code>.</p>
+                        <p class="text-xs text-blue-600 mt-1">Data yang sudah ada di database (Supabase) **TIDAK AKAN** dihapus secara otomatis. Proses sinkronisasi ke database utama akan dilakukan secara manual oleh Admin/Sistem terpisah.</p>
                     </div>
                     <div class="mb-4">
                         <label for="excel-file-input" class="block text-sm font-medium text-gray-700 mb-2">Pilih File Excel:</label>
@@ -246,7 +246,7 @@
                 </div>
 
                 <div id="step-review" class="hidden mt-6">
-                    <h4 class="text-xl font-bold text-gray-800 mb-4">Review Data yang Akan Diproses</h4>
+                    <h4 class="text-xl font-bold text-gray-800 mb-4">Review Data yang Akan Diajukan</h4>
                     <div class="overflow-x-auto max-h-96 border rounded-lg p-2 custom-scroll">
                         <table class="w-full text-left review-table">
                             <thead class="sticky top-0">
@@ -276,9 +276,9 @@
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
                         Review Data
                     </button>
-                    <button type="submit" id="import-submit-button" class="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition duration-150 btn-primary hidden flex items-center" disabled>
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        Hapus Lama & Ganti Baru
+                    <button type="submit" id="import-submit-button" class="px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition duration-150 btn-primary hidden flex items-center" disabled>
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Kirim ke PendingImport
                     </button>
                 </div>
             </form>
@@ -370,7 +370,8 @@
         // --- 1. KONFIGURASI SUPABASE (PASTIKAN INI SESUAI) ---
         const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxsCOV3ZYEtUONZRsu78jr46zQvN3jlYM2c4Gg2p66sq6ua6cFMvFOpEWdxtTvXDWxOuw/exec';
+        // URL Google Apps Script Anda untuk menerima data
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqjrOj5cV7nHgm38O8saraNUPr9XNalmbTssEdzsZmIXYmbDUbyzU0yQeEYnBfsRS7kw/exec';
         const TABLE_NAME = 'data_master';
         const LOG_TABLE_NAME = 'log_absen';
         const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; 
@@ -385,6 +386,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             checkAdminSession(); 
             document.getElementById('crud-form').addEventListener('submit', handleFormSubmit);
+            // Perhatian: handleImportSubmit kini mengurus pengiriman ke Google Sheet
             document.getElementById('import-form').addEventListener('submit', handleImportSubmit); 
         });
 
@@ -833,6 +835,7 @@
 
             for (let i = 1; i < data.length; i++) {
                 const row = data[i];
+                // Menggunakan headerMap untuk mendapatkan data
                 const item = {
                     card: String(row[headerMap['card id']]).trim() || '',
                     nik: String(row[headerMap['nik']]).trim() || '',
@@ -845,7 +848,7 @@
                 };
 
                 const isValid = item.card && item.nik && item.nama && item.departemen && !activeCardIds.includes(item.card);
-                const status = isValid ? 'Valid' : 'Invalid';
+                const status = isValid ? 'Valid' : 'Invalid (Card ID Duplikat/Kosong)';
 
                 const newRow = reviewBody.insertRow();
                 newRow.className = isValid ? 'text-gray-700' : 'bg-red-50 text-red-600';
@@ -864,8 +867,9 @@
                 statusCell.textContent = status;
 
                 if (isValid) {
+                    // Hanya push data valid
                     parsedImportData.push(item);
-                    activeCardIds.push(item.card);
+                    activeCardIds.push(item.card); // Catat Card ID yang valid untuk cek duplikat di file yang sama
                     validCount++;
                 } else {
                     invalidCount++;
@@ -874,19 +878,18 @@
 
             document.getElementById('step-upload').classList.add('hidden');
             document.getElementById('step-review').classList.remove('hidden');
-            document.getElementById('review-summary').textContent = `Ditemukan ${validCount} baris data valid dan ${invalidCount} baris data invalid/duplikat (diabaikan).`;
+            document.getElementById('review-summary').textContent = `Ditemukan ${validCount} baris data valid dan ${invalidCount} baris data invalid/duplikat di file (diabaikan).`;
+            document.getElementById('deletion-warning').classList.add('hidden'); // Sembunyikan peringatan hapus
 
             if (validCount > 0) {
                 document.getElementById('import-submit-button').classList.remove('hidden');
                 document.getElementById('review-button').classList.add('hidden');
                 document.getElementById('import-submit-button').disabled = false;
-                document.getElementById('deletion-warning').classList.remove('hidden');
             } else {
                 document.getElementById('import-submit-button').classList.add('hidden');
                 document.getElementById('review-button').classList.remove('hidden');
                 document.getElementById('import-submit-button').disabled = true;
-                document.getElementById('deletion-warning').classList.add('hidden');
-                showGlobalMessage('Tidak ada data valid yang ditemukan untuk disinkronisasi.', 'error');
+                showGlobalMessage('Tidak ada data valid yang ditemukan untuk diajukan.', 'error');
             }
         }
 
@@ -899,43 +902,58 @@
 
             const submitButton = document.getElementById('import-submit-button');
             submitButton.disabled = true;
-            submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memproses...';
-
+            submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Mengirim Data...';
 
             try {
-                // 1. Hapus semua data lama dari Supabase
-                // Menggunakan kriteria yang selalu true (neq pada kolom non-existent atau kolom yang nilainya unik dan pasti ada) untuk menghapus semua baris
-                const { error: deleteError } = await supabaseClient.from(TABLE_NAME).delete().neq('card', 'TEMPORARY_DELETE_ALL_MARKER');
+                // Siapkan data untuk Google Apps Script
+                const dataToSend = {
+                    sheetName: "PendingImport", // Nama sheet tujuan
+                    data: parsedImportData.map(item => [
+                        item.card, 
+                        item.nik, 
+                        item.nama, 
+                        item.departemen, 
+                        item.pagi, 
+                        item.siang, 
+                        item.sore, 
+                        item.malam,
+                        new Date().toLocaleString('id-ID'), // Tambahkan timestamp
+                        parsedImportData.length // Tambahkan jumlah data yang dikirim
+                    ]),
+                    // Opsional: header untuk membantu Apps Script mengidentifikasi kolom
+                    headers: ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam', 'Timestamp Kirim', 'Jumlah Data']
+                };
 
-                if (deleteError) {
-                    throw new Error(`Gagal menghapus data lama dari database: ${deleteError.message}`);
-                }
-
-                // 2. Insert data baru (mass insert)
-                const chunkSize = 1000;
-                let insertErrors = [];
-                for (let i = 0; i < parsedImportData.length; i += chunkSize) {
-                    const chunk = parsedImportData.slice(i, i + chunkSize);
-                    const { error: insertError } = await supabaseClient.from(TABLE_NAME).insert(chunk);
-                    if (insertError) {
-                        insertErrors.push(`Chunk ${Math.floor(i/chunkSize) + 1} gagal: ${insertError.message}`);
-                    }
-                }
+                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'cors', // Penting untuk Apps Script
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(dataToSend),
+                });
                 
-                if (insertErrors.length > 0) {
-                    throw new Error(`Gagal memasukkan sebagian data baru: ${insertErrors.join('; ')}`);
+                if (!response.ok) {
+                    throw new Error(`Google Apps Script API Error: ${response.status} ${response.statusText}`);
                 }
 
-                showGlobalMessage(`✅ Sinkronisasi Berhasil! ${parsedImportData.length} data karyawan baru berhasil dimasukkan.`, 'success');
+                const result = await response.json();
+
+                if (result.status === 'SUCCESS') {
+                    showGlobalMessage(`✅ Pengajuan Import Berhasil! ${parsedImportData.length} data karyawan telah dikirim ke Spreadsheet 'PendingImport'.`, 'success');
+                } else {
+                    // Asumsikan Apps Script mengembalikan objek error
+                    throw new Error(`Gagal mengirim data ke Spreadsheet: ${result.message || 'Respons tidak diketahui'}`);
+                }
 
             } catch (error) {
-                console.error("Import Error:", error);
-                showGlobalMessage(`❌ Gagal melakukan import total: ${error.message}. Cek log di browser console.`, 'error');
+                console.error("Import to Sheet Error:", error);
+                showGlobalMessage(`❌ Gagal melakukan pengajuan import: ${error.message}. Cek log di browser console.`, 'error');
             } finally {
                 closeImportModal();
-                submitButton.innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Hapus Lama & Ganti Baru';
+                submitButton.innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg> Kirim ke PendingImport';
                 submitButton.disabled = false;
-                fetchData(); 
+                fetchData(); // Refresh data utama (Supabase)
             }
         }
         
