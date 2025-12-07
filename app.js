@@ -106,8 +106,9 @@ function setupInitialState() {
     const savedDate = localStorage.getItem(LOCAL_STORAGE_DATE_KEY);
     const today = getTodayDateString();
 
-    // Reset jika tanggal berbeda
+    // --- LOGIKA RESET HARIAN ---
     if (savedDate !== today) {
+        // Hapus total log absen sukses dan gagal
         logCounters = {
             total: { success: 0, fail: 0 },
             pagi: { success: 0, fail: 0 },
@@ -115,8 +116,12 @@ function setupInitialState() {
             sore: { success: 0, fail: 0 },
             malam: { success: 0, fail: 0 }
         };
+        // Simpan tanggal baru
         localStorage.setItem(LOCAL_STORAGE_DATE_KEY, today);
-        localStorage.removeItem(LOCAL_STORAGE_KEY); // Hapus log lama
+        // Hapus log lama (untuk memastikan hitungan dimulai dari 0 jika user pindah tab/browser)
+        localStorage.removeItem(LOCAL_STORAGE_KEY); 
+        // Kosongkan state deduplikasi karena ini hari baru
+        lastTapStatus.clear(); 
         console.log("Counter presensi direset karena pergantian hari.");
     } else if (savedCounters) {
         // Muat state jika tanggal sama
@@ -138,6 +143,8 @@ function setupInitialState() {
             };
         }
     }
+    // --- AKHIR LOGIKA RESET HARIAN ---
+    
     updateUILogCounters();
 }
 
@@ -450,5 +457,3 @@ window.onload = () => {
     // 2. Setup listener
     setupHIDListener();
 };
-
-
