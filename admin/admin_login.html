@@ -64,9 +64,12 @@
 
     <script>
         // Inisialisasi Supabase Client (Pastikan API Key dan URL sudah benar!)
-        const supabaseUrl = 'YOUR_SUPABASE_URL'; 
-        const supabaseAnonKey = 'YOUR_SUPABASE_ANON_KEY';
-        const supabaseClient = supabase.createClient(supabaseUrl, supabaseAnonKey);
+        // --- 1. KONFIGURASI SUPABASE (HARUS SAMA DENGAN paneladmin.html) ---
+        // Ganti nilai di bawah ini dengan konfigurasi Supabase Anda yang sebenarnya
+        const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const loginButton = document.getElementById('login-button');
         const errorMessageDiv = document.getElementById('error-message');
