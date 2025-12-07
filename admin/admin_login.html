@@ -25,74 +25,89 @@
             box-shadow: 0 6px 10px rgba(99, 102, 241, 0.4); /* Bayangan biru yang halus */
         }
         .login-card {
-            backdrop-filter: blur(10px); 
-            background-color: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            backdrop-filter: blur(10px); /* Efek blur ringan */
+            background-color: rgba(255, 255, 255, 0.95); /* Sedikit transparan */
+        }
+        /* Ikon loading berputar */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
         }
     </style>
 </head>
 <body class="flex items-center justify-center min-h-screen p-4">
 
-    <div class="login-card w-full max-w-md p-8 rounded-xl border border-gray-200">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-gray-800">Panel Admin Login</h1>
-            <p class="text-gray-500 mt-1">Masuk untuk mengakses dashboard</p>
-        </div>
-
-        <div id="error-message" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
-            <strong class="font-bold">Error!</strong>
-            <span class="block sm:inline" id="error-text"></span>
+    <div class="w-full max-w-md">
+        <div class="text-center mb-10">
+            <div class="inline-flex p-3 rounded-full bg-indigo-600 shadow-xl mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <h1 class="text-3xl font-extrabold text-gray-900">Selamat Datang, Admin</h1>
+            <p class="text-gray-500 mt-2">Akses panel Admin-GAS.</p>
         </div>
         
-        <form id="login-form" method="POST">
-            <div class="mb-5">
-                <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email Admin</label>
-                <input type="email" id="email" name="email" required autocomplete="email" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out" placeholder="admin@example.com">
-            </div>
+        <div class="login-card p-8 rounded-xl shadow-2xl border-t-4 border-indigo-600 transform transition-all duration-300 hover:shadow-3xl">
+            <form id="login-form" onsubmit="handleLogin(event)">
+                
+                <div id="error-message" class="bg-red-50 text-red-700 px-4 py-3 rounded-lg border border-red-300 mb-4 hidden" role="alert">
+                    <span id="error-text" class="block text-sm font-medium"></span>
+                </div>
 
-            <div class="mb-6">
-                <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
-                <input type="password" id="password" name="password" required autocomplete="current-password" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out" placeholder="********">
-            </div>
-
-            <button type="submit" id="login-button" class="btn-login w-full bg-indigo-600 text-white py-2.5 rounded-lg text-lg font-semibold hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50 shadow-lg shadow-indigo-500/50">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3v-12a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
-                Masuk
-            </button>
-        </form>
+                <div class="mb-5">
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" id="email" required autocomplete="username"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                           placeholder="admin@perusahaan.com">
+                </div>
+                
+                <div class="mb-6">
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" required autocomplete="current-password"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                           placeholder="••••••••">
+                </div>
+                
+                <button type="submit" id="login-button"
+                        class="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold btn-login hover:bg-indigo-700 transition duration-150"
+                        disabled>
+                    Masuk ke Panel Admin
+                </button>
+            </form>
+        </div>
     </div>
 
     <script>
-        // Inisialisasi Supabase Client (Pastikan API Key dan URL sudah benar!)
         // --- 1. KONFIGURASI SUPABASE (HARUS SAMA DENGAN paneladmin.html) ---
         // Ganti nilai di bawah ini dengan konfigurasi Supabase Anda yang sebenarnya
         const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
+        
         const loginButton = document.getElementById('login-button');
         const errorMessageDiv = document.getElementById('error-message');
         const errorTextSpan = document.getElementById('error-text');
-        const defaultButtonText = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3v-12a3 3 0 013-3h7a3 3 0 013 3v1"/></svg> Masuk';
-        const loadingSpinner = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
 
+        // Ikon loading SVG
+        const loadingSpinner = '<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
+        const defaultButtonText = 'Masuk ke Panel Admin';
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // Cek sesi saat halaman login dimuat
-            checkSessionAndRedirect(); 
-            document.getElementById('login-form').addEventListener('submit', handleLogin);
-        });
-        
-        /**
-         * PERUBAHAN BARU: Cek apakah pengguna sudah login. Jika ya, arahkan ke panel admin terbaru.
-         */
-        async function checkSessionAndRedirect() {
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Cek apakah user sudah login. Jika iya, redirect langsung
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (session) {
-                window.location.href = './paneladminterbaru.html'; // REDIRECT KE PANEL ADMIN BARU
+                window.location.href = './paneladmin.html';
+                return;
             }
-        }
+            // Aktifkan tombol login setelah cek sesi selesai
+            loginButton.disabled = false; 
+            loginButton.innerHTML = defaultButtonText;
+        });
+
 
         /**
          * Menangani proses login menggunakan Email dan Password.
@@ -122,9 +137,9 @@
                 loginButton.disabled = false;
                 loginButton.innerHTML = defaultButtonText;
             } else if (data.session) {
-                // Login sukses, redirect ke halaman admin terbaru
+                // Login sukses, redirect ke halaman admin
                 loginButton.innerHTML = 'Berhasil! Redirecting...'; 
-                window.location.href = './paneladminterbaru.html'; // PERUBAHAN PENTING
+                window.location.href = './paneladmin.html';
             }
         }
     </script>
