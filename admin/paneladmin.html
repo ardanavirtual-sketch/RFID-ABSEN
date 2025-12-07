@@ -1,135 +1,328 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<title>Admin Panel Modern</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Admin Sistem</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* Custom styles */
+        /* Menggunakan Inter Font dari Google Fonts */
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; } /* Latar belakang lebih terang */
+        .container { max-width: 1300px; } /* Lebar container lebih besar */
+        .modal-overlay { background-color: rgba(30, 41, 59, 0.7); backdrop-filter: blur(2px); } /* Overlay modal lebih gelap & blur */
+        
+        /* Gaya Tabel Admin */
+        .admin-table th, .admin-table td { padding: 12px 16px; text-align: left; }
+        .admin-table th { 
+            background-color: #374151; /* Dark Gray */
+            color: white; 
+            font-weight: 600;
+            font-size: 0.8rem;
+            letter-spacing: 0.05em;
+            position: sticky; top: 0; z-index: 10;
+            border-top: 1px solid #4b5563; /* Pemisah di atas */
+        }
+        .admin-table tbody tr:nth-child(even) { background-color: #f9fafb; } /* Zebra striping */
 
-<!-- Font & Tailwind -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-<style>
-body { font-family: 'Inter', sans-serif; background:#f1f5f9 }
-.sidebar {
-  background: linear-gradient(180deg,#020617,#020617,#020617)
-}
-.sidebar a.active {
-  background:#1e293b
-}
-</style>
+        /* Gaya Tabel Review */
+        .review-table th, .review-table td { padding: 8px; font-size: 0.75rem; white-space: nowrap; }
+        .review-table th { background-color: #e5e7eb; font-weight: 600; }
+        
+        /* Transisi dan Tombol */
+        .btn-primary { 
+            transition: all 0.2s ease-in-out; 
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+        }
+        .btn-primary:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15); 
+        }
+        
+        /* Navigasi Tab Modern */
+        .tab-button {
+            border-bottom: 3px solid transparent;
+            color: #6b7280; /* Gray-500 */
+            transition: all 0.2s;
+            position: relative;
+        }
+        .tab-button:hover {
+            color: #1e3a8a; /* Dark Blue */
+        }
+        .tab-active { 
+            border-color: #4f46e5; /* Primary Blue/Indigo */
+            font-weight: 700; 
+            color: #1f2937; /* Darker text for active */
+        }
+        
+        .text-success-green { color: #059669; } /* Emerald Green */
+        .text-error-red { color: #dc2626; } /* Red-600 */
+        
+        /* Sticky header log absensi */
+        .log-table-header { 
+            position: sticky; top: 0; z-index: 10; 
+            background-color: #f3f4f6; 
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Penyesuaian Scrollbar */
+        .custom-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-track { background-color: #f3f4f6; }
+    </style>
 </head>
+<body>
 
-<body class="min-h-screen flex">
-
-<!-- ================= SIDEBAR DARK ================= -->
-<aside class="sidebar w-64 fixed inset-y-0 left-0 flex flex-col text-white shadow-xl">
-
-  <div class="p-6 border-b border-white/10">
-    <h1 class="text-xl font-extrabold text-indigo-400 tracking-wide">ADMIN PANEL</h1>
-    <p class="text-xs text-gray-400 mt-1">Dashboard System</p>
-  </div>
-
-  <nav class="flex-1 p-4 space-y-2">
-    <a id="tab-data-karyawan" onclick="switchView('data-karyawan')" class="active flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 transition cursor-pointer">
-      📋 <span>Data Karyawan</span>
-    </a>
-
-    <a id="tab-laporan-absen" onclick="switchView('laporan-absen')" class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-800 transition cursor-pointer">
-      📊 <span>Log Absensi</span>
-    </a>
-  </nav>
-
-  <div class="p-4 border-t border-white/10">
-    <button onclick="handleLogout()" class="w-full bg-red-600 hover:bg-red-700 py-2 rounded-xl font-semibold transition">
-      Logout
-    </button>
-  </div>
-
-</aside>
-
-<!-- ================= MAIN CONTENT ================= -->
-<main class="ml-64 w-full min-h-screen p-8">
-
-  <!-- Header -->
-  <header class="bg-white shadow-xl rounded-2xl p-6 flex justify-between items-center mb-6">
-    <h1 class="text-3xl font-extrabold text-gray-800">Dashboard Admin</h1>
-  </header>
-
-  <!-- GLOBAL MESSAGE -->
-  <div id="global-message" class="hidden mb-6"></div>
-
-  <!-- ================= DATA KARYAWAN ================= -->
-  <div id="data-karyawan-view">
-
-    <div class="bg-white shadow-2xl rounded-2xl p-8 mb-10">
-
-      <div class="flex justify-between items-center mb-8">
-        <h2 class="text-2xl font-bold">Manajemen Data Karyawan</h2>
-
-        <div class="flex gap-3">
-          <button onclick="openImportModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-semibold">
-            Import Excel
-          </button>
-          <button onclick="openFormModal('create')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-xl font-semibold">
-            Tambah Data
-          </button>
+    <div id="admin-app" class="min-h-screen flex flex-col items-center p-4 lg:p-10">
+        
+        <header class="w-full container mx-auto mb-6 bg-white p-6 rounded-2xl shadow-xl border-t-4 border-indigo-600">
+            <div class="flex justify-between items-center flex-wrap gap-4">
+                <h1 class="text-4xl font-extrabold text-gray-900 leading-tight">
+                    <span class="text-indigo-600">Admin</span> Panel 📊
+                </h1>
+                <button id="logout-button" onclick="handleLogout()" class="bg-red-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-red-700 transition duration-300 btn-primary">
+                    Keluar (Logout)
+                </button>
+            </div>
+        </header>
+        
+        <div id="global-message" class="w-full container mx-auto mb-6 p-4 rounded-xl text-center font-medium hidden"></div>
+        
+        <div class="w-full container mx-auto mb-6 bg-white rounded-xl shadow-lg p-1">
+            <nav class="flex border-b border-gray-100">
+                <button id="tab-data-karyawan" onclick="switchView('data-karyawan')" 
+                    class="tab-button py-3 px-6 text-sm sm:text-base tab-active">
+                    Data Karyawan
+                </button>
+                <button id="tab-laporan-absen" onclick="switchView('laporan-absen')" 
+                    class="tab-button py-3 px-6 text-sm sm:text-base">
+                    Laporan Log Absensi Arsip
+                </button>
+            </nav>
         </div>
-      </div>
 
-      <!-- FILTER -->
-      <div class="grid md:grid-cols-5 gap-3 mb-6">
-        <input id="search-card" class="border p-2 rounded-lg" placeholder="Cari Card ID">
-        <input id="search-nama" class="md:col-span-2 border p-2 rounded-lg" placeholder="Cari Nama">
-        <button onclick="applySearchFilter()" class="bg-indigo-600 text-white rounded-lg">Cari</button>
-        <button onclick="clearSearchFilter()" class="bg-gray-400 text-white rounded-lg">Reset</button>
-      </div>
+        <div id="data-karyawan-view" class="w-full container mx-auto">
+            <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl">
+                
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 space-y-4 sm:space-y-0">
+                    <h2 class="text-3xl font-extrabold text-gray-800">
+                        Employee Data Management
+                    </h2>
+                    <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
+                        <button onclick="openImportModal()" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-blue-700 transition duration-300 btn-primary flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            Import Data (Ganti Total)
+                        </button>
+                        <button onclick="openFormModal('create')" class="bg-green-600 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-green-700 transition duration-300 btn-primary flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            Tambah Karyawan Baru
+                        </button>
+                    </div>
+                </div>
 
-      <!-- TABLE -->
-      <div class="overflow-x-auto rounded-xl shadow border">
-        <table class="min-w-full text-sm">
-          <thead class="bg-gray-900 text-white">
-            <tr>
-              <th class="p-3">Card</th><th>NIK</th><th>Nama</th><th>Departemen</th>
-              <th>Pagi</th><th>Siang</th><th>Sore</th><th>Malam</th><th>Aksi</th>
-            </tr>
-          </thead>
-          <tbody id="data-table-body" class="bg-white"></tbody>
-        </table>
-      </div>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6 p-4 bg-gray-50 rounded-lg border">
+                    <input type="text" id="search-card" placeholder="Cari Card ID..." 
+                           class="p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 col-span-2 md:col-span-1"
+                           onkeypress="if(event.key === 'Enter') applySearchFilter()">
+                    <input type="text" id="search-nama" placeholder="Cari Nama..." 
+                           class="p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 col-span-2 md:col-span-2"
+                           onkeypress="if(event.key === 'Enter') applySearchFilter()">
+                    <button onclick="applySearchFilter()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300 btn-primary flex items-center justify-center text-sm">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        Cari
+                    </button>
+                    <button onclick="clearSearchFilter()" class="bg-gray-400 text-white px-4 py-2 rounded-lg font-semibold hover:bg-gray-500 transition duration-300 flex items-center justify-center text-sm">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m-15.356-2a8.001 8.001 0 0115.357-2m0 0H15"></path></svg>
+                        Reset
+                    </button>
+                </div>
+                
+                <div class="overflow-x-auto relative shadow-xl rounded-xl custom-scroll max-h-[70vh]">
+                    <table class="w-full text-sm text-left text-gray-500 admin-table">
+                        <thead class="text-xs uppercase">
+                            <tr>
+                                <th>Card ID</th>
+                                <th>NIK</th>
+                                <th>Nama</th>
+                                <th>Departemen</th>
+                                <th class="text-blue-400">Pagi</th>
+                                <th class="text-blue-400">Siang</th>
+                                <th class="text-blue-400">Sore</th>
+                                <th class="text-blue-400">Malam</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="data-table-body" class="bg-white divide-y divide-gray-100">
+                            </tbody>
+                    </table>
+                </div>
 
-      <div id="no-data-message" class="hidden text-center py-10 text-gray-500"></div>
+                <div id="no-data-message" class="text-center py-10 text-gray-500 font-medium hidden">
+                    Belum ada data karyawan yang tersimpan.
+                </div>
+            </div>
+        </div>
+        
+        <div id="laporan-absen-view" class="w-full container mx-auto hidden">
+            <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl">
+                
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4">
+                    <h2 class="text-3xl font-extrabold text-gray-800">Log Absensi (Arsip 7 Hari)</h2>
+                    <p id="deletion-status" class="text-sm text-gray-500 font-medium mt-2 sm:mt-0"></p>
+                </div>
 
+                <p class="text-sm text-gray-600 mb-6 border-l-4 border-indigo-400 pl-3 py-1 bg-indigo-50 rounded-md">
+                    Menampilkan log tap kartu (sukses dan gagal) yang tersimpan untuk **7 hari terakhir**. Data log di luar periode ini otomatis dihapus.
+                </p>
+                
+                <div id="log-per-tanggal-container" class="space-y-6">
+                    </div>
+                
+                <div id="loading-log-message" class="py-6 text-center text-gray-500 font-medium">Memuat detail log absensi...</div>
+                <div id="no-log-message" class="py-6 text-center text-gray-500 font-medium hidden">Tidak ada data absensi yang terarsip dalam 7 hari terakhir.</div>
+
+            </div>
+        </div>
+        </div>
+
+    <div id="import-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-5xl transform transition-all duration-300 scale-95 opacity-0" id="import-content">
+            <h3 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Import Data Karyawan (Ganti Total)</h3>
+            
+            <form id="import-form">
+                <div id="step-upload" class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                    <p class="text-sm text-gray-600 mb-4">Unggah file Excel (.xlsx atau .xls) yang berisi **SEMUA** data karyawan aktif.</p>
+                    
+                    <div class="p-3 bg-red-50 border border-red-300 rounded-lg mb-4">
+                        <p class="text-xs text-red-600 font-bold">⚠️ PENTING: Proses ini adalah **PENGGANTIAN TOTAL**.</p>
+                        <p class="text-xs text-red-600 mt-1">Kolom Wajib: <code class="font-mono text-xs bg-red-100 p-1 rounded font-semibold">Card ID, NIK, Nama, Departemen, Pagi, Siang, Sore, Malam</code>.</p>
+                        <p class="text-xs text-red-600 mt-1">Semua data karyawan lama di database akan **DIHAPUS** dan digantikan dengan data dari file Excel ini.</p>
+                    </div>
+                    <div class="mb-4">
+                        <label for="excel-file-input" class="block text-sm font-medium text-gray-700 mb-2">Pilih File Excel:</label>
+                        <input type="file" id="excel-file-input" accept=".xlsx, .xls" required 
+                            class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+                    </div>
+                </div>
+
+                <div id="step-review" class="hidden mt-6">
+                    <h4 class="text-xl font-bold text-gray-800 mb-4">Review Data yang Akan Diproses</h4>
+                    <div class="overflow-x-auto max-h-96 border rounded-lg p-2 custom-scroll">
+                        <table class="w-full text-left review-table">
+                            <thead class="sticky top-0">
+                                <tr>
+                                    <th class="w-1/12">Card ID</th>
+                                    <th class="w-1/12">NIK</th>
+                                    <th class="w-2/12">Nama</th>
+                                    <th class="w-2/12">Departemen</th>
+                                    <th class="w-1/12 text-blue-600">Pagi</th>
+                                    <th class="w-1/12 text-blue-600">Siang</th>
+                                    <th class="w-1/12 text-blue-600">Sore</th>
+                                    <th class="w-1/12 text-blue-600">Malam</th>
+                                    <th class="w-1/12">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="review-table-body">
+                                </tbody>
+                        </table>
+                    </div>
+                    <p id="review-summary" class="text-sm mt-4 text-gray-700 font-medium"></p>
+                    <p id="deletion-warning" class="text-sm text-red-600 font-semibold mt-2 hidden p-2 bg-red-100 rounded-md">⚠️ Peringatan Akhir: Proses ini akan **MENGHAPUS SEMUA DATA LAMA** dan menggantinya dengan data yang di-review di atas.</p>
+                    </div>
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="closeImportModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition duration-150">Batal</button>
+                    <button type="button" id="review-button" onclick="parseExcelFile()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition duration-150 btn-primary flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                        Review Data
+                    </button>
+                    <button type="submit" id="import-submit-button" class="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition duration-150 btn-primary hidden flex items-center" disabled>
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                        Hapus Lama & Ganti Baru
+                    </button>
+                    </div>
+            </form>
+        </div>
     </div>
-  </div>
 
-  <!-- ================= LOG ABSENSI ================= -->
-  <div id="laporan-absen-view" class="hidden">
-    <div class="bg-white shadow-2xl rounded-2xl p-8">
-      <h2 class="text-2xl font-bold mb-4">Log Absensi 7 Hari Terakhir</h2>
+    <div id="form-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg transform transition-all duration-300 scale-95 opacity-0" id="form-content">
+            <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Tambah Karyawan Baru</h3>
+            <form id="crud-form">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label for="form-card" class="block text-sm font-medium text-gray-700">Card ID</label>
+                        <input type="text" id="form-card" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100" autocomplete="off">
+                    </div>
+                    <div class="mb-4">
+                        <label for="form-nik" class="block text-sm font-medium text-gray-700">NIK</label>
+                        <input type="text" id="form-nik" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" autocomplete="off">
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="form-nama" class="block text-sm font-medium text-gray-700">Nama</label>
+                    <input type="text" id="form-nama" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" autocomplete="off">
+                </div>
+                <div class="mb-6">
+                    <label for="form-departemen" class="block text-sm font-medium text-gray-700">Departemen</label>
+                    <input type="text" id="form-departemen" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" autocomplete="off">
+                </div>
 
-      <div id="log-per-tanggal-container" class="space-y-6"></div>
-
-      <div id="loading-log-message" class="py-6 text-center text-gray-500">
-        Memuat data...
-      </div>
-
-      <div id="no-log-message" class="hidden text-center py-6 text-gray-500">
-        Tidak ada data log
-      </div>
+                <div class="border-t border-gray-200 my-6"></div>
+                <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+                    Absensi/Makan Periode 🍽️
+                </h4>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="mb-4">
+                        <label for="form-pagi" class="block text-sm font-medium text-gray-700">Pagi</label>
+                        <input type="text" id="form-pagi" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                    </div>
+                    <div class="mb-4">
+                        <label for="form-siang" class="block text-sm font-medium text-gray-700">Siang</label>
+                        <input type="text" id="form-siang" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                    </div>
+                    <div class="mb-4">
+                        <label for="form-sore" class="block text-sm font-medium text-gray-700">Sore</label>
+                        <input type="text" id="form-sore" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                    </div>
+                    <div class="mb-6">
+                        <label for="form-malam" class="block text-sm font-medium text-gray-700">Malam</label>
+                        <input type="text" id="form-malam" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-4">
+                    <button type="button" onclick="closeFormModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition duration-150">Batal</button>
+                    <button type="submit" id="submit-button" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition duration-150 btn-primary flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        Simpan
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-  </div>
-
-</main>
-
-<!-- ================= MODAL DIAMBIL FULL DARI FILE ANDA (TETAP SAMA) ================= -->
-<!-- IMPORT MODAL -->
-<!-- FORM MODAL -->
-<!-- DELETE MODAL -->
-
-<!-- ================= SCRIPT ASLI ANDA TETAP DARI FILE ================= -->
+    
+    <div id="delete-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md transform transition-all duration-300 scale-95 opacity-0" id="delete-content">
+            <h3 class="text-2xl font-bold text-red-600 mb-4 flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                Konfirmasi Penghapusan
+            </h3>
+            <p class="text-gray-700 mb-6">Anda yakin ingin menghapus data karyawan dengan Card ID: <span id="delete-card-id" class="font-bold text-red-700"></span>? **Aksi ini tidak dapat dibatalkan.**</p>
+            <div class="flex justify-end space-x-3">
+                <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition duration-150">Batal</button>
+                <button type="button" onclick="executeDelete()" class="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition duration-150 btn-primary flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3"></path></svg>
+                    Hapus Permanen
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // --- 1. KONFIGURASI SUPABASE (PASTIKAN INI SESUAI) ---
