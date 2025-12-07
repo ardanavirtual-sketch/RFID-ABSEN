@@ -12,7 +12,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script>
-        // Konfigurasi Tailwind CSS (Tema Dark Mode Default)
         tailwind.config = {
             theme: {
                 extend: {
@@ -66,9 +65,9 @@
             z-index: 0;
         }
 
-        /* Glass morphism (Dark Mode style for Sidebar and Laporan Absen) */
+        /* Glass morphism */
         .glass {
-            background: hsla(222, 47%, 8%, 0.9); /* Sedikit lebih gelap agar lebih menonjol */
+            background: hsla(222, 47%, 8%, 0.8);
             backdrop-filter: blur(16px);
             border: 1px solid hsla(222, 47%, 18%, 0.5);
         }
@@ -94,102 +93,38 @@
             background: transparent;
         }
 
-        /* Sidebar Navigation Link Style */
-        .sidebar-nav-item {
-            display: flex;
-            align-items: center;
-            padding: 12px 16px;
-            border-radius: 12px;
+        /* Tab styles */
+        .tab-button {
+            position: relative;
+            padding: 12px 24px;
             font-size: 14px;
             font-weight: 500;
             color: hsl(215, 20%, 55%);
             transition: all 0.2s;
-            gap: 12px;
         }
-        .sidebar-nav-item:hover {
-            background: hsl(222, 47%, 14%);
+        .tab-button:hover {
             color: hsl(210, 40%, 98%);
         }
-        .sidebar-nav-active {
+        .tab-button::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
             background: hsl(234, 89%, 74%);
-            color: hsl(222, 47%, 6%);
+            transform: scaleX(0);
+            transition: transform 0.2s;
+        }
+        .tab-active {
+            color: hsl(210, 40%, 98%);
             font-weight: 600;
-            box-shadow: 0 4px 15px hsla(234, 89%, 74%, 0.3);
         }
-        .sidebar-nav-active:hover {
-            background: hsl(234, 89%, 74%);
-            color: hsl(222, 47%, 6%);
+        .tab-active::after {
+            transform: scaleX(1);
         }
 
-
-        /* ---------------------------------------------------------------------- */
-        /* LIGHT MODE STYLES for Data Karyawan View (Permintaan User) */
-        /* ---------------------------------------------------------------------- */
-        .light-content-area {
-            background-color: hsl(0, 0%, 98%); /* Latar belakang terang (Hampir Putih) */
-            color: hsl(222, 47%, 6%); /* Teks gelap */
-            border: 1px solid hsl(210, 40%, 90%);
-            border-radius: 16px;
-            box-shadow: 0 10px 30px hsla(0, 0%, 0%, 0.1);
-        }
-        
-        .light-content-area h2, .light-content-area .text-foreground {
-            color: hsl(222, 47%, 6%) !important; /* Foreground menjadi gelap */
-        }
-        .light-content-area p, .light-content-area .text-muted-foreground {
-            color: hsl(215, 20%, 35%) !important; /* Muted foreground menjadi agak gelap */
-        }
-
-        .light-content-area .bg-secondary\/30 {
-            background-color: hsla(210, 40%, 80%, 0.3) !important;
-        }
-        .light-content-area .border-border\/50 {
-            border-color: hsla(210, 40%, 90%, 0.5) !important;
-        }
-        .light-content-area .input {
-            background: hsla(210, 40%, 95%, 0.8);
-            border: 1px solid hsl(210, 40%, 90%);
-            color: hsl(222, 47%, 6%);
-        }
-        .light-content-area .input::placeholder {
-            color: hsl(215, 20%, 55%);
-        }
-        .light-content-area .btn-secondary {
-            background: hsl(210, 40%, 90%);
-            color: hsl(222, 47%, 6%);
-        }
-        .light-content-area .btn-secondary:hover:not(:disabled) {
-            background: hsla(210, 40%, 80%, 0.8);
-        }
-
-        /* Admin table override for light mode */
-        .light-content-area .admin-table th {
-            background: hsl(210, 40%, 90%); /* Light background for header */
-            color: hsl(215, 20%, 35%); /* Dark text for header */
-        }
-        .light-content-area .admin-table td {
-            color: hsl(222, 47%, 6%); /* Ensure text is dark */
-        }
-        .light-content-area .admin-table tbody tr {
-            border-bottom: 1px solid hsla(210, 40%, 90%, 0.5);
-        }
-        .light-content-area .admin-table tbody tr:hover {
-            background: hsla(210, 40%, 80%, 0.5);
-        }
-        .light-content-area .font-mono { /* Ensure Card ID is visible */
-            color: hsl(222, 47%, 16%) !important;
-        }
-        .light-content-area .text-primary\/80 { /* Ensure schedule times are visible */
-            color: hsl(234, 89%, 54%) !important;
-        }
-        .light-content-area .btn-ghost:hover:not(:disabled) {
-            background: hsl(210, 40%, 90%);
-            color: hsl(222, 47%, 6%);
-        }
-        /* ---------------------------------------------------------------------- */
-
-
-        /* Remaining Original Styles (Applied to Dark Sidebar, Log View, and Modals) */
+        /* Admin table */
         .admin-table th {
             background: hsl(222, 47%, 14%);
             color: hsl(215, 20%, 55%);
@@ -391,10 +326,6 @@
             from { opacity: 0; transform: scale(0.95); }
             to { opacity: 1; transform: scale(1); }
         }
-        @keyframes slideInLeft {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
         .animate-fade-in {
             animation: fadeIn 0.3s ease-out forwards;
         }
@@ -403,9 +334,6 @@
         }
         .animate-scale-in {
             animation: scaleIn 0.2s ease-out forwards;
-        }
-        .animate-slide-in-left {
-            animation: slideInLeft 0.3s ease-out forwards;
         }
 
         /* Spinner */
@@ -434,55 +362,62 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex"> <div id="admin-app" class="flex flex-1 relative bg-glow">
-        
-        <aside id="sidebar" class="w-64 flex-shrink-0 relative z-20 glass flex flex-col justify-between py-6 px-4 custom-scroll overflow-y-auto border-r border-border/50 animate-slide-in-left">
-            <div class="space-y-8">
-                <div class="p-2 border-b border-border/50 pb-6">
+<body class="min-h-screen">
+
+    <div id="admin-app" class="min-h-screen relative bg-glow">
+        <div class="relative z-10 max-w-7xl mx-auto p-4 lg:p-8 space-y-6">
+            
+            <!-- Header -->
+            <header class="glass rounded-2xl p-6 border-t-4 border-primary animate-slide-up">
+                <div class="flex justify-between items-center flex-wrap gap-4">
                     <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-glow-sm">
-                            <svg class="w-5 h-5 text-background" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-glow-sm">
+                            <svg class="w-6 h-6 text-background" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
                             </svg>
                         </div>
                         <div>
-                            <h1 class="text-xl font-extrabold leading-tight">
+                            <h1 class="text-2xl md:text-3xl font-extrabold">
                                 <span class="gradient-text">Admin</span>
                                 <span class="text-foreground">Panel</span>
                             </h1>
-                            <p class="text-xs text-muted-foreground">Manajemen Karyawan</p>
+                            <p class="text-xs text-muted-foreground">Sistem Manajemen Karyawan</p>
                         </div>
                     </div>
+                    <button id="logout-button" onclick="handleLogout()" class="btn btn-destructive">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                        </svg>
+                        Keluar
+                    </button>
                 </div>
-
-                <nav class="space-y-2">
-                    <a href="#" id="nav-data-karyawan" onclick="switchView('data-karyawan')" class="sidebar-nav-item sidebar-nav-active">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            </header>
+            
+            <!-- Global Message -->
+            <div id="global-message" class="p-4 rounded-xl text-center font-medium hidden animate-slide-up"></div>
+            
+            <!-- Tab Navigation -->
+            <div class="glass rounded-xl p-1 animate-slide-up" style="animation-delay: 0.1s">
+                <nav class="flex border-b border-border/50">
+                    <button id="tab-data-karyawan" onclick="switchView('data-karyawan')" class="tab-button tab-active flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
                         </svg>
-                        Data Karyawan
-                    </a>
-                    <a href="#" id="nav-laporan-absen" onclick="switchView('laporan-absen')" class="sidebar-nav-item">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <span class="hidden sm:inline">Data Karyawan</span>
+                        <span class="sm:hidden">Karyawan</span>
+                    </button>
+                    <button id="tab-laporan-absen" onclick="switchView('laporan-absen')" class="tab-button flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                         </svg>
-                        Log Absensi
-                    </a>
+                        <span class="hidden sm:inline">Laporan Log Absensi</span>
+                        <span class="sm:hidden">Log Absen</span>
+                    </button>
                 </nav>
             </div>
 
-            <button id="logout-button" onclick="handleLogout()" class="btn btn-destructive w-full mt-8">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                </svg>
-                Keluar
-            </button>
-        </aside>
-        <main class="flex-1 relative z-10 p-4 lg:p-8 space-y-6 overflow-y-auto custom-scroll">
-            
-            <div id="global-message" class="p-4 rounded-xl text-center font-medium hidden animate-slide-up"></div>
-
-            <div id="data-karyawan-view" class="light-content-area rounded-2xl p-6 md:p-8 animate-slide-up"> 
+            <!-- Data Karyawan View -->
+            <div id="data-karyawan-view" class="glass rounded-2xl p-6 md:p-8 animate-slide-up" style="animation-delay: 0.2s">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                     <div>
                         <h2 class="text-2xl font-extrabold text-foreground">Employee Data Management</h2>
@@ -504,6 +439,7 @@
                     </div>
                 </div>
 
+                <!-- Search Filter -->
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6 p-4 bg-secondary/30 rounded-xl border border-border/50">
                     <input type="text" id="search-card" placeholder="Cari Card ID..." class="input col-span-2 md:col-span-1" onkeypress="if(event.key === 'Enter') applySearchFilter()">
                     <input type="text" id="search-nama" placeholder="Cari Nama..." class="input col-span-2 md:col-span-2" onkeypress="if(event.key === 'Enter') applySearchFilter()">
@@ -521,6 +457,7 @@
                     </button>
                 </div>
                 
+                <!-- Table -->
                 <div class="overflow-x-auto relative rounded-xl border border-border/50 custom-scroll max-h-[65vh]">
                     <table class="w-full text-sm admin-table">
                         <thead>
@@ -550,7 +487,8 @@
                 </div>
             </div>
             
-            <div id="laporan-absen-view" class="hidden glass rounded-2xl p-6 md:p-8 animate-slide-up">
+            <!-- Laporan Absen View -->
+            <div id="laporan-absen-view" class="hidden glass rounded-2xl p-6 md:p-8 animate-slide-up" style="animation-delay: 0.2s">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-border/50 pb-4">
                     <div>
                         <h2 class="text-2xl font-extrabold text-foreground">Log Absensi (Arsip 7 Hari)</h2>
@@ -581,9 +519,10 @@
                     <p class="text-muted-foreground font-medium">Tidak ada data absensi yang terarsip dalam 7 hari terakhir.</p>
                 </div>
             </div>
-        </main>
         </div>
+    </div>
 
+    <!-- Import Modal -->
     <div id="import-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="modal-content p-6 w-11/12 max-w-5xl max-h-[90vh] overflow-hidden flex flex-col transform transition-all duration-300 scale-95 opacity-0" id="import-content">
             <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border">
@@ -615,7 +554,7 @@
                     <div class="space-y-2">
                         <label for="excel-file-input" class="flex items-center gap-2 text-sm font-medium text-foreground">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                             </svg>
                             Pilih File Excel:
                         </label>
@@ -678,61 +617,63 @@
         </div>
     </div>
 
+    <!-- Form Modal -->
     <div id="form-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="modal-content p-6 w-11/12 max-w-lg transform transition-all duration-300 scale-95 opacity-0" id="form-content">
             <div class="flex items-center gap-3 mb-6 pb-4 border-b border-border">
-                <div class="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
-                    <svg id="form-icon" class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                <div id="form-icon" class="w-10 h-10 rounded-lg bg-success/20 flex items-center justify-center">
+                    <svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                     </svg>
                 </div>
-                <h3 id="form-title" class="text-xl font-bold text-foreground">Tambah Karyawan Baru</h3>
+                <h3 id="modal-title" class="text-xl font-bold text-foreground">Tambah Karyawan Baru</h3>
             </div>
-            
-            <form id="employee-form" onsubmit="handleFormSubmit(event)">
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <label for="form-card" class="text-sm font-medium text-foreground">Card ID</label>
-                            <input type="text" id="form-card" class="input uppercase" placeholder="Contoh: 12345678" required>
-                        </div>
-                        <div class="space-y-2">
-                            <label for="form-nik" class="text-sm font-medium text-foreground">NIK</label>
-                            <input type="text" id="form-nik" class="input" placeholder="Nomor Induk Karyawan" required>
-                        </div>
-                    </div>
-                    
+            <form id="crud-form">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="space-y-2">
-                        <label for="form-nama" class="text-sm font-medium text-foreground">Nama Karyawan</label>
-                        <input type="text" id="form-nama" class="input" placeholder="Nama Lengkap" required>
+                        <label for="form-card" class="text-sm font-medium text-foreground">Card ID</label>
+                        <input type="text" id="form-card" required class="input" autocomplete="off">
                     </div>
-                    
                     <div class="space-y-2">
-                        <label for="form-departemen" class="text-sm font-medium text-foreground">Departemen / Posisi</label>
-                        <input type="text" id="form-departemen" class="input" placeholder="Contoh: Produksi, Security, Staf" required>
-                    </div>
-
-                    <h4 class="text-md font-bold text-primary mt-6 pt-4 border-t border-border">Jadwal Makan (Kosongkan jika tidak ada)</h4>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="space-y-2">
-                            <label for="form-pagi" class="text-sm font-medium text-foreground">Pagi</label>
-                            <input type="text" id="form-pagi" class="input" placeholder="Contoh: Kantin, Lokasi A">
-                        </div>
-                        <div class="space-y-2">
-                            <label for="form-siang" class="text-sm font-medium text-foreground">Siang</label>
-                            <input type="text" id="form-siang" class="input" placeholder="Contoh: Kantin">
-                        </div>
-                        <div class="space-y-2">
-                            <label for="form-sore" class="text-sm font-medium text-foreground">Sore</label>
-                            <input type="text" id="form-sore" class="input" placeholder="Contoh: Kantin">
-                        </div>
-                        <div class="space-y-2">
-                            <label for="form-malam" class="text-sm font-medium text-foreground">Malam</label>
-                            <input type="text" id="form-malam" class="input" placeholder="Contoh: Kantin">
-                        </div>
+                        <label for="form-nik" class="text-sm font-medium text-foreground">NIK</label>
+                        <input type="text" id="form-nik" required class="input" autocomplete="off">
                     </div>
                 </div>
+                
+                <div class="space-y-2 mt-4">
+                    <label for="form-nama" class="text-sm font-medium text-foreground">Nama</label>
+                    <input type="text" id="form-nama" required class="input" autocomplete="off">
+                </div>
+                <div class="space-y-2 mt-4">
+                    <label for="form-departemen" class="text-sm font-medium text-foreground">Departemen</label>
+                    <input type="text" id="form-departemen" required class="input" autocomplete="off">
+                </div>
 
+                <div class="border-t border-border my-6"></div>
+                <h4 class="font-semibold mb-4 flex items-center gap-2 text-foreground">
+                    <span class="text-lg">🍽️</span>
+                    Absensi/Makan Periode
+                </h4>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-2">
+                        <label for="form-pagi" class="text-sm font-medium text-foreground">Pagi</label>
+                        <input type="text" id="form-pagi" class="input" placeholder="Contoh: Kantin">
+                    </div>
+                    <div class="space-y-2">
+                        <label for="form-siang" class="text-sm font-medium text-foreground">Siang</label>
+                        <input type="text" id="form-siang" class="input" placeholder="Contoh: Kantin">
+                    </div>
+                    <div class="space-y-2">
+                        <label for="form-sore" class="text-sm font-medium text-foreground">Sore</label>
+                        <input type="text" id="form-sore" class="input" placeholder="Contoh: Kantin">
+                    </div>
+                    <div class="space-y-2">
+                        <label for="form-malam" class="text-sm font-medium text-foreground">Malam</label>
+                        <input type="text" id="form-malam" class="input" placeholder="Contoh: Kantin">
+                    </div>
+                </div>
+                
                 <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-border">
                     <button type="button" onclick="closeFormModal()" class="btn btn-secondary">Batal</button>
                     <button type="submit" id="submit-button" class="btn btn-primary">
@@ -745,7 +686,8 @@
             </form>
         </div>
     </div>
-
+    
+    <!-- Delete Modal -->
     <div id="delete-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
         <div class="modal-content p-6 w-11/12 max-w-md transform transition-all duration-300 scale-95 opacity-0" id="delete-content">
             <div class="flex items-center gap-3 mb-4">
@@ -757,12 +699,13 @@
                 <h3 class="text-xl font-bold text-destructive">Konfirmasi Penghapusan</h3>
             </div>
             <p class="text-muted-foreground mb-6">
-                Anda yakin ingin menghapus data karyawan dengan Card ID: <span id="delete-card-id" class="font-bold text-destructive"></span>? 
+                Anda yakin ingin menghapus data karyawan dengan Card ID: 
+                <span id="delete-card-id" class="font-bold text-destructive"></span>? 
                 <span class="font-semibold text-foreground">Aksi ini tidak dapat dibatalkan.</span>
             </p>
             <div class="flex justify-end gap-3">
                 <button type="button" onclick="closeDeleteModal()" class="btn btn-secondary">Batal</button>
-                <button type="button" id="confirm-delete-button" onclick="handleDeleteConfirm()" class="btn btn-destructive">
+                <button type="button" onclick="executeDelete()" class="btn btn-destructive">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                     </svg>
@@ -773,65 +716,352 @@
     </div>
 
     <script>
-        // Inisialisasi Supabase (Ganti dengan kunci dan URL Anda)
-       // --- 1. KONFIGURASI SUPABASE (PASTIKAN INI SESUAI) ---
+        // --- 1. KONFIGURASI SUPABASE (PASTIKAN INI SESUAI) ---
         const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzAfsUuh08kOiu201i5fnw9u1PtMG86OuYRXdE0RpYq0aeAZTsbzwHYNf6K7S27lRZH/exec';
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1TgP25Wwj4eBN1KGECy1xzqxjrF9siqHIEojiSFbxcHhsaHU-DHRM6MKY2gMZg1eviQ/exec';
         const TABLE_NAME = 'data_master';
         const LOG_TABLE_NAME = 'log_absen';
         const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; 
         
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        let allEmployees = [];
+        
+        let parsedImportData = []; 
+        let activeCardIds = [];    
+        let currentMode = 'create';
+        let cardIdToDelete = null;
         let allAbsensiLogs = [];
-        let currentMode = 'create'; // 'create' or 'edit'
-        let currentDeleteCardId = null;
-        let parsedImportData = [];
-        let activeCardIds = [];
-        let isLogLoading = false;
+        let expandedDates = new Set();
 
-        // Utility Functions
-        function showGlobalMessage(message, type = 'info') {
-            const el = document.getElementById('global-message');
-            el.classList.remove('hidden', 'bg-success/20', 'text-success', 'bg-destructive/20', 'text-destructive', 'bg-primary/20', 'text-primary');
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAdminSession(); 
+            document.getElementById('crud-form').addEventListener('submit', handleFormSubmit);
+            document.getElementById('import-form').addEventListener('submit', handleImportSubmit);
+        });
+
+        function getDateNDaysAgo(n) {
+            const date = new Date();
+            date.setDate(date.getDate() - n);
+            return date.toISOString(); 
+        }
+
+        async function autoDeleteOldLogs() {
+            const sevenDaysAgo = getDateNDaysAgo(7);
+            const deletionStatusEl = document.getElementById('deletion-status');
+            deletionStatusEl.textContent = 'Memeriksa dan menghapus log lama...';
+
+            const { count, error } = await supabaseClient
+                .from(LOG_TABLE_NAME)
+                .delete({ count: 'exact' })
+                .lt('created_at', sevenDaysAgo); 
             
-            let bgColor, textColor;
-            if (type === 'success') {
-                bgColor = 'bg-success/20';
-                textColor = 'text-success';
-            } else if (type === 'error') {
-                bgColor = 'bg-destructive/20';
-                textColor = 'text-destructive';
+            if (error) {
+                console.error("Auto Delete Log Error:", error);
+                deletionStatusEl.textContent = `⚠️ Gagal menghapus log lama: ${error.message}`;
             } else {
-                bgColor = 'bg-primary/20';
-                textColor = 'text-primary';
+                deletionStatusEl.textContent = `✅ Log lama (${count} baris) berhasil dihapus.`;
+            }
+        }
+        
+        async function checkAdminSession() {
+            const { data: { session }, error } = await supabaseClient.auth.getSession();
+            
+            if (error || !session) {
+                // Untuk demo, langsung tampilkan tanpa redirect
+                // window.location.href = './admin_login.html'; 
+            }
+            
+            switchView('data-karyawan'); 
+        }
+
+        async function handleLogout() {
+            const logoutBtn = document.getElementById('logout-button');
+            logoutBtn.disabled = true;
+            logoutBtn.innerHTML = '<svg class="w-4 h-4 spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Keluar...';
+            
+            const { error } = await supabaseClient.auth.signOut();
+
+            if (error) {
+                console.error("Logout Error:", error);
+                showGlobalMessage(`Gagal keluar: ${error.message}`, 'error');
+                logoutBtn.disabled = false;
+                logoutBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg> Keluar';
+            } else {
+                window.location.reload();
+            }
+        }
+
+        function switchView(viewId) {
+            document.getElementById('data-karyawan-view').classList.add('hidden');
+            document.getElementById('laporan-absen-view').classList.add('hidden');
+
+            document.getElementById('tab-data-karyawan').classList.remove('tab-active');
+            document.getElementById('tab-laporan-absen').classList.remove('tab-active');
+
+            if (viewId === 'data-karyawan') {
+                document.getElementById('data-karyawan-view').classList.remove('hidden');
+                document.getElementById('tab-data-karyawan').classList.add('tab-active');
+                fetchData();
+            } else if (viewId === 'laporan-absen') {
+                document.getElementById('laporan-absen-view').classList.remove('hidden');
+                document.getElementById('tab-laporan-absen').classList.add('tab-active');
+                autoDeleteOldLogs();
+                loadArchivedAbsensiLog();
+            }
+        }
+
+        async function loadArchivedAbsensiLog() {
+            const container = document.getElementById('log-per-tanggal-container');
+            const loadingMsg = document.getElementById('loading-log-message');
+            const noLogMsg = document.getElementById('no-log-message');
+
+            container.innerHTML = '';
+            loadingMsg.classList.remove('hidden');
+            noLogMsg.classList.add('hidden');
+
+            const sevenDaysAgo = getDateNDaysAgo(7);
+
+            const { data: masterData, error: masterError } = await supabaseClient
+                .from(TABLE_NAME)
+                .select('card, nama, departemen');
+
+            if (masterError) {
+                console.error("Error fetching master data:", masterError);
+                showGlobalMessage(`Gagal memuat data master karyawan: ${masterError.message}`, 'error');
+                loadingMsg.classList.add('hidden');
+                return;
+            }
+            
+            const employeeMap = new Map();
+            masterData.forEach(emp => employeeMap.set(emp.card, emp));
+
+            const { data: logs, error: logError } = await supabaseClient
+                .from(LOG_TABLE_NAME)
+                .select('card, status, periode, created_at, nama, departemen')
+                .gte('created_at', sevenDaysAgo)
+                .order('created_at', { ascending: false });
+
+            loadingMsg.classList.add('hidden');
+            
+            if (logError) {
+                console.error("Error fetching logs:", logError);
+                showGlobalMessage(`Gagal memuat log absensi: ${logError.message}`, 'error');
+                container.innerHTML = '<p class="text-center py-4 text-destructive">Gagal memuat data log.</p>';
+                return;
             }
 
-            el.classList.add(bgColor, textColor);
-            el.textContent = message;
+            const enrichedLogs = logs.map(log => {
+                const isDataMissing = !log.nama || log.nama.trim() === '-' || !log.departemen || log.departemen.trim() === '-';
+                
+                if (log.status === 'Sukses' && isDataMissing) {
+                    const employee = employeeMap.get(log.card);
+                    if (employee) {
+                        return {
+                            ...log,
+                            nama: employee.nama || 'Tidak Terdaftar', 
+                            departemen: employee.departemen || '-' 
+                        };
+                    }
+                } 
+                return log;
+            });
 
-            setTimeout(() => {
-                el.classList.add('hidden');
-                el.textContent = '';
-            }, 5000);
+            allAbsensiLogs = enrichedLogs; 
+            renderGroupedLogDetails(enrichedLogs);
+
+            if (enrichedLogs.length === 0) {
+                noLogMsg.classList.remove('hidden');
+            }
         }
 
-        function formatTime(value) {
-            // Fungsi helper untuk memastikan nilai ditampilkan dengan benar
-            return String(value || '-').trim();
+        function groupLogsByDate(logs) {
+            const grouped = {};
+            logs.forEach(log => {
+                const dateKey = new Date(log.created_at).toISOString().split('T')[0];
+                if (!grouped[dateKey]) {
+                    grouped[dateKey] = [];
+                }
+                grouped[dateKey].push(log);
+            });
+            return grouped;
         }
 
-        // --- Core Data Functions ---
+        function renderGroupedLogDetails(logs) {
+            const container = document.getElementById('log-per-tanggal-container');
+            container.innerHTML = '';
+            
+            if (logs.length === 0) return;
 
+            const groupedLogs = groupLogsByDate(logs);
+            const sortedDates = Object.keys(groupedLogs).sort((a, b) => new Date(b) - new Date(a));
+
+            sortedDates.forEach(dateKey => {
+                const logsForDate = groupedLogs[dateKey];
+                
+                const dateForDisplay = new Date(dateKey + 'T00:00:00').toLocaleDateString('id-ID', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                });
+                
+                const dateSection = document.createElement('div');
+                dateSection.className = 'log-card';
+                
+                const header = document.createElement('div');
+                header.className = 'log-card-header';
+                header.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h.01M8 21h8a2 2 0 002-2V7a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="text-sm font-bold text-foreground">${dateForDisplay}</span>
+                            <span class="ml-2 badge-info">${logsForDate.length} log</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="exportSingleDayLogToExcel('${dateKey}')" class="btn btn-secondary btn-sm text-xs">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Export
+                        </button>
+                        <button onclick="toggleLogDetails(this, 'log-table-${dateKey}')" class="btn btn-ghost btn-icon">
+                            <svg class="w-4 h-4 transition-transform duration-200" data-toggle="collapse" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                dateSection.appendChild(header);
+
+                const detailContainer = document.createElement('div');
+                detailContainer.id = `log-table-${dateKey}`;
+                detailContainer.className = 'overflow-x-auto max-h-96 hidden custom-scroll'; 
+
+                const table = document.createElement('table');
+                table.className = 'min-w-full';
+                table.innerHTML = `
+                    <thead class="bg-secondary sticky top-0 z-10">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Waktu</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Card ID</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Nama</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Departemen</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Periode</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                `;
+
+                const tbody = document.createElement('tbody');
+                tbody.className = 'divide-y divide-border/50';
+                
+                logsForDate.forEach(log => {
+                    const logTime = new Date(log.created_at).toLocaleTimeString('id-ID', {
+                        hour: '2-digit', minute: '2-digit', second: '2-digit'
+                    });
+
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-secondary/50';
+                    row.innerHTML = `
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">${logTime}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-mono text-muted-foreground">${log.card}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-foreground">${log.nama || 'Tidak Terdaftar'}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">${log.departemen || '-'}</td>
+                        <td class="px-4 py-3 whitespace-nowrap"><span class="badge-info capitalize">${log.periode || '-'}</span></td>
+                        <td class="px-4 py-3 whitespace-nowrap"><span class="${log.status === 'Sukses' ? 'badge-success' : 'badge-error'}">${log.status}</span></td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                table.appendChild(tbody);
+                detailContainer.appendChild(table);
+                dateSection.appendChild(detailContainer);
+                container.appendChild(dateSection);
+            });
+        }
+        
+        function toggleLogDetails(button, tableId) {
+            const detailElement = document.getElementById(tableId);
+            const svg = button.querySelector('svg');
+            
+            if (detailElement.classList.contains('hidden')) {
+                detailElement.classList.remove('hidden');
+                svg.style.transform = 'rotate(180deg)';
+            } else {
+                detailElement.classList.add('hidden');
+                svg.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function exportSingleDayLogToExcel(dateKey) {
+            const logsToExport = allAbsensiLogs.filter(log => {
+                return new Date(log.created_at).toISOString().split('T')[0] === dateKey;
+            });
+            
+            if (logsToExport.length === 0) {
+                showGlobalMessage(`Tidak ada data log untuk tanggal ${dateKey}.`, 'error');
+                return;
+            }
+            
+            const wsData = [
+                ["Tanggal & Waktu", "Card ID", "Nama Karyawan", "Departemen", "Periode", "Status Tap", "created_at (Raw)"] 
+            ];
+
+            logsToExport.forEach(log => {
+                const dateObj = new Date(log.created_at);
+                const logDateTime = dateObj.toLocaleDateString('id-ID', {
+                    year: 'numeric', month: 'long', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
+                
+                wsData.push([
+                    logDateTime,
+                    log.card,
+                    log.nama || 'Tidak Terdaftar',
+                    log.departemen || '-', 
+                    log.periode || '-',
+                    log.status,
+                    log.created_at 
+                ]);
+            });
+
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, `Log_${dateKey}`);
+
+            XLSX.writeFile(wb, `Log_Absensi_${dateKey}.xlsx`);
+            
+            showGlobalMessage(`Berhasil mengekspor ${logsToExport.length} log untuk tanggal ${dateKey} ke Excel.`, 'success');
+        }
+
+        function showGlobalMessage(message, type = 'success') {
+            const msgEl = document.getElementById('global-message');
+            msgEl.textContent = message;
+            msgEl.className = 'p-4 rounded-xl text-center font-medium flex items-center justify-center gap-2 animate-slide-up border';
+            
+            if (type === 'success') { 
+                msgEl.classList.add('bg-success/10', 'border-success/30', 'text-success'); 
+            } else if (type === 'error') { 
+                msgEl.classList.add('bg-destructive/10', 'border-destructive/30', 'text-destructive'); 
+            } else { 
+                msgEl.classList.add('bg-primary/10', 'border-primary/30', 'text-primary'); 
+            }
+            
+            msgEl.classList.remove('hidden');
+            setTimeout(() => { msgEl.classList.add('hidden'); }, 8000); 
+        }
+        
+        function formatTime(textValue) {
+            if (!textValue) return '-';
+            return String(textValue).trim() || '-';
+        }
+        
         async function fetchData(cardFilter = '', nameFilter = '') {
-            const tbody = document.getElementById('data-table-body');
-            const noDataMsg = document.getElementById('no-data-message');
-            tbody.innerHTML = '';
-            noDataMsg.classList.add('hidden');
-
-            let query = supabaseClient.from(TABLE_NAME).select('*').order('nama', { ascending: true });
+            let query = supabaseClient
+                .from(TABLE_NAME)
+                .select('*');
 
             if (cardFilter) {
                 query = query.ilike('card', `%${cardFilter}%`);
@@ -839,30 +1069,31 @@
             if (nameFilter) {
                 query = query.ilike('nama', `%${nameFilter}%`);
             }
+            
+            const { data, error } = await query
+                .order('nama', { ascending: true });
 
-            const { data, error } = await query;
+            const tbody = document.getElementById('data-table-body');
+            const noDataMsg = document.getElementById('no-data-message');
+            tbody.innerHTML = '';
 
             if (error) {
-                console.error("Fetch Data Error:", error);
+                console.error("Error fetching data:", error);
                 showGlobalMessage(`Gagal memuat data: ${error.message}.`, 'error');
                 noDataMsg.textContent = 'Gagal memuat data.';
                 noDataMsg.classList.remove('hidden');
                 return;
             }
 
-            allEmployees = data; // Simpan data untuk digunakan di log
-
             if (data.length === 0) {
-                const isFiltered = cardFilter || nameFilter;
-                noDataMsg.querySelector('div+p').textContent = isFiltered 
-                    ? 'Tidak ada data yang cocok dengan kriteria pencarian.' 
-                    : 'Belum ada data karyawan yang tersimpan.';
+                noDataMsg.querySelector('span') ? noDataMsg.querySelector('span').textContent = (cardFilter || nameFilter) ? 'Tidak ada data yang cocok dengan kriteria pencarian.' : 'Belum ada data karyawan yang tersimpan.' : null;
                 noDataMsg.classList.remove('hidden');
             } else {
                 noDataMsg.classList.add('hidden');
                 data.forEach(item => {
-                    const row = tbody.insertRow();
+                    const row = tbody.insertRow(); 
                     row.className = 'hover:bg-secondary/50';
+
                     row.innerHTML = `
                         <td class="font-mono text-muted-foreground">${item.card}</td>
                         <td>${item.nik}</td>
@@ -890,7 +1121,7 @@
                 });
             }
         }
-
+        
         function applySearchFilter() {
             const card = document.getElementById('search-card').value.trim();
             const nama = document.getElementById('search-nama').value.trim();
@@ -900,329 +1131,43 @@
         function clearSearchFilter() {
             document.getElementById('search-card').value = '';
             document.getElementById('search-nama').value = '';
-            fetchData();
+            fetchData(); 
         }
-
-        // --- Auth & Initial Load ---
-
-        async function autoDeleteOldLogs() {
-            const deletionStatusEl = document.getElementById('deletion-status');
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            
-            const { count, error } = await supabaseClient
-                .from(LOG_TABLE_NAME)
-                .delete()
-                .lt('created_at', sevenDaysAgo.toISOString())
-                .select('*', { count: 'exact', head: true }); 
-
-            if (error) {
-                console.error("Auto Delete Log Error:", error);
-                deletionStatusEl.textContent = `⚠️ Gagal menghapus log lama: ${error.message}`;
-            } else {
-                deletionStatusEl.textContent = `✅ Log lama (${count} baris) berhasil dihapus.`;
-            }
-        }
-
-        async function checkAdminSession() {
-            const { data: { session }, error } = await supabaseClient.auth.getSession();
-            if (error || !session) {
-                // Untuk demo, langsung tampilkan tanpa redirect
-                // window.location.href = './admin_login.html';
-            }
-            switchView('data-karyawan');
-        }
-
-        async function handleLogout() {
-            const logoutBtn = document.getElementById('logout-button');
-            logoutBtn.disabled = true;
-            logoutBtn.innerHTML = '<svg class="w-4 h-4 spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" class="opacity-25"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Keluar...';
-            
-            const { error } = await supabaseClient.auth.signOut();
-
-            if (error) {
-                console.error("Logout Error:", error);
-                showGlobalMessage(`Gagal keluar: ${error.message}`, 'error');
-                logoutBtn.disabled = false;
-                logoutBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg> Keluar';
-            } else {
-                window.location.reload();
-            }
-        }
-
-        // --- View Switching (Updated for Sidebar) ---
-
-        function switchView(viewId) {
-            // Hide all views
-            document.getElementById('data-karyawan-view').classList.add('hidden');
-            document.getElementById('laporan-absen-view').classList.add('hidden');
-            
-            // Remove active state from all nav links
-            document.getElementById('nav-data-karyawan').classList.remove('sidebar-nav-active');
-            document.getElementById('nav-laporan-absen').classList.remove('sidebar-nav-active');
-
-            // Show the selected view and set active nav link
-            if (viewId === 'data-karyawan') {
-                document.getElementById('data-karyawan-view').classList.remove('hidden');
-                document.getElementById('nav-data-karyawan').classList.add('sidebar-nav-active');
-                fetchData();
-            } else if (viewId === 'laporan-absen') {
-                document.getElementById('laporan-absen-view').classList.remove('hidden');
-                document.getElementById('nav-laporan-absen').classList.add('sidebar-nav-active');
-                fetchAbsensiLog();
-            }
-        }
-
-        // --- Log Absensi Functions ---
-
-        async function fetchAbsensiLog() {
-            if (isLogLoading) return;
-            isLogLoading = true;
-
-            const loadingMsg = document.getElementById('loading-log-message');
-            const noLogMsg = document.getElementById('no-log-message');
-            const logContainer = document.getElementById('log-per-tanggal-container');
-            logContainer.innerHTML = '';
-            noLogMsg.classList.add('hidden');
-            loadingMsg.classList.remove('hidden');
-
-            autoDeleteOldLogs(); // Hapus log lama secara otomatis
-
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-            // Fetch log data from the last 7 days
-            const { data: logs, error } = await supabaseClient
-                .from(LOG_TABLE_NAME)
-                .select('*')
-                .gte('created_at', sevenDaysAgo.toISOString())
-                .order('created_at', { ascending: false });
-
-            loadingMsg.classList.add('hidden');
-            isLogLoading = false;
-
-            if (error) {
-                console.error("Fetch Log Error:", error);
-                showGlobalMessage(`Gagal memuat log absensi: ${error.message}.`, 'error');
-                noLogMsg.classList.remove('hidden');
-                noLogMsg.querySelector('p').textContent = 'Gagal memuat data log.';
-                return;
-            }
-
-            // Fetch all employee data for enrichment
-            const { data: employees, error: empError } = await supabaseClient
-                .from(TABLE_NAME)
-                .select('card, nama, departemen');
-            
-            if (empError) {
-                console.error("Fetch Employees for Log Enrichment Error:", empError);
-                // Lanjutkan meskipun gagal, karena data log utama sudah ada
-            }
-
-            const employeeMap = new Map();
-            if (employees) {
-                employees.forEach(emp => employeeMap.set(emp.card, emp));
-            }
-
-            // Enrich log data
-            const enrichedLogs = logs.map(log => {
-                const employee = employeeMap.get(log.card);
-                if (employee) {
-                    return { ...log, nama: employee.nama, departemen: employee.departemen };
-                } else {
-                    return { ...log, nama: 'Tidak Terdaftar', departemen: '-' };
-                }
-            });
-
-            allAbsensiLogs = enrichedLogs;
-            renderGroupedLogDetails(enrichedLogs);
-
-            if (enrichedLogs.length === 0) {
-                noLogMsg.classList.remove('hidden');
-                noLogMsg.querySelector('p').textContent = 'Tidak ada data absensi yang terarsip dalam 7 hari terakhir.';
-            }
-        }
-
-        function groupLogsByDate(logs) {
-            const grouped = {};
-            logs.forEach(log => {
-                const dateKey = new Date(log.created_at).toISOString().split('T')[0];
-                if (!grouped[dateKey]) {
-                    grouped[dateKey] = [];
-                }
-                grouped[dateKey].push(log);
-            });
-            return grouped;
-        }
-
-        function renderGroupedLogDetails(logs) {
-            const container = document.getElementById('log-per-tanggal-container');
-            container.innerHTML = '';
-            if (logs.length === 0) return;
-
-            const groupedLogs = groupLogsByDate(logs);
-            const sortedDates = Object.keys(groupedLogs).sort((a, b) => new Date(b) - new Date(a));
-
-            sortedDates.forEach(dateKey => {
-                const logsForDate = groupedLogs[dateKey];
-                const dateForDisplay = new Date(dateKey + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-
-                const dateSection = document.createElement('div');
-                dateSection.className = 'log-card';
-
-                const header = document.createElement('div');
-                header.className = 'log-card-header';
-                header.innerHTML = `
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                            <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h.01M8 21h8a2 2 0 002-2V7a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                        </div>
-                        <div>
-                            <span class="text-sm font-bold text-foreground">${dateForDisplay}</span>
-                            <span class="ml-2 badge-info">${logsForDate.length} log</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button onclick="exportSingleDayLogToExcel('${dateKey}')" class="btn btn-secondary btn-sm text-xs">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                            </svg>
-                            Export
-                        </button>
-                        <button onclick="toggleLogDetails(this, 'log-detail-${dateKey}')" class="btn btn-secondary btn-icon ml-2">
-                            <svg class="w-4 h-4 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                            </svg>
-                        </button>
-                    </div>
-                `;
-                dateSection.appendChild(header);
-
-                const detailContainer = document.createElement('div');
-                detailContainer.id = `log-detail-${dateKey}`;
-                detailContainer.className = 'overflow-x-auto custom-scroll hidden'; // Hidden by default
-
-                const table = document.createElement('table');
-                table.className = 'w-full text-xs review-table';
-
-                // Table Header
-                const thead = document.createElement('thead');
-                thead.innerHTML = `
-                    <tr>
-                        <th>Waktu</th>
-                        <th>Card ID</th>
-                        <th>Nama Karyawan</th>
-                        <th>Departemen</th>
-                        <th>Periode</th>
-                        <th>Status</th>
-                    </tr>
-                `;
-                table.appendChild(thead);
-
-                // Table Body
-                const tbody = document.createElement('tbody');
-                logsForDate.forEach(log => {
-                    const logTime = new Date(log.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                    const row = document.createElement('tr');
-                    row.className = 'hover:bg-secondary/50';
-                    row.innerHTML = `
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">${logTime}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm font-mono text-muted-foreground">${log.card}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-foreground">${log.nama || 'Tidak Terdaftar'}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">${log.departemen || '-'}</td>
-                        <td class="px-4 py-3 whitespace-nowrap"><span class="badge-info capitalize">${log.periode || '-'}</span></td>
-                        <td class="px-4 py-3 whitespace-nowrap"><span class="${log.status === 'Sukses' ? 'badge-success' : 'badge-error'}">${log.status}</span></td>
-                    `;
-                    tbody.appendChild(row);
-                });
-
-                table.appendChild(tbody);
-                detailContainer.appendChild(table);
-                dateSection.appendChild(detailContainer);
-                container.appendChild(dateSection);
-            });
-        }
-
-        function toggleLogDetails(button, tableId) {
-            const detailElement = document.getElementById(tableId);
-            const svg = button.querySelector('svg');
-            if (detailElement.classList.contains('hidden')) {
-                detailElement.classList.remove('hidden');
-                svg.style.transform = 'rotate(180deg)';
-            } else {
-                detailElement.classList.add('hidden');
-                svg.style.transform = 'rotate(0deg)';
-            }
-        }
-
-        function exportSingleDayLogToExcel(dateKey) {
-            const logsToExport = allAbsensiLogs.filter(log => {
-                return new Date(log.created_at).toISOString().split('T')[0] === dateKey;
-            });
-
-            if (logsToExport.length === 0) {
-                showGlobalMessage(`Tidak ada data log untuk tanggal ${dateKey}.`, 'error');
-                return;
-            }
-
-            const wsData = [
-                ["Tanggal & Waktu", "Card ID", "Nama Karyawan", "Departemen", "Periode", "Status Tap", "created_at (Raw)"]
-            ];
-
-            logsToExport.forEach(log => {
-                const dateObj = new Date(log.created_at);
-                const logDateTime = dateObj.toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                wsData.push([
-                    logDateTime,
-                    log.card,
-                    log.nama || 'Tidak Terdaftar',
-                    log.departemen || '-',
-                    log.periode || '-',
-                    log.status,
-                    log.created_at
-                ]);
-            });
-
-            const ws = XLSX.utils.aoa_to_sheet(wsData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, `Log_${dateKey}`);
-            XLSX.writeFile(wb, `Log_Absensi_${dateKey}.xlsx`);
-
-            showGlobalMessage(`Berhasil mengekspor ${logsToExport.length} log untuk tanggal ${dateKey} ke Excel.`, 'success');
-        }
-
-        // --- Form Modal Functions ---
 
         async function openFormModal(mode, cardId = null) {
             currentMode = mode;
             const modal = document.getElementById('form-modal');
             const content = document.getElementById('form-content');
-            const formTitle = document.getElementById('form-title');
             const formIcon = document.getElementById('form-icon');
-            const submitButton = document.getElementById('submit-button');
-            const formCard = document.getElementById('form-card');
             
-            // Reset form
-            document.getElementById('employee-form').reset();
+            const formCard = document.getElementById('form-card');
+            const formNik = document.getElementById('form-nik');
+            const formNama = document.getElementById('form-nama');
+            const formDepartemen = document.getElementById('form-departemen');
+            const formPagi = document.getElementById('form-pagi');
+            const formSiang = document.getElementById('form-siang');
+            const formSore = document.getElementById('form-sore');
+            const formMalam = document.getElementById('form-malam');
+
+            document.getElementById('crud-form').reset();
             formCard.readOnly = false;
 
             if (mode === 'create') {
-                formTitle.textContent = 'Tambah Karyawan Baru';
-                submitButton.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Simpan';
-                formIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>';
-            } else if (mode === 'edit' && cardId) {
-                formTitle.textContent = 'Edit Data Karyawan';
-                submitButton.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg> Update';
-                formIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>';
-                
+                document.getElementById('modal-title').textContent = 'Tambah Karyawan Baru';
+                document.getElementById('submit-button').innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Simpan';
+                formIcon.className = 'w-10 h-10 rounded-lg bg-success/20 flex items-center justify-center';
+                formIcon.innerHTML = '<svg class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>';
+            } else {
+                document.getElementById('modal-title').textContent = 'Edit Data Karyawan';
+                document.getElementById('submit-button').innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Update';
+                formIcon.className = 'w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center';
+                formIcon.innerHTML = '<svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>';
                 formCard.value = cardId;
                 formCard.readOnly = true;
 
                 const { data, error } = await supabaseClient
                     .from(TABLE_NAME)
-                    .select('*')
+                    .select('*') 
                     .eq('card', cardId)
                     .single();
 
@@ -1232,13 +1177,13 @@
                     return;
                 }
 
-                document.getElementById('form-nik').value = data.nik;
-                document.getElementById('form-nama').value = data.nama;
-                document.getElementById('form-departemen').value = data.departemen;
-                document.getElementById('form-pagi').value = data.pagi || '';
-                document.getElementById('form-siang').value = data.siang || '';
-                document.getElementById('form-sore').value = data.sore || '';
-                document.getElementById('form-malam').value = data.malam || '';
+                formNik.value = data.nik;
+                formNama.value = data.nama;
+                formDepartemen.value = data.departemen;
+                formPagi.value = data.pagi || '';
+                formSiang.value = data.siang || '';
+                formSore.value = data.sore || '';
+                formMalam.value = data.malam || '';
             }
 
             modal.classList.remove('hidden');
@@ -1251,20 +1196,13 @@
         function closeFormModal() {
             const modal = document.getElementById('form-modal');
             const content = document.getElementById('form-content');
-            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.remove('scale-100', 'opacity-100'); 
             content.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
 
         async function handleFormSubmit(event) {
             event.preventDefault();
-
-            const submitButton = document.getElementById('submit-button');
-            submitButton.disabled = true;
-            submitButton.innerHTML = '<svg class="w-4 h-4 spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memproses...';
-
 
             const card = document.getElementById('form-card').value.trim();
             const nik = document.getElementById('form-nik').value.trim();
@@ -1277,102 +1215,76 @@
 
             let error;
             let message;
-            
-            const payload = { 
-                card: card.toUpperCase(), // Pastikan Card ID konsisten (Uppercase)
-                nik, nama, departemen, pagi, siang, sore, malam 
-            };
-
 
             if (currentMode === 'create') {
+                const payload = { card, nik, nama, departemen, pagi, siang, sore, malam };
                 const result = await supabaseClient.from(TABLE_NAME).insert([payload]);
                 error = result.error;
                 message = 'Data karyawan berhasil ditambahkan.';
             } else {
-                const updateData = { nik, nama, departemen, pagi, siang, sore, malam };
+                const updateData = { 
+                    nik: nik, 
+                    nama: nama, 
+                    departemen: departemen, 
+                    pagi: pagi, 
+                    siang: siang, 
+                    sore: sore, 
+                    malam: malam 
+                };
+                
                 const result = await supabaseClient
                     .from(TABLE_NAME)
                     .update(updateData)
-                    .eq('card', card.toUpperCase());
+                    .eq('card', card);
+                    
                 error = result.error;
-                message = 'Data karyawan berhasil diperbarui.';
+                message = 'Data karyawan berhasil diupdate.';
             }
 
             if (error) {
-                console.error("Form Submit Error:", error);
-                if (error.code === '23505') { // Unique constraint violation (e.g., duplicate Card ID)
-                    showGlobalMessage(`Gagal: Card ID "${card}" sudah terdaftar atau duplikat.`, 'error');
-                } else {
-                    showGlobalMessage(`Gagal menyimpan data: ${error.message}`, 'error');
-                }
+                console.error("CRUD Error:", error);
+                const errorMessage = error.code === '23505' ? 'Gagal: Card ID sudah terdaftar.' : error.message;
+                showGlobalMessage(`Gagal ${currentMode === 'create' ? 'menambah' : 'mengupdate'} data: ${errorMessage}`, 'error');
             } else {
                 showGlobalMessage(message, 'success');
                 closeFormModal();
-                fetchData();
-            }
-
-            submitButton.disabled = false;
-            if (currentMode === 'create') {
-                 submitButton.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Simpan';
-            } else {
-                 submitButton.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg> Update';
+                fetchData(); 
             }
         }
-
-        // --- Delete Modal Functions ---
-
+        
         function openDeleteModal(cardId) {
-            currentDeleteCardId = cardId;
+            cardIdToDelete = cardId;
             document.getElementById('delete-card-id').textContent = cardId;
             const modal = document.getElementById('delete-modal');
             const content = document.getElementById('delete-content');
-
             modal.classList.remove('hidden');
-            setTimeout(() => {
-                content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-100');
+            setTimeout(() => { 
+                content.classList.remove('scale-95', 'opacity-0'); 
+                content.classList.add('scale-100', 'opacity-100'); 
             }, 50);
         }
 
         function closeDeleteModal() {
             const modal = document.getElementById('delete-modal');
             const content = document.getElementById('delete-content');
-            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.remove('scale-100', 'opacity-100'); 
             content.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-                currentDeleteCardId = null;
-            }, 300);
+            setTimeout(() => { modal.classList.add('hidden'); cardIdToDelete = null; }, 300);
         }
 
-        async function handleDeleteConfirm() {
-            if (!currentDeleteCardId) return;
+        async function executeDelete() {
+            if (!cardIdToDelete) return;
+            const { error } = await supabaseClient.from(TABLE_NAME).delete().eq('card', cardIdToDelete);
 
-            const deleteBtn = document.getElementById('confirm-delete-button');
-            deleteBtn.disabled = true;
-            deleteBtn.innerHTML = '<svg class="w-4 h-4 spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Menghapus...';
-
-
-            const { error } = await supabaseClient
-                .from(TABLE_NAME)
-                .delete()
-                .eq('card', currentDeleteCardId);
-
-            if (error) {
-                console.error("Delete Error:", error);
-                showGlobalMessage(`Gagal menghapus data: ${error.message}`, 'error');
-            } else {
-                showGlobalMessage(`Data karyawan dengan Card ID ${currentDeleteCardId} berhasil dihapus.`, 'success');
-                fetchData();
+            if (error) { 
+                console.error("Delete Error:", error); 
+                showGlobalMessage('Gagal menghapus data karyawan.', 'error'); 
+            } else { 
+                showGlobalMessage('Data karyawan berhasil dihapus.', 'success'); 
+                fetchData(); 
             }
-
-            deleteBtn.disabled = false;
-            deleteBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg> Hapus Permanen';
             closeDeleteModal();
         }
-
-
-        // --- Import Modal Functions ---
 
         function openImportModal() {
             document.getElementById('excel-file-input').value = '';
@@ -1380,46 +1292,39 @@
             document.getElementById('step-review').classList.add('hidden');
             document.getElementById('review-button').classList.remove('hidden');
             document.getElementById('import-submit-button').classList.add('hidden');
-            document.getElementById('deletion-warning').classList.add('hidden');
-            document.getElementById('review-table-body').innerHTML = ''; // Clear review table
-            document.getElementById('review-summary').textContent = ''; // Clear summary
-
+            document.getElementById('deletion-warning').classList.add('hidden'); 
             parsedImportData = [];
-            activeCardIds = [];
-
+            activeCardIds = []; 
+            
             const modal = document.getElementById('import-modal');
             const content = document.getElementById('import-content');
-
             modal.classList.remove('hidden');
-            setTimeout(() => {
-                content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-100');
+            setTimeout(() => { 
+                content.classList.remove('scale-95', 'opacity-0'); 
+                content.classList.add('scale-100', 'opacity-100'); 
             }, 50);
         }
 
         function closeImportModal() {
             const modal = document.getElementById('import-modal');
             const content = document.getElementById('import-content');
-            content.classList.remove('scale-100', 'opacity-100');
+            content.classList.remove('scale-100', 'opacity-100'); 
             content.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
+            setTimeout(() => { modal.classList.add('hidden'); }, 300);
         }
-
+        
         function parseExcelFile() {
             const fileInput = document.getElementById('excel-file-input');
             const file = fileInput.files[0];
 
-            if (!file) {
-                showGlobalMessage('Pilih file Excel terlebih dahulu.', 'error');
-                return;
+            if (!file) { 
+                showGlobalMessage('Pilih file Excel terlebih dahulu.', 'error'); 
+                return; 
             }
-
+            
             const reviewBtn = document.getElementById('review-button');
             reviewBtn.disabled = true;
             reviewBtn.innerHTML = '<svg class="w-4 h-4 spinner" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memproses...';
-
 
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -1428,8 +1333,15 @@
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
                 const excelData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                
                 processExcelData(excelData);
 
+                reviewBtn.disabled = false;
+                reviewBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg> Review Data';
+            };
+
+            reader.onerror = function(ex) {
+                showGlobalMessage('Gagal membaca file Excel.', 'error');
                 reviewBtn.disabled = false;
                 reviewBtn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg> Review Data';
             };
@@ -1441,41 +1353,38 @@
             activeCardIds = [];
             const reviewBody = document.getElementById('review-table-body');
             reviewBody.innerHTML = '';
-
-            if (data.length === 0 || data[0].length === 0) {
-                showGlobalMessage('Gagal membaca file Excel. File kosong atau tidak valid.', 'error');
-                return;
+            
+            if (data.length < 2) { 
+                showGlobalMessage('File Excel kosong atau hanya berisi header.', 'error'); 
+                return; 
             }
 
-            const headerRow = data[0].map(h => String(h).toLowerCase().trim().replace(/[^a-z0-9]/g, ' '));
-            const requiredFields = ['card id', 'nik', 'nama', 'departemen', 'pagi', 'siang', 'sore', 'malam'];
-            
+            const rawHeaders = data[0].map(h => String(h).trim());
             const headerMap = {};
-            requiredFields.forEach(field => {
-                headerMap[field] = headerRow.findIndex(h => h === field);
+            REQUIRED_HEADERS.forEach(requiredHeader => {
+                const index = rawHeaders.findIndex(h => h.toLowerCase() === requiredHeader.toLowerCase());
+                if (index !== -1) { headerMap[requiredHeader.toLowerCase()] = index; }
             });
 
-            const missingFields = requiredFields.filter(field => headerMap[field] === -1 || typeof headerMap[field] === 'undefined');
-
+            const requiredFields = ['card id', 'nik', 'nama', 'departemen', 'pagi', 'siang', 'sore', 'malam'];
+            const missingFields = requiredFields.filter(field => typeof headerMap[field] === 'undefined');
+            
             if (missingFields.length > 0) {
                 showGlobalMessage(`Gagal: Kolom wajib tidak ditemukan di Excel: ${missingFields.map(f => f.toUpperCase()).join(', ')}.`, 'error');
                 return;
             }
 
-            const cardIndex = headerMap['card id'];
+            const cardIndex = headerMap['card id']; 
             let validCount = 0;
             let skippedCount = 0;
 
             for (let i = 1; i < data.length; i++) {
                 const row = data[i];
                 let status = 'Valid';
-                let cardId = String(row[cardIndex] || '').trim().toUpperCase(); // Normalisasi Card ID
+                let cardId = String(row[cardIndex] || '').trim();
 
                 if (!cardId) {
                     status = 'Dilewati (Card ID Kosong)';
-                    skippedCount++;
-                } else if (activeCardIds.includes(cardId)) {
-                    status = 'Dilewati (Card ID Duplikat di File)';
                     skippedCount++;
                 } else {
                     const payload = {
@@ -1488,8 +1397,9 @@
                         sore: formatTime(row[headerMap['sore']] || ''),
                         malam: formatTime(row[headerMap['malam']] || ''),
                     };
+                    
                     parsedImportData.push(payload);
-                    activeCardIds.push(cardId);
+                    activeCardIds.push(cardId);      
                     validCount++;
                 }
 
@@ -1504,48 +1414,44 @@
                     <td class="text-primary/80">${formatTime(row[headerMap['siang']] || '')}</td>
                     <td class="text-primary/80">${formatTime(row[headerMap['sore']] || '')}</td>
                     <td class="text-primary/80">${formatTime(row[headerMap['malam']] || '')}</td>
-                    <td><span class="${status === 'Valid' ? 'badge-success' : 'badge-error'}">${status}</span></td>
+                    <td><span class="${status.startsWith('Dilewati') ? 'badge-error' : 'badge-success'}">${status}</span></td>
                 `;
             }
 
-            document.getElementById('review-summary').textContent = `Ditemukan ${data.length - 1} baris. ${validCount} data valid siap diproses, ${skippedCount} baris dilewati.`;
-            document.getElementById('step-upload').classList.add('hidden');
-            document.getElementById('step-review').classList.remove('hidden');
-            document.getElementById('review-button').classList.add('hidden');
-            document.getElementById('import-submit-button').classList.remove('hidden');
-            document.getElementById('deletion-warning').classList.remove('hidden');
-            document.getElementById('import-submit-button').disabled = validCount === 0;
+            document.getElementById('review-summary').innerHTML = 
+                `Total baris: ${data.length - 1}. Data siap disinkronisasi: <span class="text-success font-medium">${validCount}</span>. Baris dilewati: <span class="text-destructive font-medium">${skippedCount}</span>.`;
 
-            if (validCount === 0) {
-                showGlobalMessage('Semua baris dilewati atau tidak ada data valid yang ditemukan.', 'error');
+            if (validCount > 0) {
+                document.getElementById('step-upload').classList.add('hidden');
+                document.getElementById('step-review').classList.remove('hidden');
+                document.getElementById('review-button').classList.add('hidden');
+                document.getElementById('import-submit-button').classList.remove('hidden');
+                document.getElementById('import-submit-button').disabled = false;
+                document.getElementById('deletion-warning').classList.remove('hidden');
+            } else {
+                document.getElementById('import-submit-button').disabled = true;
+                showGlobalMessage('Tidak ada data valid yang ditemukan untuk disinkronisasi.', 'error');
             }
         }
 
-        document.getElementById('import-form').addEventListener('submit', handleImportSubmit);
-
         async function handleImportSubmit(event) {
             event.preventDefault();
-
-            if (parsedImportData.length === 0) {
-                showGlobalMessage('Tidak ada data valid untuk diimpor.', 'error');
-                return;
+            
+            if (parsedImportData.length === 0) { 
+                showGlobalMessage('Tidak ada data valid untuk dikirim.', 'error'); 
+                return; 
             }
             
-            if (GOOGLE_APPS_SCRIPT_URL.includes('YOUR_GOOGLE_APPS_SCRIPT_URL')) {
-                 showGlobalMessage('Mohon ganti "YOUR_GOOGLE_APPS_SCRIPT_URL" dengan URL Apps Script Anda.', 'error');
-                 return;
-            }
-
             const submitButton = document.getElementById('import-submit-button');
             submitButton.disabled = true;
-            submitButton.innerHTML = '<svg class="w-4 h-4 spinner" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Sinkronisasi...';
-
+            submitButton.innerHTML = '<svg class="w-4 h-4 spinner" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Menjadwalkan Sinkronisasi...';
+            
             try {
-                // Konversi data ke format JSON string untuk dikirim ke Apps Script
-                const jsonPayload = JSON.stringify(parsedImportData);
-
-                // Kirim data ke Google Apps Script (menggunakan POST request)
-                // Ini mengasumsikan Apps Script Anda memiliki fungsi doPost(e)
+                const jsonPayload = JSON.stringify({
+                    action: 'save_pending_import',
+                    data: parsedImportData
+                });
+        
                 const dataToSend = new URLSearchParams();
                 dataToSend.append('payload', jsonPayload);
         
@@ -1578,10 +1484,5 @@
         }
     </script>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAdminSession();
-        });
-    </script>
 </body>
 </html>
