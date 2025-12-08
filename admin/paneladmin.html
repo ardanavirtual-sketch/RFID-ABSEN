@@ -331,7 +331,7 @@ bg-red-100 rounded-md">⚠️ Peringatan Akhir: Proses ini akan **MENGHAPUS SEMU
                     </button>
                     <button type="submit" id="import-submit-button" class="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition duration-150 btn-primary hidden flex items-center" disabled>
                         <svg class="w-4 
-h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                         Hapus Lama & Ganti Baru
                     </button>
                     </div>
@@ -455,6 +455,9 @@ let parsedImportData = [];
             checkAdminSession(); 
             document.getElementById('crud-form').addEventListener('submit', handleFormSubmit);
             document.getElementById('import-form').addEventListener('submit', handleImportSubmit);
+            // Tambahkan event listener untuk memuat log secara otomatis saat halaman dimuat
+            // Ini akan memastikan log terarsip dimuat pertama kali
+            // switchView('data-karyawan'); // Pindahkan ini ke checkAdminSession jika perlu
         });
 
 // FUNGSI BARU: Mendapatkan tanggal hari N hari yang lalu
@@ -730,6 +733,68 @@ function exportSingleDayLogToExcel(dateKey) {
 }
 
 
+// --- FUNGSI PENTING: SWITCH VIEW ---
+function switchView(viewId) {
+    const views = ['data-karyawan', 'laporan-absen'];
+    
+    // 1. Sembunyikan semua tampilan
+    views.forEach(id => {
+        const viewEl = document.getElementById(`${id}-view`);
+        if (viewEl) {
+            viewEl.classList.add('hidden');
+        }
+    });
+
+    // 2. Tampilkan tampilan yang dipilih
+    const activeView = document.getElementById(`${viewId}-view`);
+    if (activeView) {
+        activeView.classList.remove('hidden');
+    }
+
+    // 3. Atur status aktif pada Sidebar Desktop
+    views.forEach(id => {
+        const sidebarLink = document.getElementById(`sidebar-${id}`);
+        if (sidebarLink) {
+            if (id === viewId) {
+                sidebarLink.classList.add('sidebar-active');
+                sidebarLink.classList.remove('text-gray-200');
+            } else {
+                sidebarLink.classList.remove('sidebar-active');
+                sidebarLink.classList.add('text-gray-200');
+            }
+        }
+    });
+
+    // 4. Atur status aktif pada Tab Mobile
+    const tabKaryawan = document.getElementById('tab-data-karyawan-mobile');
+    const tabAbsen = document.getElementById('tab-laporan-absen-mobile');
+
+    // Reset semua tab mobile
+    [tabKaryawan, tabAbsen].forEach(tab => {
+        if (tab) {
+            tab.classList.remove('tab-active', 'border-b-2', 'border-indigo-600', 'text-indigo-600', 'font-semibold');
+        }
+    });
+
+    // Set tab mobile yang aktif
+    if (viewId === 'data-karyawan' && tabKaryawan) {
+        tabKaryawan.classList.add('tab-active', 'border-b-2', 'border-indigo-600', 'text-indigo-600', 'font-semibold');
+    } else if (viewId === 'laporan-absen' && tabAbsen) {
+        tabAbsen.classList.add('tab-active', 'border-b-2', 'border-indigo-600', 'text-indigo-600', 'font-semibold');
+    }
+
+
+    // 5. Muat data spesifik untuk tampilan Log Absensi
+    if (viewId === 'laporan-absen') {
+        autoDeleteOldLogs(); // Hapus log lama secara otomatis
+        loadArchivedAbsensiLog(); // Muat log 7 hari terakhir
+    } else if (viewId === 'data-karyawan') {
+        fetchData(); // Muat data karyawan saat kembali ke tampilan ini
+    }
+}
+// --- AKHIR FUNGSI PENTING: SWITCH VIEW ---
+
+
 // --- FUNGSI LAMA (CRUD, FETCH DATA, DLL) - TIDAK ADA PERUBAHAN FUNGSI DASAR --- 
 
 function showGlobalMessage(message, type = 'success') {
@@ -754,7 +819,7 @@ function checkAdminSession() {
     // Jika tidak ada sesi, redirect ke halaman login
     // ...
     // Untuk demo, asumsikan sesi valid dan tampilkan data
-    fetchData();
+    switchView('data-karyawan'); // Panggil switchView di sini untuk inisialisasi tampilan awal
 }
 
 async function fetchData(card = '', nama = '') {
@@ -1232,10 +1297,16 @@ async function handleImportSubmit(event) {
         showGlobalMessage(`Gagal menjadwalkan import: ${error.message}. Cek log Apps Script Anda.`, 'error');
     } finally {
         closeImportModal();
-        submitButton.innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Hapus Lama & Ganti Baru';
+        submitButton.innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg> Hapus Lama & Ganti Baru';
         submitButton.disabled = false;
         fetchData(); 
     }
+}
+
+function handleLogout() {
+    // Implementasi logout di sini
+    alert("Fungsi Logout dipanggil. (Implementasi Supabase Auth diperlukan)");
+    // window.location.href = '/login.html'; // Contoh redirect ke halaman login
 }
     </script>
 </body>
