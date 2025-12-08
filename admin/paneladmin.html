@@ -438,6 +438,7 @@ viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="rou
 // --- 1. KONFIGURASI SUPABASE (PASTIKAN INI SESUAI) ---
         const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
+        // ⚠️ PASTIKAN URL INI ADALAH URL DEPLOYMENT GOOGLE APPS SCRIPT ANDA
         const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz1TgP25Wwj4eBN1KGECy1xzqxjrF9siqHIEojiSFbxcHhsaHU-DHRM6MKY2gMZg1eviQ/exec';
         const TABLE_NAME = 'data_master';
         const LOG_TABLE_NAME = 'log_absen';
@@ -733,7 +734,7 @@ function exportSingleDayLogToExcel(dateKey) {
 }
 
 
-// --- FUNGSI PENTING: SWITCH VIEW ---
+// FUNGSI PENTING: SWITCH VIEW (Sudah diperbaiki pada respons sebelumnya)
 function switchView(viewId) {
     const views = ['data-karyawan', 'laporan-absen'];
     
@@ -1270,9 +1271,10 @@ async function handleImportSubmit(event) {
         const dataToSend = new FormData();
         const jsonPayload = JSON.stringify({
             data: parsedImportData,
-            action: 'importData'
+            action: 'importData' // Parameter 'action' dikirim di sini
         });
 
+        // Payload dikirim sebagai field bernama 'payload' di FormData
         dataToSend.append('payload', jsonPayload);
 
         const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
@@ -1289,11 +1291,13 @@ async function handleImportSubmit(event) {
         if (result.status === 'success') {
             showGlobalMessage(`Sinkronisasi Dijadwalkan! ${result.message}`, 'success');
         } else {
+            // Jika Apps Script mengembalikan status error (termasuk "Aksi tidak valid"), error akan dilempar di sini
             throw new Error(result.message || 'Gagal menyimpan data sementara ke Apps Script.');
         }
 
     } catch (error) {
         console.error("Import Scheduling Error:", error);
+        // Pesan kesalahan yang muncul di sini sekarang sudah akurat
         showGlobalMessage(`Gagal menjadwalkan import: ${error.message}. Cek log Apps Script Anda.`, 'error');
     } finally {
         closeImportModal();
