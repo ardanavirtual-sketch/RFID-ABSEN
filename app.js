@@ -1,4 +1,4 @@
-// app.js (Kode sudah diupdate untuk menggunakan audio duplikasi dan perbaikan Timezone)
+// app.js (Kode sudah diupdate untuk menggunakan audio duplikasi)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -36,28 +36,28 @@ const logGagalMalamElement = document.getElementById('log-gagal-malam');
 // Tambahkan elemen audio
 const audioSuccess = document.getElementById('audio-success');
 const audioFail = document.getElementById('audio-fail');
-const audioDuplicate = document.getElementById('audio-duplicate');
+const audioDuplicate = document.getElementById('audio-duplicate'); // BARIS BARU
 
 // State untuk HID Listener
-let currentRFID = '';
-let isProcessing = false;
+let currentRFID = ''; // Buffer untuk menampung input ID kartu
+let isProcessing = false; // Mencegah double tap saat proses masih berjalan
 
-// State for Log Counters 
+// State for Log Counters 
 let logCounters = {
-    // Total harian
-    total: {
-        success: 0,
-        fail: 0
-    },
-    // Per periode
-    pagi: { success: 0, fail: 0 },
-    siang: { success: 0, fail: 0 },
-    sore: { success: 0, fail: 0 },
-    malam: { success: 0, fail: 0 }
+    // Total harian
+    total: {
+        success: 0,
+        fail: 0
+    },
+    // Per periode
+    pagi: { success: 0, fail: 0 },
+    siang: { success: 0, fail: 0 },
+    sore: { success: 0, fail: 0 },
+    malam: { success: 0, fail: 0 }
 };
 
 // State Deduplikasi (Mencegah Hitungan Ganda per Kartu di UI)
-const lastTapStatus = new Map(); 
+const lastTapStatus = new Map(); 
 const DEDUPLICATION_WINDOW_MS = 60000; // 60 detik
 
 // State untuk Reset Harian
@@ -70,263 +70,242 @@ const LOCAL_STORAGE_DATE_KEY = 'rfid_log_date';
 // ===================================
 
 function getCurrentMealPeriod() {
-    const hour = new Date().getHours();
-    
-    if (hour >= 4 && hour < 10) { 
-        return 'pagi';
-    } else if (hour >= 10 && hour < 16) { 
-        return 'siang';
-    } else if (hour >= 16 && hour < 21) { 
-        return 'sore';
-    } else if (hour >= 21 && hour < 23) { 
-        return 'malam';
-    } else {
-        // Default ke 'pagi' atau periode yang paling awal jika di luar range
-        return 'pagi'; 
-    }
+    const hour = new Date().getHours();
+    
+    if (hour >= 4 && hour < 10) { 
+        return 'pagi';
+    } else if (hour >= 10 && hour < 16) { 
+        return 'siang';
+    } else if (hour >= 16 && hour < 21) { 
+        return 'sore';
+    } else if (hour >= 21 && hour < 23) { 
+        return 'malam';
+    } else {
+        // Default ke 'pagi' atau periode yang paling awal jika di luar range
+        return 'pagi'; 
+    }
 }
 
-/**
- * MENGAMBIL TANGGAL HARI INI SECARA AKURAT BERDASARKAN WIT (Asia/Jayapura).
- * Ini sangat penting untuk logika reset harian di setupInitialState.
- */
 function getTodayDateString() {
-    const today = new Date();
-    
-    // Gunakan formatter untuk mendapatkan tanggal YYYY-MM-DD sesuai zona waktu WIT (UTC+9)
-    const formatter = new Intl.DateTimeFormat('fr-CA', { // 'fr-CA' menghasilkan format YYYY-MM-DD
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        timeZone: 'Asia/Jayapura' // Tentukan zona waktu Indonesia Timur
-    });
-    
-    return formatter.format(today); // Contoh: "2025-12-08"
+    return new Date().toISOString().split('T')[0];
 }
 
 function updateUILogCounters() {
-    if(logSuksesPagiElement) logSuksesPagiElement.textContent = logCounters.pagi.success;
-    if(logGagalPagiElement) logGagalPagiElement.textContent = logCounters.pagi.fail;
-    if(logSuksesSiangElement) logSuksesSiangElement.textContent = logCounters.siang.success;
-    if(logGagalSiangElement) logGagalSiangElement.textContent = logCounters.siang.fail;
-    if(logSuksesSoreElement) logSuksesSoreElement.textContent = logCounters.sore.success;
-    if(logGagalSoreElement) logGagalSoreElement.textContent = logCounters.sore.fail;
-    if(logSuksesMalamElement) logSuksesMalamElement.textContent = logCounters.malam.success;
-    if(logGagalMalamElement) logGagalMalamElement.textContent = logCounters.malam.fail;
+    if(logSuksesPagiElement) logSuksesPagiElement.textContent = logCounters.pagi.success;
+    if(logGagalPagiElement) logGagalPagiElement.textContent = logCounters.pagi.fail;
+    if(logSuksesSiangElement) logSuksesSiangElement.textContent = logCounters.siang.success;
+    if(logGagalSiangElement) logGagalSiangElement.textContent = logCounters.siang.fail;
+    if(logSuksesSoreElement) logSuksesSoreElement.textContent = logCounters.sore.success;
+    if(logGagalSoreElement) logGagalSoreElement.textContent = logCounters.sore.fail;
+    if(logSuksesMalamElement) logSuksesMalamElement.textContent = logCounters.malam.success;
+    if(logGagalMalamElement) logGagalMalamElement.textContent = logCounters.malam.fail;
 }
 
 function setupInitialState() {
-    const savedCounters = localStorage.getItem(LOCAL_STORAGE_KEY);
-    const savedDate = localStorage.getItem(LOCAL_STORAGE_DATE_KEY);
-    const today = getTodayDateString(); // Menggunakan fungsi yang sudah diperbaiki
+    const savedCounters = localStorage.getItem(LOCAL_STORAGE_KEY);
+    const savedDate = localStorage.getItem(LOCAL_STORAGE_DATE_KEY);
+    const today = getTodayDateString();
 
-    // --- LOGIKA RESET HARIAN ---
-    if (savedDate !== today) {
-        // Hapus total log absen sukses dan gagal
-        logCounters = {
-            total: { success: 0, fail: 0 },
-            pagi: { success: 0, fail: 0 },
-            siang: { success: 0, fail: 0 },
-            sore: { success: 0, fail: 0 },
-            malam: { success: 0, fail: 0 }
-        };
-        // Simpan tanggal baru
-        localStorage.setItem(LOCAL_STORAGE_DATE_KEY, today);
-        // Hapus log lama (untuk memastikan hitungan dimulai dari 0 jika user pindah tab/browser)
-        localStorage.removeItem(LOCAL_STORAGE_KEY); 
-        // Kosongkan state deduplikasi karena ini hari baru
-        lastTapStatus.clear(); 
-        console.log("Counter presensi direset karena pergantian hari.");
-    } else if (savedCounters) {
-        // Muat state jika tanggal sama
-        try {
-            logCounters = JSON.parse(savedCounters);
-            // Pastikan struktur logCounters valid
-            if (!logCounters.pagi) { 
-                throw new Error("Invalid logCounters structure, resetting.");
-            }
-        } catch (e) {
-            console.error("Gagal memuat state logCounters dari Local Storage:", e);
-            // Reset ke default jika gagal parsing
-            logCounters = {
-                total: { success: 0, fail: 0 },
-                pagi: { success: 0, fail: 0 },
-                siang: { success: 0, fail: 0 },
-                sore: { success: 0, fail: 0 },
-                malam: { success: 0, fail: 0 }
-            };
-        }
-    }
-    // --- AKHIR LOGIKA RESET HARIAN ---
-    
-    updateUILogCounters();
+    // Reset jika tanggal berbeda
+    if (savedDate !== today) {
+        logCounters = {
+            total: { success: 0, fail: 0 },
+            pagi: { success: 0, fail: 0 },
+            siang: { success: 0, fail: 0 },
+            sore: { success: 0, fail: 0 },
+            malam: { success: 0, fail: 0 }
+        };
+        localStorage.setItem(LOCAL_STORAGE_DATE_KEY, today);
+        localStorage.removeItem(LOCAL_STORAGE_KEY); // Hapus log lama
+        console.log("Counter presensi direset karena pergantian hari.");
+    } else if (savedCounters) {
+        // Muat state jika tanggal sama
+        try {
+            logCounters = JSON.parse(savedCounters);
+            // Pastikan struktur logCounters valid
+            if (!logCounters.pagi) { 
+                throw new Error("Invalid logCounters structure, resetting.");
+            }
+        } catch (e) {
+            console.error("Gagal memuat state logCounters dari Local Storage:", e);
+            // Reset ke default jika gagal parsing
+            logCounters = {
+                total: { success: 0, fail: 0 },
+                pagi: { success: 0, fail: 0 },
+                siang: { success: 0, fail: 0 },
+                sore: { success: 0, fail: 0 },
+                malam: { success: 0, fail: 0 }
+            };
+        }
+    }
+    updateUILogCounters();
 }
 
 function saveLogCounters() {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logCounters));
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logCounters));
 }
 
 function updateLogCounters(rfidId, isSuccess, period) {
-    const statusKey = isSuccess ? 'SUCCESS' : 'FAIL';
-    const counterKey = isSuccess ? 'success' : 'fail';
-    const previousTap = lastTapStatus.get(rfidId);
-    
-    // Logic Deduplikasi: Hanya hitung jika tap pertama, tap di luar window, atau terjadi perubahan status
-    if (!previousTap || (Date.now() - previousTap.timestamp) > DEDUPLICATION_WINDOW_MS || previousTap.status !== statusKey) {
-        
-        // Sesuaikan counter jika terjadi perubahan status (ex: Gagal -> Sukses)
-        if (previousTap && previousTap.status !== statusKey) {
-             const prevPeriod = previousTap.period;
-             const prevCounterKey = previousTap.status === 'SUCCESS' ? 'success' : 'fail';
+    const statusKey = isSuccess ? 'SUCCESS' : 'FAIL';
+    const counterKey = isSuccess ? 'success' : 'fail';
+    const previousTap = lastTapStatus.get(rfidId);
+    
+    // Logic Deduplikasi: Hanya hitung jika tap pertama, tap di luar window, atau terjadi perubahan status
+    if (!previousTap || (Date.now() - previousTap.timestamp) > DEDUPLICATION_WINDOW_MS || previousTap.status !== statusKey) {
+        
+        // Sesuaikan counter jika terjadi perubahan status (ex: Gagal -> Sukses)
+        if (previousTap && previousTap.status !== statusKey) {
+             const prevPeriod = previousTap.period;
+             const prevCounterKey = previousTap.status === 'SUCCESS' ? 'success' : 'fail';
 
-             // Kurangi hitungan lama
-             if (logCounters[prevPeriod] && logCounters[prevPeriod][prevCounterKey] > 0) {
-                 logCounters[prevPeriod][prevCounterKey]--;
-             }
-        }
+             // Kurangi hitungan lama
+             if (logCounters[prevPeriod] && logCounters[prevPeriod][prevCounterKey] > 0) {
+                 logCounters[prevPeriod][prevCounterKey]--;
+             }
+        }
 
-        // Tambahkan hitungan baru
-        if (logCounters[period]) {
-            logCounters[period][counterKey]++;
-        } else {
-            // Fallback jika periode tidak terdefinisi (seharusnya tidak terjadi)
-            logCounters.total[counterKey]++;
-        }
+        // Tambahkan hitungan baru
+        if (logCounters[period]) {
+            logCounters[period][counterKey]++;
+        } else {
+            // Fallback jika periode tidak terdefinisi (seharusnya tidak terjadi)
+            logCounters.total[counterKey]++;
+        }
 
-        // Simpan status tap baru
-        lastTapStatus.set(rfidId, { timestamp: Date.now(), status: statusKey, period: period });
+        // Simpan status tap baru
+        lastTapStatus.set(rfidId, { timestamp: Date.now(), status: statusKey, period: period });
 
-        // Update UI & Local Storage
-        updateUILogCounters();
-        saveLogCounters();
-        return true; 
-    } else if (previousTap.status === statusKey) {
-        // Perpanjang window jika duplikat
-        lastTapStatus.set(rfidId, { timestamp: Date.now(), status: statusKey, period: period });
-    }
-    return false;
+        // Update UI & Local Storage
+        updateUILogCounters();
+        saveLogCounters();
+        return true; 
+    } else if (previousTap.status === statusKey) {
+        // Perpanjang window jika duplikat
+        lastTapStatus.set(rfidId, { timestamp: Date.now(), status: statusKey, period: period });
+    }
+    return false;
 }
 
 function showAlreadyTappedStatus(rfidId, nama) {
-    appContainer.classList.add('scale-105'); 
-    appContainer.classList.remove('bg-success-green/20', 'bg-error-red/20'); 
-    appContainer.classList.add('bg-blue-200/50'); // Latar belakang biru muda
+    appContainer.classList.add('scale-105'); 
+    appContainer.classList.remove('bg-success-green/20', 'bg-error-red/20'); 
+    appContainer.classList.add('bg-blue-200/50'); // Latar belakang biru muda
 
-    statusCard.classList.replace('bg-warning-yellow/20', 'bg-blue-100'); 
-    statusIcon.classList.replace('bg-warning-yellow', 'bg-primary-blue'); 
-    statusIcon.classList.remove('status-icon', 'animate-spin'); 
-    statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-    
-    statusMessage.textContent = 'Anda Sudah Melakukan Tap Kartu!';
-    statusMessage.classList.remove('text-success-green', 'text-error-red', 'text-warning-yellow');
-    statusMessage.classList.add('text-primary-blue');
-    
-    hasilTitle.textContent = 'Informasi Absensi';
-    hasilNama.textContent = nama || 'Terdaftar';
-    hasilID.textContent = rfidId;
-    
-    // --- PEMUTARAN SUARA DUPLIKASI (BARU) ---
-    if (audioDuplicate) {
-        audioDuplicate.currentTime = 0; // Mulai dari awal
-        audioDuplicate.play().catch(e => console.error("Gagal memutar audio duplikasi:", e));
-    }
-    // ------------------------------------------
+    statusCard.classList.replace('bg-warning-yellow/20', 'bg-blue-100'); 
+    statusIcon.classList.replace('bg-warning-yellow', 'bg-primary-blue'); 
+    statusIcon.classList.remove('status-icon', 'animate-spin'); 
+    statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+    
+    statusMessage.textContent = 'Anda Sudah Melakukan Tap Kartu!';
+    statusMessage.classList.remove('text-success-green', 'text-error-red', 'text-warning-yellow');
+    statusMessage.classList.add('text-primary-blue');
+    
+    hasilTitle.textContent = 'Informasi Absensi';
+    hasilNama.textContent = nama || 'Terdaftar';
+    hasilID.textContent = rfidId;
+    
+    // --- PEMUTARAN SUARA DUPLIKASI (BARU) ---
+    if (audioDuplicate) {
+        audioDuplicate.currentTime = 0; // Mulai dari awal
+        audioDuplicate.play().catch(e => console.error("Gagal memutar audio duplikasi:", e));
+    }
+    // ------------------------------------------
 
-    hasilContainer.classList.remove('hidden');
+    hasilContainer.classList.remove('hidden');
 
-    // Izinkan input baru setelah delay
-    setTimeout(() => {
-        isProcessing = false;
-        appContainer.classList.remove('bg-blue-200/50'); 
-        resetStatus();
-    }, 5000); 
+    // Izinkan input baru setelah delay
+    setTimeout(() => {
+        isProcessing = false;
+        appContainer.classList.remove('bg-blue-200/50'); 
+        resetStatus();
+    }, 5000); 
 }
 
 
 function resetStatus() {
-    // Pastikan semua class warna dihilangkan
-    appContainer.classList.remove('scale-105', 'bg-success-green/20', 'bg-error-red/20', 'bg-blue-200/50'); 
-    statusCard.classList.remove('bg-success-green/20', 'bg-error-red/20', 'bg-warning-yellow/20', 'bg-blue-100'); 
-    statusIcon.classList.remove('bg-success-green', 'bg-error-red', 'bg-warning-yellow', 'animate-none');
+    // Pastikan semua class warna dihilangkan
+    appContainer.classList.remove('scale-105', 'bg-success-green/20', 'bg-error-red/20', 'bg-blue-200/50'); 
+    statusCard.classList.remove('bg-success-green/20', 'bg-error-red/20', 'bg-warning-yellow/20', 'bg-blue-100'); 
+    statusIcon.classList.remove('bg-success-green', 'bg-error-red', 'bg-warning-yellow', 'animate-none');
 
-    statusCard.classList.add('bg-blue-50');
-    statusIcon.classList.add('bg-primary-blue/80', 'status-icon');
-    statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>`;
-    statusMessage.classList.remove('text-success-green', 'text-error-red', 'text-warning-yellow', 'text-primary-blue'); 
-    statusMessage.classList.add('text-primary-blue');
+    statusCard.classList.add('bg-blue-50');
+    statusIcon.classList.add('bg-primary-blue/80', 'status-icon');
+    statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>`;
+    statusMessage.classList.remove('text-success-green', 'text-error-red', 'text-warning-yellow', 'text-primary-blue'); 
+    statusMessage.classList.add('text-primary-blue');
 
-    hasilContainer.classList.add('hidden');
-    hasilNama.textContent = '-';
-    hasilID.textContent = '-';
-    // hasilWaktu.textContent = '-'; // Dihilangkan dari UI
-    
-    statusMessage.textContent = 'Reader Siap. Tap Kartu.';
-    readerStatusHint.textContent = 'Listener Keyboard (HID) aktif. Tempelkan kartu.';
+    hasilContainer.classList.add('hidden');
+    hasilNama.textContent = '-';
+    hasilID.textContent = '-';
+    // hasilWaktu.textContent = '-'; // Dihilangkan dari UI
+    
+    statusMessage.textContent = 'Reader Siap. Tap Kartu.';
+    readerStatusHint.textContent = 'Listener Keyboard (HID) aktif. Tempelkan kartu.';
 }
 
 function showProcessingStatus() {
-    statusCard.classList.replace('bg-blue-50', 'bg-warning-yellow/20');
-    statusIcon.classList.replace('bg-primary-blue/80', 'bg-warning-yellow');
-    statusIcon.classList.remove('status-icon'); 
-    statusIcon.innerHTML = `<svg class="animate-spin w-7 h-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
-    statusMessage.textContent = 'Memproses Data Kartu...';
-    statusMessage.classList.replace('text-primary-blue', 'text-warning-yellow');
-    hasilContainer.classList.add('hidden');
+    statusCard.classList.replace('bg-blue-50', 'bg-warning-yellow/20');
+    statusIcon.classList.replace('bg-primary-blue/80', 'bg-warning-yellow');
+    statusIcon.classList.remove('status-icon'); 
+    statusIcon.innerHTML = `<svg class="animate-spin w-7 h-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
+    statusMessage.textContent = 'Memproses Data Kartu...';
+    statusMessage.classList.replace('text-primary-blue', 'text-warning-yellow');
+    hasilContainer.classList.add('hidden');
 }
 
 function updateUI({ success, message, rfidId, nama, status_log, currentPeriod }) {
-    
-    // Panggil updateLogCounters dengan periode saat ini
-    updateLogCounters(rfidId, success, currentPeriod);
+    
+    // Panggil updateLogCounters dengan periode saat ini
+    updateLogCounters(rfidId, success, currentPeriod);
 
-    // const currentTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); // Variabel ini tetap ada, tapi tidak digunakan di UI
+    // const currentTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); // Variabel ini tetap ada, tapi tidak digunakan di UI
 
-    appContainer.classList.remove('bg-blue-200/50');
-    statusCard.classList.remove('bg-blue-100');
+    appContainer.classList.remove('bg-blue-200/50');
+    statusCard.classList.remove('bg-blue-100');
 
-    if (success) {
-        appContainer.classList.add('scale-105', 'bg-success-green/20');
-        statusCard.classList.replace('bg-warning-yellow/20', 'bg-success-green/20');
-        statusIcon.classList.replace('bg-warning-yellow', 'bg-success-green');
-        statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-        statusMessage.textContent = message;
-        statusMessage.classList.replace('text-warning-yellow', 'text-success-green');
-        hasilTitle.textContent = 'Detail Presensi Sukses';
+    if (success) {
+        appContainer.classList.add('scale-105', 'bg-success-green/20');
+        statusCard.classList.replace('bg-warning-yellow/20', 'bg-success-green/20');
+        statusIcon.classList.replace('bg-warning-yellow', 'bg-success-green');
+        statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+        statusMessage.textContent = message;
+        statusMessage.classList.replace('text-warning-yellow', 'text-success-green');
+        hasilTitle.textContent = 'Detail Presensi Sukses';
 
-        // --- PEMUTARAN SUARA SUKSES ---
-        if (audioSuccess) {
-            audioSuccess.currentTime = 0; // Mulai dari awal
-            audioSuccess.play().catch(e => console.error("Gagal memutar audio sukses:", e));
-        }
-        // -----------------------------
+        // --- PEMUTARAN SUARA SUKSES ---
+        if (audioSuccess) {
+            audioSuccess.currentTime = 0; // Mulai dari awal
+            audioSuccess.play().catch(e => console.error("Gagal memutar audio sukses:", e));
+        }
+        // -----------------------------
 
-    } else {
-        appContainer.classList.add('scale-105', 'bg-error-red/20');
-        statusCard.classList.replace('bg-warning-yellow/20', 'bg-error-red/20');
-        statusIcon.classList.replace('bg-warning-yellow', 'bg-error-red');
-        statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-        statusMessage.textContent = message;
-        statusMessage.classList.replace('text-warning-yellow', 'text-error-red');
-        hasilTitle.textContent = 'Detail Kegagalan';
+    } else {
+        appContainer.classList.add('scale-105', 'bg-error-red/20');
+        statusCard.classList.replace('bg-warning-yellow/20', 'bg-error-red/20');
+        statusIcon.classList.replace('bg-warning-yellow', 'bg-error-red');
+        statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+        statusMessage.textContent = message;
+        statusMessage.classList.replace('text-warning-yellow', 'text-error-red');
+        hasilTitle.textContent = 'Detail Kegagalan';
 
-        // --- PEMUTARAN SUARA GAGAL ---
-        if (audioFail) {
-            audioFail.currentTime = 0; // Mulai dari awal
-            audioFail.play().catch(e => console.error("Gagal memutar audio gagal:", e));
-        }
-        // -----------------------------
-    }
+        // --- PEMUTARAN SUARA GAGAL ---
+        if (audioFail) {
+            audioFail.currentTime = 0; // Mulai dari awal
+            audioFail.play().catch(e => console.error("Gagal memutar audio gagal:", e));
+        }
+        // -----------------------------
+    }
 
-    hasilNama.textContent = nama;
-    hasilID.textContent = rfidId;
-    // hasilWaktu.textContent = currentTime; // Baris ini dihapus/dinonaktifkan
-    hasilContainer.classList.remove('hidden');
+    hasilNama.textContent = nama;
+    hasilID.textContent = rfidId;
+    // hasilWaktu.textContent = currentTime; // Baris ini dihapus/dinonaktifkan
+    hasilContainer.classList.remove('hidden');
 
-    // Izinkan input baru setelah delay
-    setTimeout(() => {
-        isProcessing = false;
-        resetStatus();
-    }, 5000); 
+    // Izinkan input baru setelah delay
+    setTimeout(() => {
+        isProcessing = false;
+        resetStatus();
+    }, 5000); 
 }
 
 
@@ -335,151 +314,140 @@ function updateUI({ success, message, rfidId, nama, status_log, currentPeriod })
 // ===================================
 
 async function checkCardSupabase(rfidId) {
-    if (isProcessing) return; 
-    isProcessing = true;
+    if (isProcessing) return; 
+    isProcessing = true;
 
-    showProcessingStatus();
-    
-    const currentPeriod = getCurrentMealPeriod();
+    showProcessingStatus();
+    
+    const currentPeriod = getCurrentMealPeriod();
 
-    let result = {
-        success: false,
-        message: 'Kartu Tidak Dikenal!',
-        rfidId: rfidId,
-        nama: 'Pengguna tidak terdaftar',
-        status_log: "Gagal (Unknown Card)",
-        currentPeriod: currentPeriod // Tambahkan periode ke hasil
-    };
-    
-    try {
-        // 1. Cek apakah kartu sudah terdaftar di data_master
-        const { data: userData, error: userError } = await db
-            .from("data_master")
-            .select("nama, pagi, siang, sore, malam")
-            .eq("card", rfidId)
-            .maybeSingle();
+    let result = {
+        success: false,
+        message: 'Kartu Tidak Dikenal!',
+        rfidId: rfidId,
+        nama: 'Pengguna tidak terdaftar',
+        status_log: "Gagal (Unknown Card)",
+        currentPeriod: currentPeriod // Tambahkan periode ke hasil
+    };
+    
+    try {
+        // 1. Cek apakah kartu sudah terdaftar di data_master
+        const { data: userData, error: userError } = await db
+            .from("data_master")
+            .select("nama, pagi, siang, sore, malam")
+            .eq("card", rfidId)
+            .maybeSingle();
 
-        if (userError) throw userError;
+        if (userError) throw userError;
 
-        if (userData) {
-            result.nama = userData.nama;
-            
-            // 2. Cek apakah kartu sudah melakukan presensi sukses hari ini untuk periode ini
-            const today = getTodayDateString(); // Menggunakan tanggal WIT yang sudah diperbaiki
-            
-            const { data: logData, error: logError } = await db
-                .from("log_absen")
-                .select("id")
-                .eq("card", rfidId)
-                .eq("periode", currentPeriod)
-                .eq("status", "Sukses")
-                // Query menggunakan batas UTC T00:00:00+00:00. 
-                // Karena 'today' sudah disesuaikan ke tanggal WIT yang benar, query ini akan bekerja.
-                .gte("created_at", `${today}T00:00:00+00:00`) 
-                .lt("created_at", `${today}T23:59:59+00:00`);
+        if (userData) {
+            result.nama = userData.nama;
+            
+            // 2. Cek apakah kartu sudah melakukan presensi sukses hari ini untuk periode ini
+            const today = getTodayDateString();
+            
+            const { data: logData, error: logError } = await db
+                .from("log_absen")
+                .select("id")
+                .eq("card", rfidId)
+                .eq("periode", currentPeriod)
+                .eq("status", "Sukses")
+                .gte("created_at", `${today}T00:00:00+00:00`)
+                .lt("created_at", `${today}T23:59:59+00:00`);
 
-            if (logError) throw logError;
-            
-            // LOGIKA PENCEGAHAN TAP GANDA DARI DATABASE (TAP SUKSES KE-2)
-            if (logData && logData.length > 0) {
-                isProcessing = true; 
-                showAlreadyTappedStatus(rfidId, userData.nama);
-                return; // Keluar dari fungsi setelah menampilkan status tap ganda
-            }
+            if (logError) throw logError;
+            
+            // LOGIKA PENCEGAHAN TAP GANDA DARI DATABASE (TAP SUKSES KE-2)
+            if (logData && logData.length > 0) {
+                isProcessing = true; 
+                showAlreadyTappedStatus(rfidId, userData.nama);
+                return; // Keluar dari fungsi setelah menampilkan status tap ganda
+            }
 
-            // 3. Jika belum tap, cek jatah makannya
-            const statusMakanSaatIni = userData[currentPeriod];
+            // 3. Jika belum tap, cek jatah makannya
+            const statusMakanSaatIni = userData[currentPeriod];
 
-            if (statusMakanSaatIni === "Kantin") {
-                result.success = true;
-                result.message = `Absensi ${currentPeriod.toUpperCase()} Berhasil! Selamat Makan!`;
-                result.status_log = `Sukses`;
-            } else {
-                result.message = `Absensi ${currentPeriod.toUpperCase()} Gagal: Status **${statusMakanSaatIni || 'KOSONG'}**!`;
-                result.status_log = `Gagal (Not Kantin for ${currentPeriod.toUpperCase()})`;
-            }
-        }
-        
-        // 4. Log absensi ke Supabase 
-        // --- START: PERBAIKAN LOGGING TIMEZONE ---
-        const now = new Date();
-        // Konversi waktu lokal klien ke string ISO yang merepresentasikan waktu WIT yang benar.
-        // String ini akan memiliki format YYYY-MM-DDTHH:MM:SS, yang akan diinterpretasikan Supabase sebagai UTC.
-        // Dengan ini, kita secara efektif "memaksa" tanggal UTC menjadi tanggal WIT yang benar.
-        const witTimeISO = new Date(now.toLocaleString("sv-SE", { timeZone: "Asia/Jayapura" })).toISOString();
+            if (statusMakanSaatIni === "Kantin") {
+                result.success = true;
+                result.message = `Absensi ${currentPeriod.toUpperCase()} Berhasil! Selamat Makan!`;
+                result.status_log = `Sukses`;
+            } else {
+                result.message = `Absensi ${currentPeriod.toUpperCase()} Gagal: Status **${statusMakanSaatIni || 'KOSONG'}**!`;
+                result.status_log = `Gagal (Not Kantin for ${currentPeriod.toUpperCase()})`;
+            }
+        }
+        
+        // 4. Log absensi ke Supabase 
+        const { error: logError } = await db.from("log_absen").insert({
+            card: rfidId,
+            nama: result.nama,
+            status: result.status_log,
+            periode: currentPeriod 
+        });
 
-        const { error: logError } = await db.from("log_absen").insert({
-            card: rfidId,
-            nama: result.nama,
-            status: result.status_log,
-            periode: currentPeriod,
-            created_at: witTimeISO // Menggunakan waktu yang sudah disesuaikan
-        });
-        // --- END: PERBAIKAN LOGGING TIMEZONE ---
+        if (logError) console.error("Gagal log absensi:", logError);
 
-
-        if (logError) console.error("Gagal log absensi:", logError);
-
-    } catch (e) {
-        // Jika terjadi error (seperti yang terlihat pada gambar)
-        console.error("Kesalahan Supabase/Jaringan:", e);
-        result.message = 'Kesalahan Server/Jaringan!';
-        result.nama = 'Kesalahan Koneksi';
-        result.status_log = "Gagal (Error)";
-    }
-    
-    // PENTING: Update counter dan UI
-    updateUI(result);
+    } catch (e) {
+        // Jika terjadi error (seperti yang terlihat pada gambar)
+        console.error("Kesalahan Supabase/Jaringan:", e);
+        result.message = 'Kesalahan Server/Jaringan!';
+        result.nama = 'Kesalahan Koneksi';
+        result.status_log = "Gagal (Error)";
+    }
+    
+    // PENTING: Update counter dan UI
+    updateUI(result);
 }
 
 // ===================================
-// HID KEYBOARD LISTENER LOGIC (TIDAK BERUBAH)
+// HID KEYBOARD LISTENER LOGIC
 // ===================================
 
 function setupHIDListener() {
-    document.addEventListener('keydown', (e) => {
-        if (isProcessing || e.repeat) {
-            e.preventDefault(); 
-            return;
-        }
+    document.addEventListener('keydown', (e) => {
+        if (isProcessing || e.repeat) {
+            e.preventDefault(); 
+            return;
+        }
 
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            
-            const rfidId = currentRFID.trim();
-            if (rfidId.length > 0) {
-                checkCardSupabase(rfidId);
-            }
-            currentRFID = '';
-            
-            readerStatusHint.textContent = `Input ID diterima. Menunggu reset...`;
-            return;
-        }
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            
+            const rfidId = currentRFID.trim();
+            if (rfidId.length > 0) {
+                checkCardSupabase(rfidId);
+            }
+            currentRFID = '';
+            
+            readerStatusHint.textContent = `Input ID diterima. Menunggu reset...`;
+            return;
+        }
 
-        if (e.key.length === 1 && /[\w\d]/.test(e.key) && currentRFID.length < 20) {
-            currentRFID += e.key;
-            
-            readerStatusHint.textContent = `ID Diterima: ${currentRFID} | Menunggu Enter...`;
-            return;
-        }
+        if (e.key.length === 1 && /[\w\d]/.test(e.key) && currentRFID.length < 20) {
+            currentRFID += e.key;
+            
+            readerStatusHint.textContent = `ID Diterima: ${currentRFID} | Menunggu Enter...`;
+            return;
+        }
 
-        if (e.key === 'Backspace') {
-            currentRFID = currentRFID.slice(0, -1);
-            readerStatusHint.textContent = `ID Diterima: ${currentRFID} | Menunggu Enter...`;
-        }
-    });
+        if (e.key === 'Backspace') {
+            currentRFID = currentRFID.slice(0, -1);
+            readerStatusHint.textContent = `ID Diterima: ${currentRFID} | Menunggu Enter...`;
+        }
+    });
 
-    resetStatus();
+    resetStatus();
 }
 
 // ===================================
-// INISIALISASI (TIDAK BERUBAH)
+// INISIALISASI
 // ===================================
 
 window.onload = () => {
-    // 1. Setup state awal (memuat dari Local Storage atau mereset harian)
-    setupInitialState(); 
-    
-    // 2. Setup listener
-    setupHIDListener();
+    // 1. Setup state awal (memuat dari Local Storage atau mereset harian)
+    setupInitialState(); 
+    
+    // 2. Setup listener
+    setupHIDListener();
 };
+
