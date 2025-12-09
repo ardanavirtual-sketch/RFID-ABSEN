@@ -1,4 +1,4 @@
-// app.js (Kode sudah diupdate untuk menggunakan audio duplikasi)
+// app.js (Kode sudah diupdate untuk menggunakan audio duplikasi dan perbaikan reset harian)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -86,9 +86,35 @@ function getCurrentMealPeriod() {
     }
 }
 
-function getTodayDateString() {
-    return new Date().toISOString().split('T')[0];
+/**
+ * Mengembalikan string tanggal (YYYY-MM-DD) yang digunakan untuk reset harian.
+ * Tanggal dihitung sebagai hari *setelah* waktu reset (01:00 WIT).
+ * Misalnya, jika sekarang 00:30 WIT, fungsi ini akan mengembalikan tanggal hari sebelumnya.
+ * Jika sekarang 01:00 WIT atau lebih, fungsi ini mengembalikan tanggal hari ini.
+ * Ini memastikan reset terjadi pada 01:00 WIT.
+ */
+function getDailyResetDateString() {
+    const now = new Date();
+    const resetHour = 1; // 01:00 WIT
+    const currentHour = now.getHours();
+    
+    let dateToUse = new Date(now.getTime());
+
+    // Jika waktu saat ini antara 00:00:00 dan 00:59:59 (sebelum jam reset), 
+    // kita masih menganggapnya sebagai 'hari' yang sama dengan kemarin untuk tujuan reset log.
+    if (currentHour < resetHour) {
+        // Mundurkan 1 hari untuk mendapatkan tanggal log yang masih berlaku
+        dateToUse.setDate(now.getDate() - 1);
+    } 
+    
+    // Format ke YYYY-MM-DD (format lokal)
+    return dateToUse.toLocaleDateString('en-CA', { // en-CA memberikan YYYY-MM-DD
+        year: 'numeric', 
+        month: '2-digit', 
+        day: '2-digit'
+    });
 }
+
 
 function updateUILogCounters() {
     if(logSuksesPagiElement) logSuksesPagiElement.textContent = logCounters.pagi.success;
@@ -104,10 +130,10 @@ function updateUILogCounters() {
 function setupInitialState() {
     const savedCounters = localStorage.getItem(LOCAL_STORAGE_KEY);
     const savedDate = localStorage.getItem(LOCAL_STORAGE_DATE_KEY);
-    const today = getTodayDateString();
+    const dailyResetDate = getDailyResetDateString(); // Menggunakan fungsi baru untuk reset 01:00 WIT
 
-    // Reset jika tanggal berbeda
-    if (savedDate !== today) {
+    // Reset jika tanggal yang tersimpan berbeda dari tanggal reset hari ini
+    if (savedDate !== dailyResetDate) {
         logCounters = {
             total: { success: 0, fail: 0 },
             pagi: { success: 0, fail: 0 },
@@ -115,11 +141,12 @@ function setupInitialState() {
             sore: { success: 0, fail: 0 },
             malam: { success: 0, fail: 0 }
         };
-        localStorage.setItem(LOCAL_STORAGE_DATE_KEY, today);
+        // Simpan tanggal reset yang baru
+        localStorage.setItem(LOCAL_STORAGE_DATE_KEY, dailyResetDate);
         localStorage.removeItem(LOCAL_STORAGE_KEY); // Hapus log lama
-        console.log("Counter presensi direset karena pergantian hari.");
+        console.log("Counter presensi direset karena sudah melewati jam 01:00 WIT.");
     } else if (savedCounters) {
-        // Muat state jika tanggal sama
+        // Muat state jika tanggal sama (belum waktunya reset)
         try {
             logCounters = JSON.parse(savedCounters);
             // Pastikan struktur logCounters valid
@@ -143,6 +170,8 @@ function setupInitialState() {
 
 function saveLogCounters() {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logCounters));
+    // Pastikan tanggal reset disimpan ulang setiap kali ada perubahan data counter
+    localStorage.setItem(LOCAL_STORAGE_DATE_KEY, getDailyResetDateString());
 }
 
 function updateLogCounters(rfidId, isSuccess, period) {
@@ -313,6 +342,32 @@ function updateUI({ success, message, rfidId, nama, status_log, currentPeriod })
 // PRESENSI LOGIC (SUPABASE)
 // ===================================
 
+/**
+ * Mengembalikan string tanggal YYYY-MM-DDT00:00:00+00:00 (UTC) dari awal hari ini di zona waktu lokal.
+ * Contoh: Jika sekarang 10/12/2025 09:12 WIT (UTC+9), ini akan mengembalikan 2025-12-10T00:00:00+09:00.
+ * Supabase akan menangani konversi UTC secara otomatis.
+ * Kita gunakan date lokal *tanpa* offset untuk query agar Supabase membandingkan dengan hari yang benar.
+ */
+function getTodayDateStartForSupabase() {
+    const now = new Date();
+    // Gunakan toISOString().split('T')[0] dari Date *lokal* untuk mendapatkan tanggal YYYY-MM-DD
+    const today = now.toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    // Kembalikan sebagai string ISO dengan waktu 00:00:00.000Z agar Supabase menginterpretasikan sebagai awal hari UTC.
+    // Dalam kasus ini, kita ingin Supabase membandingkan berdasarkan tanggal *lokal*.
+    // Cara yang paling aman adalah dengan mengonversi tanggal *lokal* ke string tanpa offset T00:00:00.
+    // Namun, karena Supabase menggunakan UTC, kita ambil tanggal lokal dan tambahkan T00:00:00
+    // Asumsi: Supabase menggunakan `created_at` dengan timestamp, dan perbandingan `gte` akan berhasil 
+    // jika kita menggunakan tanggal YYYY-MM-DDT00:00:00Z.
+    
+    // Cara yang lebih aman: dapatkan timestamp 00:00 hari ini di zona waktu lokal
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+    // Kita gunakan startOfDay.toISOString() untuk mendapatkan string UTC yang sesuai 
+    // dengan tanggal lokal di awal hari.
+    // Contoh: Di WIT (UTC+9), startOfDay 10/12/2025 00:00:00 adalah 2025-12-09T15:00:00.000Z. 
+    // Query Supabase: .gte("created_at", startOfDay.toISOString())
+    return startOfDay.toISOString(); 
+}
+
 async function checkCardSupabase(rfidId) {
     if (isProcessing) return; 
     isProcessing = true;
@@ -344,7 +399,7 @@ async function checkCardSupabase(rfidId) {
             result.nama = userData.nama;
             
             // 2. Cek apakah kartu sudah melakukan presensi sukses hari ini untuk periode ini
-            const today = getTodayDateString();
+            const todayStartISO = getTodayDateStartForSupabase();
             
             const { data: logData, error: logError } = await db
                 .from("log_absen")
@@ -352,8 +407,8 @@ async function checkCardSupabase(rfidId) {
                 .eq("card", rfidId)
                 .eq("periode", currentPeriod)
                 .eq("status", "Sukses")
-                .gte("created_at", `${today}T00:00:00+00:00`)
-                .lt("created_at", `${today}T23:59:59+00:00`);
+                // Menggunakan GTE untuk filter tanggal yang tepat di Supabase berdasarkan awal hari lokal
+                .gte("created_at", todayStartISO); 
 
             if (logError) throw logError;
             
@@ -450,4 +505,3 @@ window.onload = () => {
     // 2. Setup listener
     setupHIDListener();
 };
-
