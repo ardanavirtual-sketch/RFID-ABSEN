@@ -50,6 +50,22 @@
         }
       }
     }
+
+    // Fungsi untuk mendapatkan dan memformat tanggal hari ini
+    function getFormattedDate() {
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        return now.toLocaleDateString('id-ID', options);
+    }
+    
+    // Fungsi untuk menampilkan tanggal saat halaman dimuat
+    document.addEventListener('DOMContentLoaded', () => {
+        const dateElement = document.getElementById('today-date');
+        if (dateElement) {
+            dateElement.textContent = getFormattedDate();
+        }
+    });
+
   </script>
 </head>
 <body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
@@ -63,6 +79,9 @@
     </div>
     
     <div class="mb-5 border-b pb-3">
+        <!-- Tambahan Tanggal Hari Ini -->
+        <p id="today-date" class="text-sm font-medium text-gray-600 mb-2"></p>
+        
         <h2 class="text-xl font-bold mb-3 text-gray-800">Log Presensi Harian</h2>
         
         <!-- Grid untuk Counter Absensi Harian -->
