@@ -1,4 +1,4 @@
-// app.js (Kode sudah diupdate untuk: 1. Pencegahan Tap Ganda di Supabase, 2. Reset Harian pada 01:00 WIT)
+// app.js (Kode sudah diupdate untuk: 1. Pencegahan Tap Ganda di Supabase, 2. Reset Harian pada 01:00 WIT, 3. Memuat Log Gagal/Sukses Saat Inisialisasi)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -125,7 +125,7 @@ function setupInitialState() {
     // Dapatkan tanggal logis hari ini (berubah pada jam 01:00)
     const today = getTodayDateString(); 
 
-    // Reset jika tanggal logis berbeda
+    // Cek apakah perlu reset
     if (savedDate !== today) {
         logCounters = {
             total: { success: 0, fail: 0 },
@@ -156,8 +156,92 @@ function setupInitialState() {
             };
         }
     }
+    // Update UI dengan nilai dari localStorage (atau 0 jika reset)
     updateUILogCounters();
 }
+
+/**
+ * Mengambil semua log sukses/gagal hari ini dari Supabase 
+ * dan mengisi logCounters sebelum listener HID aktif.
+ */
+async function fetchInitialLogCounters() {
+    const today = getTodayDateString();
+    const todayStart = `${today}T00:00:00+00:00`;
+    const todayEnd = `${today}T23:59:59+00:00`;
+    
+    // Jika counter baru saja di-reset atau belum pernah dimuat dari Supabase (misal, refresh browser)
+    // dan nilai logCounters masih nol (belum ada tap di sesi ini), 
+    // kita akan memuat dari Supabase.
+    // Jika logCounters sudah ada isinya (dari localStorage), kita asumsikan nilainya benar 
+    // karena `updateLogCounters` yang menyimpan ke localStorage sudah menghandle tap.
+
+    if (logCounters.pagi.success + logCounters.pagi.fail + logCounters.siang.success + logCounters.siang.fail +
+        logCounters.sore.success + logCounters.sore.fail + logCounters.malam.success + logCounters.malam.fail === 0) {
+        
+        try {
+            const { data: logs, error } = await db
+                .from("log_absen")
+                .select("status, periode, card")
+                .gte("created_at", todayStart)
+                .lt("created_at", todayEnd);
+
+            if (error) throw error;
+            
+            // Reset counter lokal sebelum hitung ulang
+            logCounters = {
+                total: { success: 0, fail: 0 },
+                pagi: { success: 0, fail: 0 },
+                siang: { success: 0, fail: 0 },
+                sore: { success: 0, fail: 0 },
+                malam: { success: 0, fail: 0 }
+            };
+            
+            // Map untuk deduplikasi Supabase log (hanya hitung tap Sukses pertama per periode)
+            const countedCards = new Map(); // Key: card_periode, Value: status
+            
+            logs.forEach(log => {
+                const isSuccess = log.status.includes('Sukses');
+                const period = log.periode;
+                const cardKey = `${log.card}_${period}`;
+                const logStatus = isSuccess ? 'SUCCESS' : 'FAIL';
+                
+                // KUNCI: Hanya hitung log jika belum pernah dihitung atau statusnya berubah
+                if (!countedCards.has(cardKey) || (countedCards.get(cardKey) === 'FAIL' && isSuccess)) {
+                    
+                    if (countedCards.get(cardKey) === 'FAIL' && isSuccess) {
+                        // Jika sebelumnya GAGAL dan sekarang SUKSES, kurangi counter GAGAL
+                        if (logCounters[period] && logCounters[period].fail > 0) {
+                            logCounters[period].fail--;
+                        }
+                    }
+                    
+                    // Tambahkan hitungan baru
+                    if (logCounters[period]) {
+                        const counterKey = isSuccess ? 'success' : 'fail';
+                        logCounters[period][counterKey]++;
+                    }
+
+                    // Set status yang sudah dihitung (Sukses lebih diutamakan)
+                    countedCards.set(cardKey, logStatus);
+                }
+            });
+
+            console.log("Counter berhasil dimuat dari Supabase:", logCounters);
+            
+            // Simpan hasil hitungan ke Local Storage untuk sesi ini
+            saveLogCounters();
+            
+            // Update UI dengan hasil hitungan dari Supabase
+            updateUILogCounters();
+
+        } catch (e) {
+            console.error("Gagal memuat log awal dari Supabase:", e);
+        }
+    } else {
+         console.log("Counter dimuat dari Local Storage.");
+    }
+}
+
 
 function saveLogCounters() {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logCounters));
@@ -462,10 +546,14 @@ function setupHIDListener() {
 // INISIALISASI
 // ===================================
 
-window.onload = () => {
+window.onload = async () => {
     // 1. Setup state awal (memuat dari Local Storage atau mereset harian)
     setupInitialState(); 
     
-    // 2. Setup listener
+    // 2. Muat log presensi yang sudah ada dari Supabase (Sukses & Gagal)
+    // Ini penting agar counter tidak mulai dari nol jika browser direfresh.
+    await fetchInitialLogCounters(); 
+
+    // 3. Setup listener (hanya setelah state awal dimuat)
     setupHIDListener();
 };
