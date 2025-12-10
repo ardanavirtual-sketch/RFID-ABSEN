@@ -202,7 +202,7 @@
     const hasilID = document.getElementById('hasil-id');
     const appContainer = document.getElementById('app-container');
     const readerStatusHint = document.getElementById('reader-status-hint');
-    const todayDateElement = document.getElementById('today-date'); // ELEMEN BARU
+    const todayDateElement = document.getElementById('today-date'); 
 
     // Elemen counter untuk setiap periode
     const logSuksesPagiElement = document.getElementById('log-sukses-pagi');
@@ -263,23 +263,25 @@
             return 'siang';
         } else if (hour >= 16 && hour < 21) { 
             return 'sore';
-        } else if (hour >= 21 && hour <= 23) { 
+        } else if (hour >= 21 || hour < 4) { // Jam 21:00 sampai 03:59
             return 'malam';
         } else {
-            // Asumsi jam 00:00 - 03:59 masih dihitung ke log 'kemarin' 
-            // untuk hari logis. Kita kembalikan ke 'pagi' sebagai default jika di luar rentang.
             return 'pagi'; 
         }
     }
 
     /**
-     * Mendapatkan string tanggal hari ini (YYYY-MM-DD), 
-     * berdasarkan WAKTU LOKAL browser saat ini.
+     * Menghitung timestamp UTC yang sesuai dengan 00:00:00 (tengah malam) 
+     * di WAKTU LOKAL browser hari ini.
+     * PENTING: Supabase menggunakan timestampz (UTC), jadi kita harus
+     * mengonversi titik awal hari lokal ke UTC yang benar.
      */
-    function getTodayDateString() {
+    function getTodayStartTimeUTC() {
         const now = new Date();
-        // Format tanggal menjadi YYYY-MM-DD (contoh: 2025-12-09)
-        return now.toISOString().split('T')[0];
+        // Set jam, menit, detik, milidetik ke nol (tengah malam) di zona waktu lokal
+        now.setHours(0, 0, 0, 0); 
+        // Konversi objek Date lokal ini ke format ISO string (UTC) yang siap dipakai oleh Supabase
+        return now.toISOString();
     }
 
 
@@ -300,10 +302,8 @@
      * menghitungnya per periode & status, lalu mengupdate UI.
      */
     async function fetchDailyLogCounters() {
-        // 1. Dapatkan tanggal hari ini
-        const today = getTodayDateString(); 
-        // Supabase menggunakan format timestampz. Kita asumsikan hari dimulai dari 00:00:00 hari ini
-        const todayStart = `${today}T00:00:00.000Z`; // Waktu awal hari dalam format UTC (sesuai Supabase)
+        // 1. Dapatkan titik awal hari ini dalam UTC yang dikoreksi
+        const todayStartUTC = getTodayStartTimeUTC();
 
         // Reset counters sebelum fetch
         logCounters = {
@@ -314,19 +314,20 @@
         };
         
         try {
-            // 2. Ambil semua log untuk hari ini
+            // 2. Ambil semua log untuk hari ini, menggunakan titik awal UTC yang benar
             const { data: dailyLogs, error } = await db
                 .from("log_absen")
                 .select("periode, status")
-                .gte("created_at", todayStart)
-                .order("created_at", { ascending: false }); // Urutkan terbaru di atas
+                .gte("created_at", todayStartUTC) // MENGGUNAKAN TITIK MULAI UTC YANG DIKOREKSI
+                .order("created_at", { ascending: false }); 
 
             if (error) throw error;
 
             // 3. Hitung log per periode
             dailyLogs.forEach(log => {
                 const period = log.periode.toLowerCase();
-                const isSuccess = log.status.toLowerCase().includes('sukses');
+                // Status dianggap Sukses jika mengandung kata "Sukses" (case-insensitive)
+                const isSuccess = log.status.toLowerCase().includes('sukses'); 
                 
                 if (logCounters[period]) {
                     if (isSuccess) {
@@ -342,7 +343,6 @@
 
         } catch (e) {
             console.error("Gagal memuat log harian dari Supabase:", e);
-            // Biarkan counter tetap nol atau tampilkan error di UI jika perlu
         }
     }
 
@@ -437,7 +437,7 @@
             appContainer.classList.add('scale-105', 'bg-error-red/20');
             statusCard.classList.replace('bg-warning-yellow/20', 'bg-error-red/20');
             statusIcon.classList.replace('bg-warning-yellow', 'bg-error-red');
-            statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
             statusMessage.textContent = message;
             statusMessage.classList.replace('text-warning-yellow', 'text-error-red');
             hasilTitle.textContent = 'Detail Kegagalan';
@@ -473,8 +473,7 @@
         showProcessingStatus();
         
         const currentPeriod = getCurrentMealPeriod();
-        const today = getTodayDateString(); 
-
+        
         let result = {
             success: false,
             message: 'Kartu Tidak Dikenal!',
@@ -497,17 +496,18 @@
             if (userData) {
                 result.nama = userData.nama;
                 
-                // Tentukan rentang waktu untuk pengecekan log Supabase (dari 00:00:00 hari ini)
-                const todayStart = `${today}T00:00:00.000Z`; // UTC start of day
+                // 2. Tentukan rentang waktu untuk pengecekan log Supabase (dari 00:00:00 hari ini)
+                // Menggunakan fungsi yang sudah dikoreksi
+                const todayStartUTC = getTodayStartTimeUTC(); 
                 
-                // 2. Cek apakah kartu sudah melakukan presensi SUKSES hari ini untuk periode ini
+                // 3. Cek apakah kartu sudah melakukan presensi SUKSES hari ini untuk periode ini
                 const { data: logData, error: logError } = await db
                     .from("log_absen")
                     .select("id")
                     .eq("card", rfidId)
                     .eq("periode", currentPeriod)
                     .eq("status", "Sukses") // KUNCI: Hanya cek status "Sukses"
-                    .gte("created_at", todayStart);
+                    .gte("created_at", todayStartUTC); // MENGGUNAKAN TITIK MULAI UTC YANG DIKOREKSI
 
                 if (logError) throw logError;
                 
@@ -526,10 +526,10 @@
                 // =======================================
 
 
-                // 3. Jika belum tap SUKSES, cek jatah makannya
+                // 4. Jika belum tap SUKSES, cek jatah makannya
                 const statusMakanSaatIni = userData[currentPeriod];
 
-                if (statusMakanSaatIni === "Kantin") {
+                if (statusMakanSaatIni && statusMakanSaatIni.toLowerCase() === "kantin") {
                     result.success = true;
                     result.message = `Absensi ${currentPeriod.toUpperCase()} Berhasil! Selamat Makan!`;
                     result.status_log = `Sukses`;
@@ -539,7 +539,7 @@
                 }
             }
             
-            // 4. Log absensi ke Supabase (akan mencatat Sukses atau Gagal, kecuali jika dicegah di langkah 2)
+            // 5. Log absensi ke Supabase 
             const { error: logErrorInsert } = await db.from("log_absen").insert({
                 card: rfidId,
                 nama: result.nama,
