@@ -3,37 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Presensi RFID (Keyboard HID)</title>
+  <title>Ringkasan Presensi Harian 3 Hari Terakhir</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
-    /* Mengatur font dan transisi */
     body {
       font-family: 'Inter', sans-serif;
-      transition: background-color 0.5s ease;
+      background-color: #f3ff6;
     }
-    /* Animasi pulse untuk ikon saat menunggu input */
-    .status-icon {
-      animation: pulse-ring 1.5s infinite;
+    /* Mengatur tabel di dalam grup agar memiliki scroll horizontal jika terlalu sempit */
+    .table-responsive {
+        overflow-x: auto;
     }
-    @keyframes pulse-ring {
-      0% { transform: scale(0.9); opacity: 0.7; }
-      50% { transform: scale(1.05); opacity: 1; }
-      100% { transform: scale(0.9); opacity: 0.7; }
-    }
-    /* Style untuk kotak periode */
-    .period-box {
-        border-radius: 0.5rem; 
-        padding: 0.5rem; 
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        height: 100%; 
-    }
-    
-    /* Responsive adjustment for status card on small screens */
-    #status-card-message {
-        font-size: 1.125rem; 
+    .date-header {
+        background-color: #e5e7eb; /* Warna abu-abu yang lebih menonjol */
+        position: sticky;
+        top: 0;
+        z-index: 10;
     }
   </style>
   <script>
@@ -45,124 +33,359 @@
             'primary-blue': '#1e3a8a', 
             'success-green': '#10b981',
             'error-red': '#ef4444',
-            'warning-yellow': '#f59e0b', // Digunakan untuk status 'Processing'
           }
         }
       }
     }
   </script>
 </head>
-<body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
+<body class="p-4 sm:p-8">
 
-  <div id="app-container" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 sm:p-8 text-center transition-all duration-500 transform scale-100">
+  <div class="max-w-4xl mx-auto bg-white rounded-3xl shadow-2xl p-6 sm:p-8">
 
-    <div class="mb-6">
-      <svg class="w-12 h-12 mx-auto text-primary-blue mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-      <h1 class="text-2xl font-extrabold text-gray-900">Sistem Presensi RFID</h1>
-      <p class="text-xs text-gray-500 mt-1">Mode Koneksi Keyboard Emulator (HID)</p>
-      
-      <!-- ELEMEN BARU UNTUK MENAMPILKAN TANGGAL -->
-      <p id="tanggal-hari-ini" class="text-sm font-bold mt-2 text-primary-blue/80">Memuat Tanggal...</p>
-      <!-- AKHIR ELEMEN BARU -->
-      
-    </div>
-    
-    <div class="mb-5 border-b pb-3">
-        <h2 class="text-xl font-bold mb-3 text-gray-800">Log Presensi Harian</h2>
-        
-        <div class="grid grid-cols-2 gap-2">
-
-            <div class="period-box bg-blue-50/50">
-                <h3 class="text-xs font-semibold text-primary-blue mb-1">Pagi</h3>
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                        <p class="text-success-green font-bold text-base" id="log-sukses-pagi">0</p>
-                        <p class="text-gray-500 text-xs">Sukses</p>
-                    </div>
-                    <div class="flex-1 p-1 ml-1">
-                        <p class="text-error-red font-bold text-base" id="log-gagal-pagi">0</p>
-                        <p class="text-gray-500 text-xs">Gagal</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="period-box bg-yellow-50/50">
-                <h3 class="text-xs font-semibold text-yellow-600 mb-1">Siang</h3>
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                        <p class="text-success-green font-bold text-base" id="log-sukses-siang">0</p>
-                        <p class="text-gray-500 text-xs">Sukses</p>
-                    </div>
-                    <div class="flex-1 p-1 ml-1">
-                        <p class="text-error-red font-bold text-base" id="log-gagal-siang">0</p>
-                        <p class="text-gray-500 text-xs">Gagal</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="period-box bg-orange-50/50">
-                <h3 class="text-xs font-semibold text-orange-600 mb-1">Sore</h3>
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                        <p class="text-success-green font-bold text-base" id="log-sukses-sore">0</p>
-                        <p class="text-gray-500 text-xs">Sukses</p>
-                    </div>
-                    <div class="flex-1 p-1 ml-1">
-                        <p class="text-error-red font-bold text-base" id="log-gagal-sore">0</p>
-                        <p class="text-gray-500 text-xs">Gagal</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="period-box bg-purple-50/50">
-                <h3 class="text-xs font-semibold text-purple-600 mb-1">Malam</h3>
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                        <p class="text-success-green font-bold text-base" id="log-sukses-malam">0</p>
-                        <p class="text-gray-500 text-xs">Sukses</p>
-                    </div>
-                    <div class="flex-1 p-1 ml-1">
-                        <p class="text-error-red font-bold text-base" id="log-gagal-malam">0</p>
-                        <p class="text-gray-500 text-xs">Gagal</p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-        
-        <!-- Tombol Baru untuk Navigasi ke Halaman Log Absen -->
-        <a href="log_absen.html" class="mt-4 w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl shadow-sm text-white bg-primary-blue hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-blue transition-colors duration-200">
-            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-            Lihat Detail Log Absen
+    <div class="flex justify-between items-center mb-6 border-b pb-4">
+        <h1 class="text-2xl font-extrabold text-gray-900">Ringkasan Presensi 3 Hari Terakhir</h1>
+        <a href="index.html" class="inline-flex items-center text-primary-blue hover:text-blue-700 transition-colors duration-200 font-medium text-sm">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Kembali ke Beranda
         </a>
-        <!-- Akhir Tombol Baru -->
-        
     </div>
     
-    <div id="status-card" class="p-4 rounded-2xl transition-all duration-300 bg-blue-50">
-      <div id="status-icon" class="status-icon w-14 h-14 mx-auto mb-3 flex items-center justify-center rounded-full bg-primary-blue/80 shadow-lg text-white">
-        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-      </div>
-      <p id="status-message" class="text-lg font-semibold text-primary-blue">Reader Siap. Tap Kartu.</p>
-      <p class="text-xs text-gray-400 mt-1" id="reader-status-hint">Listener Keyboard (HID) aktif. Tempelkan kartu.</p>
+    <!-- Status Penghapusan Otomatis -->
+    <div id="deletion-status" class="text-xs text-gray-500 mb-4 p-2 bg-yellow-50 rounded-lg hidden">
+        <span class="font-medium text-yellow-700">Pemberitahuan:</span> Log presensi dan foto yang berusia lebih dari 3 hari sedang diperiksa dan dihapus secara otomatis.
+        <!-- Baris ini dipertahankan sebagai pengingat -->
+        <p class="text-xs mt-1">
+            <strong class="text-red-600">Penting:</strong> Fitur foto dinonaktifkan karena kolom 'photo_path' belum ada di tabel 'log_absen'. Harap tambahkan kolom tersebut untuk mengaktifkan tampilan dan penghapusan foto otomatis.
+        </p>
     </div>
 
-    <div id="hasil-container" class="mt-4 p-4 border-t border-gray-100 hidden">
-      <h3 class="text-lg font-bold text-left mb-3" id="hasil-title">Detail Presensi</h3>
-      <div class="space-y-2 text-left">
-        <div class="flex justify-between items-center pb-1 border-b border-dashed">
-          <span class="text-gray-500 font-medium text-sm">Nama:</span>
-          <span class="text-gray-900 font-semibold text-sm" id="hasil-nama">-</span>
+    <!-- Status Loading -->
+    <div id="loading-status" class="flex items-center justify-center p-8 text-primary-blue font-medium">
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        Memuat data log presensi (3 hari terakhir)...
+    </div>
+
+    <!-- RINGKASAN PRESENSI PER TANGGAL -->
+    <h2 class="text-xl font-bold text-gray-800 mb-4 mt-8 border-t pt-4">Ringkasan Harian (Keberhasilan & Kegagalan Tapping)</h2>
+    
+    <!-- Container utama untuk semua ringkasan harian yang dikelompokkan -->
+    <div class="space-y-8" id="grouped-logs-container">
+        <!-- Grup harian (Header + Ringkasan) akan dimasukkan di sini oleh JavaScript -->
+        <div id="no-data-message" class="text-center p-4 text-gray-500 hidden">
+            Tidak ada log presensi ditemukan dalam 3 hari terakhir.
         </div>
-        <div class="flex justify-between items-center pb-1">
-          <span class="text-gray-500 font-medium text-sm">ID Kartu:</span>
-          <span class="text-gray-900 font-semibold text-xs" id="hasil-id">-</span>
-        </div>
-      </div>
     </div>
   </div>
-  <audio id="audio-success" src="assets/audio_absen_SUKSES.mp3" preload="auto"></audio>
-  <audio id="audio-fail" src="assets/audio_absen_GAGAL.mp3" preload="auto"></audio>
-  <audio id="audio-duplicate" src="assets/sudah_absen.mp3" preload="auto"></audio> <script type="module" src="app.js"></script>
+
+<script>
+    // ===================================
+    // KONFIGURASI SUPABASE & DOM ELEMENTS
+    // ===================================
+    const SUPABASE_URL = "https://ymzcvyumplerqccaplxi.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI";
+    const BUCKET_NAME = "presensi_photos"; 
+
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // DOM Elements
+    const groupedLogsContainer = document.getElementById('grouped-logs-container');
+    const loadingStatus = document.getElementById('loading-status');
+    const noDataMessage = document.getElementById('no-data-message');
+    const deletionStatus = document.getElementById('deletion-status');
+    
+    // Konfigurasi default diubah: rangeDays ditetapkan 3 hari
+    const DEFAULT_RANGE_DAYS = 3;
+    const PERIODES = ['pagi', 'siang', 'sore', 'malam'];
+
+    // ===================================
+    // UTILITY FUNCTIONS
+    // ===================================
+    
+    /**
+     * Mendapatkan string tanggal (YYYY-MM-DD) dari timestamp untuk grouping.
+     */
+    function getUtcDateString(timestamp) {
+        if (!timestamp) return 'Tanggal Tidak Diketahui';
+        const date = new Date(timestamp);
+        // Menggunakan ISO string dan memisahkannya untuk mendapatkan YYYY-MM-DD
+        return date.toISOString().split('T')[0];
+    }
+
+    /**
+     * Mengubah string tanggal YYYY-MM-DD menjadi format yang mudah dibaca.
+     */
+    function formatReadableDate(dateString) {
+        const date = new Date(dateString + 'T00:00:00Z'); // Anggap sebagai UTC tengah malam
+        return date.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    // ===================================
+    // LOGIC PENGHAPUSAN OTOMATIS (3 HARI)
+    // ===================================
+
+    // Logika ini dipertahankan
+    async function deleteOldLogsAndPhotos() {
+        deletionStatus.classList.remove('hidden');
+
+        const limitDays = 3; 
+        const threeDaysAgo = new Date();
+        threeDaysAgo.setDate(threeDaysAgo.getDate() - limitDays);
+        const cutoffDate = threeDaysAgo.toISOString();
+        
+        try {
+            const { data: oldLogs, error: fetchError } = await db
+                .from("log_absen")
+                .select("id") 
+                .lt("created_at", cutoffDate);
+
+            if (fetchError) throw fetchError;
+            
+            if (oldLogs.length === 0) {
+                // Tidak ada log lama, sembunyikan notifikasi setelah beberapa saat
+                setTimeout(() => { deletionStatus.classList.add('hidden'); }, 1000);
+                return;
+            }
+
+            const logIdsToDelete = oldLogs.map(log => log.id);
+
+            const { error: deleteLogError } = await db
+                .from("log_absen")
+                .delete()
+                .in('id', logIdsToDelete);
+
+            if (deleteLogError) throw deleteLogError;
+            
+        } catch (e) {
+            console.error("Gagal menjalankan penghapusan log (non-critical):", e); 
+        } finally {
+            // Sembunyikan notifikasi setelah proses selesai
+            setTimeout(() => {
+                deletionStatus.classList.add('hidden');
+            }, 5000);
+        }
+    }
+
+    // ===================================
+    // LOGIC AGGREGASI & RENDER UTAMA
+    // ===================================
+
+    /**
+     * Memproses data log untuk menghasilkan ringkasan statistik per periode per hari.
+     * Dihitung: Sukses, Gagal, dan TotalLog (Sukses + Gagal).
+     */
+    function aggregateDailyLogs(logs) {
+        const summary = {};
+        // Inisialisasi Total Harian
+        const overallTotal = { Sukses: 0, Gagal: 0, TotalLog: 0 }; 
+
+        PERIODES.forEach(p => {
+            // Inisialisasi per periode
+            summary[p] = { Sukses: 0, Gagal: 0 }; 
+        });
+
+        logs.forEach(log => {
+            const periode = log.periode.toLowerCase();
+            const status = log.status; 
+            
+            if (summary[periode]) {
+                if (status === 'Sukses') {
+                    summary[periode].Sukses += 1;
+                    overallTotal.Sukses += 1;
+                } else if (status === 'Gagal') {
+                    // Penambahan Gagal
+                    summary[periode].Gagal += 1;
+                    overallTotal.Gagal += 1;
+                }
+            }
+            overallTotal.TotalLog += 1; 
+        });
+
+        return { summary, overallTotal };
+    }
+
+    /**
+     * Merender tabel ringkasan harian (summary) untuk satu tanggal.
+     * Sekarang menampilkan Sukses dan Gagal.
+     */
+    function renderDailySummaryTable(aggregatedData) {
+        const { summary, overallTotal } = aggregatedData;
+        
+        // Membangun body tabel ringkasan harian
+        let summaryRows = '';
+        PERIODES.forEach(p => {
+            const data = summary[p];
+            summaryRows += `
+                <tr class="hover:bg-gray-50 capitalize">
+                    <td class="px-6 py-3 text-left font-semibold text-gray-700">${p}</td>
+                    <td class="px-6 py-3 text-center text-lg text-success-green font-bold">${data.Sukses}</td>
+                    <td class="px-6 py-3 text-center text-lg text-error-red font-bold">${data.Gagal}</td>
+                    <td class="px-6 py-3 text-center text-lg text-primary-blue font-bold">${data.Sukses + data.Gagal}</td>
+                </tr>
+            `;
+        });
+
+        // Membangun footer tabel ringkasan harian
+        const footerRow = `
+            <tr class="bg-primary-blue/10 font-extrabold border-t-2 border-primary-blue">
+                <td class="px-6 py-3 text-left text-sm text-primary-blue uppercase">TOTAL HARIAN</td>
+                <td class="px-6 py-3 text-center text-lg text-success-green">${overallTotal.Sukses}</td>
+                <td class="px-6 py-3 text-center text-lg text-error-red">${overallTotal.Gagal}</td>
+                <td class="px-6 py-3 text-center text-lg text-primary-blue">${overallTotal.Sukses + overallTotal.Gagal}</td>
+            </tr>
+        `;
+
+        // Menggabungkan menjadi tabel lengkap
+        const summaryTableHtml = `
+            <div class="table-responsive shadow-md rounded-xl mt-4">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Periode Presensi
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-success-green uppercase tracking-wider">
+                                Sukses
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-error-red uppercase tracking-wider">
+                                Gagal
+                            </th>
+                             <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-primary-blue uppercase tracking-wider">
+                                Total
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${summaryRows}
+                    </tbody>
+                    <tfoot>
+                        ${footerRow}
+                    </tfoot>
+                </table>
+                <p class="text-xs text-gray-400 p-2 text-right">*Total Log Tapping (Sukses & Gagal) pada hari ini: ${overallTotal.TotalLog}</p>
+            </div>
+        `;
+        return summaryTableHtml;
+    }
+
+    /**
+     * Mengelompokkan log berdasarkan tanggal.
+     */
+    function groupLogsByDate(logs) {
+        const groups = {};
+        logs.forEach(log => {
+            const dateKey = getUtcDateString(log.created_at);
+            if (!groups[dateKey]) {
+                groups[dateKey] = [];
+            }
+            groups[dateKey].push(log);
+        });
+        return groups;
+    }
+
+    /**
+     * Merender data ringkasan, dengan pengelompokan per tanggal.
+     */
+    function renderGroupedLogs(groupedLogs) {
+        groupedLogsContainer.innerHTML = '';
+        // Urutkan tanggal dari yang terbaru ke yang terlama
+        const dateKeys = Object.keys(groupedLogs).sort().reverse(); 
+
+        if (dateKeys.length === 0) {
+            noDataMessage.textContent = `Tidak ada log presensi ditemukan dalam ${DEFAULT_RANGE_DAYS} hari terakhir.`;
+            noDataMessage.classList.remove('hidden');
+            return;
+        }
+
+        noDataMessage.classList.add('hidden');
+        
+        // Hanya tampilkan data untuk 3 hari pertama (terbaru)
+        dateKeys.slice(0, DEFAULT_RANGE_DAYS).forEach(dateKey => {
+            const logs = groupedLogs[dateKey];
+            const readableDate = formatReadableDate(dateKey);
+
+            // 1. Agregasi untuk tanggal ini
+            const aggregatedData = aggregateDailyLogs(logs);
+
+            // 2. Render Header Tanggal
+            let html = `
+                <div class="date-group border border-gray-200 rounded-xl shadow-lg">
+                    <div class="date-header p-4 rounded-t-xl border-b border-gray-300">
+                        <h3 class="text-xl font-extrabold text-primary-blue">${readableDate}</h3>
+                    </div>
+            `;
+            
+            // 3. Render Ringkasan Harian
+            html += renderDailySummaryTable(aggregatedData);
+
+            html += `</div>`; // Tutup date-group
+            groupedLogsContainer.innerHTML += html;
+        });
+    }
+
+    /**
+     * Mengambil semua log dalam rentang 3 hari terakhir.
+     */
+    async function fetchLogs() {
+        loadingStatus.classList.remove('hidden');
+        groupedLogsContainer.innerHTML = '';
+        noDataMessage.classList.add('hidden');
+
+        // Tentukan batas waktu (3 hari terakhir)
+        const dateStart = new Date();
+        dateStart.setDate(dateStart.getDate() - DEFAULT_RANGE_DAYS);
+        const cutoffDate = dateStart.toISOString(); 
+
+        try {
+            // Ambil SEMUA data log dalam rentang waktu yang ditetapkan
+            let query = db
+                .from("log_absen")
+                // Hanya ambil kolom yang diperlukan untuk agregasi
+                .select("periode, status, created_at") 
+                .order("created_at", { ascending: false }) 
+                .gte("created_at", cutoffDate);
+                
+            const { data: rawLogs, error: rawError } = await query;
+
+            if (rawError) throw rawError;
+            
+            if (rawLogs.length === 0) {
+                loadingStatus.classList.add('hidden');
+                noDataMessage.textContent = `Tidak ada log presensi ditemukan dalam ${DEFAULT_RANGE_DAYS} hari terakhir.`;
+                noDataMessage.classList.remove('hidden');
+                return;
+            }
+
+            // Kelompokkan log berdasarkan Tanggal (tidak ada filter tambahan)
+            const groupedLogs = groupLogsByDate(rawLogs);
+
+            // Render Log yang Dikelompokkan (Ringkasan Harian 3 hari terbaru)
+            renderGroupedLogs(groupedLogs);
+
+
+        } catch (e) {
+            console.error("Gagal mengambil data log:", e);
+            noDataMessage.textContent = 'Gagal memuat data dari server.';
+            noDataMessage.classList.remove('hidden');
+        } finally {
+            loadingStatus.classList.add('hidden');
+        }
+    }
+
+    // ===================================
+    // INITIALISASI
+    // ===================================
+    window.onload = () => {
+        // 1. Jalankan penghapusan log dan foto lama
+        deleteOldLogsAndPhotos(); 
+        
+        // 2. Ambil data pertama kali saat halaman dimuat
+        fetchLogs(); 
+
+        // Tidak ada event listener karena filter dihapus
+    };
+
+</script>
 </body>
 </html>
