@@ -49,11 +49,9 @@
     .text-primary-blue { color: #3B82F6; /* blue-500 */ }
     .bg-primary-blue\/80 { background-color: rgba(59, 130, 246, 0.8); }
 
-    .app-card {
-        max-width: 600px;
-        margin: auto;
-        transition: transform 0.3s ease;
-    }
+    /* Menghapus class .app-card yang sebelumnya memiliki lebar tetap, 
+       kini lebar diatur langsung di elemen div menggunakan Tailwind CSS. */
+    /* .app-card { ... } */ 
     
     .grid-period-log {
         display: grid;
@@ -63,14 +61,18 @@
     
     @media (min-width: 640px) {
         .grid-log-container {
+            /* Di layar besar, gunakan 4 kolom */
             grid-template-columns: repeat(4, 1fr);
         }
     }
+    /* Di layar kecil (mobile), default 2 kolom pada grid-log-container tetap berlaku */
   </style>
 </head>
+<!-- Menggunakan p-4 di body untuk padding di Handphone -->
 <body class="bg-gray-50 min-h-screen p-4 flex items-center justify-center">
 
-  <main class="w-full max-w-6xl">
+  <!-- Mengatur max-w-6xl dan mx-auto agar konten tetap terpusat di layar lebar -->
+  <main class="w-full max-w-6xl mx-auto">
     
     <!-- Header Aplikasi -->
     <header class="text-center mb-6">
@@ -78,7 +80,13 @@
         <p class="text-gray-500 mt-1" id="today-date">Memuat tanggal...</p> <!-- ELEMEN UNTUK TANGGAL -->
     </header>
 
-    <div class="app-card bg-white p-6 rounded-xl shadow-2xl transition-all" id="app-container">
+    <!-- KARTU UTAMA: 
+         - w-full: Memastikan lebar penuh di mobile
+         - max-w-lg: Membatasi lebar maksimum di layar besar (sekitar 512px)
+         - mx-auto: Memastikan kartu terpusat
+         - p-4 sm:p-6: Padding lebih kecil di mobile, lebih besar di desktop
+    -->
+    <div class="bg-white p-4 sm:p-6 rounded-xl shadow-2xl transition-all w-full max-w-lg mx-auto" id="app-container">
       
       <!-- Status Reader Utama -->
       <div id="status-card" class="text-center p-4 bg-blue-50 rounded-lg shadow-inner">
@@ -107,7 +115,8 @@
     </div>
 
     <!-- Log Harian -->
-    <h2 class="text-xl font-bold text-gray-700 mt-8 mb-4 text-center sm:text-left">Log Presensi Harian</h2>
+    <h2 class="text-xl font-bold text-gray-700 mt-8 mb-4 text-center sm:text-left w-full max-w-6xl mx-auto">Log Presensi Harian</h2>
+    <!-- Grid Log Harian: 2 kolom di Handphone (default), 4 kolom di layar medium ke atas (md:grid-cols-4) -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 grid-log-container">
       
       <!-- Pagi -->
