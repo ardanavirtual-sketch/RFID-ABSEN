@@ -23,19 +23,6 @@
       50% { transform: scale(1.05); opacity: 1; }
       100% { transform: scale(0.9); opacity: 0.7; }
     }
-    /* Style untuk kotak periode */
-    .period-box {
-        border-radius: 0.5rem; 
-        padding: 0.5rem; 
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        height: 100%; 
-    }
-    
-    /* Responsive adjustment for status card on small screens */
-    #status-card-message {
-        font-size: 1.125rem; 
-    }
-
     /* Style untuk Modal (Log Absensi) */
     .modal-overlay {
         position: fixed;
@@ -86,74 +73,12 @@
       <p class="text-xs text-gray-500 mt-1">Mode Koneksi Keyboard Emulator (HID)</p>
     </div>
     
-    <div class="mb-5 border-b pb-3">
-        <div class="flex justify-between items-center mb-3">
-            <h2 class="text-xl font-bold text-gray-800">Log Presensi Harian</h2>
-            <button id="open-log-modal" class="text-xs font-semibold px-3 py-1 bg-primary-blue text-white rounded-full hover:bg-blue-800 transition">
-                <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                Log Detail
-            </button>
-            </div>
-        
-        <div class="grid grid-cols-2 gap-2">
-
-            <div class="period-box bg-blue-50/50">
-                <h3 class="text-xs font-semibold text-primary-blue mb-1">Pagi</h3>
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                        <p class="text-success-green font-bold text-base" id="log-sukses-pagi">0</p>
-                        <p class="text-gray-500 text-xs">Sukses</p>
-                    </div>
-                    <div class="flex-1 p-1 ml-1">
-                        <p class="text-error-red font-bold text-base" id="log-gagal-pagi">0</p>
-                        <p class="text-gray-500 text-xs">Gagal</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="period-box bg-yellow-50/50">
-                <h3 class="text-xs font-semibold text-yellow-600 mb-1">Siang</h3>
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                        <p class="text-success-green font-bold text-base" id="log-sukses-siang">0</p>
-                        <p class="text-gray-500 text-xs">Sukses</p>
-                    </div>
-                    <div class="flex-1 p-1 ml-1">
-                        <p class="text-error-red font-bold text-base" id="log-gagal-siang">0</p>
-                        <p class="text-gray-500 text-xs">Gagal</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="period-box bg-orange-50/50">
-                <h3 class="text-xs font-semibold text-orange-600 mb-1">Sore</h3>
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                        <p class="text-success-green font-bold text-base" id="log-sukses-sore">0</p>
-                        <p class="text-gray-500 text-xs">Sukses</p>
-                    </div>
-                    <div class="flex-1 p-1 ml-1">
-                        <p class="text-error-red font-bold text-base" id="log-gagal-sore">0</p>
-                        <p class="text-gray-500 text-xs">Gagal</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="period-box bg-purple-50/50">
-                <h3 class="text-xs font-semibold text-purple-600 mb-1">Malam</h3>
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                        <p class="text-success-green font-bold text-base" id="log-sukses-malam">0</p>
-                        <p class="text-gray-500 text-xs">Sukses</p>
-                    </div>
-                    <div class="flex-1 p-1 ml-1">
-                        <p class="text-error-red font-bold text-base" id="log-gagal-malam">0</p>
-                        <p class="text-gray-500 text-xs">Gagal</p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
+    <div class="mb-5 border-b pb-3 flex justify-between items-center">
+        <h2 class="text-xl font-bold text-gray-800">Aktivitas Presensi</h2>
+        <button id="open-log-modal" class="text-xs font-semibold px-3 py-1 bg-primary-blue text-white rounded-full hover:bg-blue-800 transition">
+            <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+            Log Detail (3 Hari)
+        </button>
     </div>
     <div id="status-card" class="p-4 rounded-2xl transition-all duration-300 bg-blue-50">
       <div id="status-icon" class="status-icon w-14 h-14 mx-auto mb-3 flex items-center justify-center rounded-full bg-primary-blue/80 shadow-lg text-white">
@@ -181,7 +106,7 @@
   <div id="log-modal" class="modal-overlay">
       <div class="modal-content">
           <div class="flex justify-between items-center mb-4 border-b pb-2">
-              <h2 class="text-xl font-bold text-gray-900">Log Absensi (3 Hari Terakhir)</h2>
+              <h2 class="text-xl font-bold text-gray-900">Log Absensi Detail (3 Hari Terakhir)</h2>
               <button id="close-log-modal" class="text-gray-500 hover:text-gray-800">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
