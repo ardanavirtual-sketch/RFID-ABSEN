@@ -6,7 +6,6 @@
   <title>Sistem Presensi RFID (Keyboard HID)</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Supabase JS dimuat di sini -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
@@ -29,638 +28,135 @@
         border-radius: 0.5rem; 
         padding: 0.5rem; 
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-    .text-success-green { color: #10B981; /* emerald-500 */ }
-    .bg-success-green\/20 { background-color: rgba(16, 185, 129, 0.2); }
-    .bg-success-green { background-color: #10B981; }
-
-    .text-error-red { color: #EF4444; /* red-500 */ }
-    .bg-error-red\/20 { background-color: rgba(239, 68, 68, 0.2); }
-    .bg-error-red { background-color: #EF4444; }
-
-    .text-warning-yellow { color: #F59E0B; /* amber-500 */ }
-    .bg-warning-yellow\/20 { background-color: rgba(245, 158, 11, 0.2); }
-    .bg-warning-yellow { background-color: #F59E0B; }
-
-    .text-primary-blue { color: #3B82F6; /* blue-500 */ }
-    .bg-primary-blue\/80 { background-color: rgba(59, 130, 246, 0.8); }
-
-    .grid-period-log {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr); /* 2 kolom untuk Sukses dan Gagal */
-        gap: 0.5rem;
+        height: 100%; 
     }
     
-    @media (min-width: 640px) {
-        .grid-log-container {
-            /* Di layar besar, gunakan 4 kolom */
-            grid-template-columns: repeat(4, 1fr);
-        }
+    /* Responsive adjustment for status card on small screens */
+    #status-card-message {
+        font-size: 1.125rem; 
     }
   </style>
-</head>
-<body class="bg-gray-50 min-h-screen p-4 flex items-center justify-center">
-
-  <main class="w-full max-w-6xl mx-auto">
-    
-    <!-- Header Aplikasi -->
-    <header class="text-center mb-6">
-        <h1 class="text-3xl font-extrabold text-gray-800">Sistem Presensi Kantin</h1>
-        <p class="text-gray-500 mt-1" id="today-date">Memuat tanggal...</p> <!-- ELEMEN UNTUK TANGGAL -->
-    </header>
-
-    <!-- KARTU UTAMA -->
-    <div class="bg-white p-4 sm:p-6 rounded-xl shadow-2xl transition-all w-full max-w-lg mx-auto" id="app-container">
-      
-      <!-- Status Reader Utama -->
-      <div id="status-card" class="text-center p-4 bg-blue-50 rounded-lg shadow-inner">
-        <div id="status-icon" class="mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-2 text-white bg-primary-blue/80 status-icon">
-          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-        </div>
-        <p id="status-message" class="text-lg font-semibold text-primary-blue">Reader Siap. Tap Kartu.</p>
-        <p class="text-xs text-gray-400 mt-1" id="reader-status-hint">Listener Keyboard (HID) aktif. Tempelkan kartu.</p>
-      </div>
-
-      <!-- Detail Hasil Tap -->
-      <div id="hasil-container" class="mt-4 p-4 border-t border-gray-100 hidden">
-        <h3 class="text-lg font-bold text-left mb-3" id="hasil-title">Detail Presensi</h3>
-        <div class="space-y-2 text-left">
-          <div class="flex justify-between items-center pb-1 border-b border-dashed">
-            <span class="text-gray-500 font-medium text-sm">Nama:</span>
-            <span id="hasil-nama" class="text-gray-800 font-bold text-lg">-</span>
-          </div>
-          <div class="flex justify-between items-center">
-            <span class="text-gray-500 font-medium text-sm">ID Kartu (RFID):</span>
-            <span id="hasil-id" class="text-gray-800 font-mono text-xs">-</span>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Log Harian -->
-    <h2 class="text-xl font-bold text-gray-700 mt-8 mb-4 text-center sm:text-left w-full max-w-6xl mx-auto">Log Presensi Harian</h2>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 grid-log-container">
-      
-      <!-- Pagi -->
-      <div class="period-box bg-white shadow-lg border border-gray-200">
-        <h4 class="font-bold text-gray-800 text-sm mb-2">Pagi (04:00 - 09:59)</h4>
-        <div class="grid-period-log">
-            <div class="text-center p-2 bg-success-green/10 rounded-md">
-                <p class="text-xs font-medium text-gray-500">Sukses</p>
-                <p id="log-sukses-pagi" class="text-xl font-extrabold text-success-green">0</p>
-            </div>
-            <div class="text-center p-2 bg-error-red/10 rounded-md">
-                <p class="text-xs font-medium text-gray-500">Gagal</p>
-                <p id="log-gagal-pagi" class="text-xl font-extrabold text-error-red">0</p>
-            </div>
-        </div>
-      </div>
-
-      <!-- Siang -->
-      <div class="period-box bg-white shadow-lg border border-gray-200">
-        <h4 class="font-bold text-gray-800 text-sm mb-2">Siang (10:00 - 15:59)</h4>
-        <div class="grid-period-log">
-            <div class="text-center p-2 bg-success-green/10 rounded-md">
-                <p class="text-xs font-medium text-gray-500">Sukses</p>
-                <p id="log-sukses-siang" class="text-xl font-extrabold text-success-green">0</p>
-            </div>
-            <div class="text-center p-2 bg-error-red/10 rounded-md">
-                <p class="text-xs font-medium text-gray-500">Gagal</p>
-                <p id="log-gagal-siang" class="text-xl font-extrabold text-error-red">0</p>
-            </div>
-        </div>
-      </div>
-
-      <!-- Sore -->
-      <div class="period-box bg-white shadow-lg border border-gray-200">
-        <h4 class="font-bold text-gray-800 text-sm mb-2">Sore (16:00 - 20:59)</h4>
-        <div class="grid-period-log">
-            <div class="text-center p-2 bg-success-green/10 rounded-md">
-                <p class="text-xs font-medium text-gray-500">Sukses</p>
-                <p id="log-sukses-sore" class="text-xl font-extrabold text-success-green">0</p>
-            </div>
-            <div class="text-center p-2 bg-error-red/10 rounded-md">
-                <p class="text-xs font-medium text-gray-500">Gagal</p>
-                <p id="log-gagal-sore" class="text-xl font-extrabold text-error-red">0</p>
-            </div>
-        </div>
-      </div>
-
-      <!-- Malam -->
-      <div class="period-box bg-white shadow-lg border border-gray-200">
-        <h4 class="font-bold text-gray-800 text-sm mb-2">Malam (21:00 - 03:59)</h4>
-        <div class="grid-period-log">
-            <div class="text-center p-2 bg-success-green/10 rounded-md">
-                <p class="text-xs font-medium text-gray-500">Sukses</p>
-                <p id="log-sukses-malam" class="text-xl font-extrabold text-success-green">0</p>
-            </div>
-            <div class="text-center p-2 bg-error-red/10 rounded-md">
-                <p class="text-xs font-medium text-gray-500">Gagal</p>
-                <p id="log-gagal-malam" class="text-xl font-extrabold text-error-red">0</p>
-            </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- Audio untuk Feedback -->
-    <!-- PASTIKAN FILE AUDIO ADA DI LOKASI YANG BENAR: assets/ -->
-    <audio id="audio-success" src="assets/audio_absen_SUKSES.mp3" preload="auto"></audio>
-    <audio id="audio-fail" src="assets/audio_absen_GAGAL.mp3" preload="auto"></audio>
-    <audio id="audio-duplicate" src="assets/sudah_absen.mp3" preload="auto"></audio>
-
-  </main>
-
   <script>
-    // app.js (Kode di-inline ke dalam index.html)
-
-    // ===================================
-    // KONFIGURASI SUPABASE & DOM ELEMENTS
-    // ===================================
-
-    const SUPABASE_URL = "https://ymzcvyumplerqccaplxi.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI";
-
-    const { createClient } = supabase;
-    const db = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // DOM Elements
-    const statusCard = document.getElementById('status-card');
-    const statusIcon = document.getElementById('status-icon');
-    const statusMessage = document.getElementById('status-message');
-    const hasilContainer = document.getElementById('hasil-container');
-    const hasilTitle = document.getElementById('hasil-title');
-    const hasilNama = document.getElementById('hasil-nama');
-    const hasilID = document.getElementById('hasil-id');
-    const appContainer = document.getElementById('app-container');
-    const readerStatusHint = document.getElementById('reader-status-hint');
-    const todayDateElement = document.getElementById('today-date'); 
-
-    // Elemen counter untuk setiap periode
-    const logSuksesPagiElement = document.getElementById('log-sukses-pagi');
-    const logGagalPagiElement = document.getElementById('log-gagal-pagi');
-    const logSuksesSiangElement = document.getElementById('log-sukses-siang');
-    const logGagalSiangElement = document.getElementById('log-gagal-siang');
-    const logSuksesSoreElement = document.getElementById('log-sukses-sore');
-    const logGagalSoreElement = document.getElementById('log-gagal-sore');
-    const logSuksesMalamElement = document.getElementById('log-sukses-malam');
-    const logGagalMalamElement = document.getElementById('log-gagal-malam');
-
-
-    // Elemen audio
-    const audioSuccess = document.getElementById('audio-success');
-    const audioFail = document.getElementById('audio-fail');
-    const audioDuplicate = document.getElementById('audio-duplicate'); 
-
-    // State untuk HID Listener
-    let currentRFID = ''; // Buffer untuk menampung input ID kartu
-    let isProcessing = false; // Mencegah double tap saat proses masih berjalan
-
-    // State Log Counters (diisi oleh data Supabase)
-    let logCounters = {
-        pagi: { success: 0, fail: 0 },
-        siang: { success: 0, fail: 0 },
-        sore: { success: 0, fail: 0 },
-        malam: { success: 0, fail: 0 }
-    };
-
-    // ===================================
-    // UTILITY/UI FUNCTIONS
-    // ===================================
-
-    /**
-     * Menampilkan tanggal hari ini dalam format Bahasa Indonesia
-     */
-    function displayCurrentDate() {
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        const dateString = new Date().toLocaleDateString('id-ID', options);
-        if (todayDateElement) {
-            todayDateElement.textContent = dateString;
+    // Konfigurasi warna khusus Tailwind
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary-blue': '#1e3a8a', 
+            'success-green': '#10b981',
+            'error-red': '#ef4444',
+            'warning-yellow': '#f59e0b', // Digunakan untuk status 'Processing'
+          }
         }
+      }
     }
-
-
-    function getCurrentMealPeriod() {
-        const hour = new Date().getHours();
-        
-        // Asumsi: WIT = UTC+9. Kode ini bekerja berdasarkan jam lokal browser.
-        if (hour >= 4 && hour < 10) { 
-            return 'pagi';
-        } else if (hour >= 10 && hour < 16) { 
-            return 'siang';
-        } else if (hour >= 16 && hour < 21) { 
-            return 'sore';
-        } else if (hour >= 21 || hour < 4) { // Jam 21:00 sampai 03:59
-            return 'malam';
-        } else {
-            return 'pagi'; 
-        }
-    }
-
-    /**
-     * Menghitung timestamp UTC yang sesuai dengan 00:00:00 (tengah malam) 
-     * di WAKTU LOKAL browser hari ini.
-     * PENTING: Supabase menggunakan timestampz (UTC), jadi kita harus
-     * mengonversi titik awal hari lokal ke UTC yang benar.
-     */
-    function getTodayStartTimeUTC() {
-        const now = new Date();
-        // Set jam, menit, detik, milidetik ke nol (tengah malam) di zona waktu lokal
-        now.setHours(0, 0, 0, 0); 
-        // Konversi objek Date lokal ini ke format ISO string (UTC) yang siap dipakai oleh Supabase
-        return now.toISOString();
-    }
-
-
-    function updateUILogCounters() {
-        // Memastikan elemen ada sebelum mencoba mengupdate
-        if(logSuksesPagiElement) logSuksesPagiElement.textContent = logCounters.pagi.success;
-        if(logGagalPagiElement) logGagalPagiElement.textContent = logCounters.pagi.fail;
-        if(logSuksesSiangElement) logSuksesSiangElement.textContent = logCounters.siang.success;
-        if(logGagalSiangElement) logGagalSiangElement.textContent = logCounters.siang.fail;
-        if(logSuksesSoreElement) logSuksesSoreElement.textContent = logCounters.sore.success;
-        if(logGagalSoreElement) logGagalSoreElement.textContent = logCounters.sore.fail;
-        if(logSuksesMalamElement) logSuksesMalamElement.textContent = logCounters.malam.success;
-        if(logGagalMalamElement) logGagalMalamElement.textContent = logCounters.malam.fail;
-    }
-
-    /**
-     * Mengambil data log presensi untuk hari ini dari Supabase, 
-     * menghitungnya berdasarkan kartu unik (unique card ID) per periode, 
-     * lalu mengupdate UI.
-     * * LOGIKA BARU: Menghitung jumlah Card ID unik yang berhasil/gagal, 
-     * dengan memprioritaskan "Sukses" jika ada multi-tap (sukses/gagal).
-     */
-    async function fetchDailyLogCounters() {
-        // 1. Dapatkan titik awal hari ini dalam UTC yang dikoreksi
-        const todayStartUTC = getTodayStartTimeUTC();
-
-        // Reset counters sebelum fetch
-        logCounters = {
-            pagi: { success: 0, fail: 0 },
-            siang: { success: 0, fail: 0 },
-            sore: { success: 0, fail: 0 },
-            malam: { success: 0, fail: 0 }
-        };
-
-        try {
-            // 2. Ambil semua log hari ini, diurutkan berdasarkan waktu (ASCENDING = dari yang paling awal)
-            const { data: dailyLogs, error } = await db
-                .from("log_absen")
-                .select("card, periode, status")
-                .gte("created_at", todayStartUTC)
-                .order("created_at", { ascending: true }); 
-
-            if (error) throw error;
-            
-            // Map untuk melacak ID Kartu unik yang berhasil atau gagal di setiap periode.
-            // Jika Card ID ada di Set 'Success', ia tidak boleh ada di Set 'Failure'.
-            const uniqueSuccess = { pagi: new Set(), siang: new Set(), sore: new Set(), malam: new Set() };
-            const uniqueFailure = { pagi: new Set(), siang: new Set(), sore: new Set(), malam: new Set() };
-
-            // 3. Iterasi log (dari yang paling awal) untuk menentukan status akhir per Card/Periode
-            dailyLogs.forEach(log => {
-                const period = log.periode.toLowerCase();
-                const status = log.status;
-                const cardId = log.card;
-
-                // Pastikan periode valid
-                if (!['pagi', 'siang', 'sore', 'malam'].includes(period)) return;
-
-                const isSuccess = status.toLowerCase().includes('sukses');
-                // Status kegagalan "nyata" (bukan double tap sukses)
-                const isRealFailure = status !== "Gagal (Double Tap Sukses)";
-                
-                // Logika Prioritas: Sukses selalu mengalahkan Gagal dalam periode yang sama
-                if (isSuccess) {
-                    uniqueSuccess[period].add(cardId);
-                    // Hapus dari set kegagalan, karena kartu ini akhirnya sukses di periode ini
-                    uniqueFailure[period].delete(cardId); 
-                } 
-                
-                // Jika log adalah kegagalan nyata, dan kartu ini belum tercatat sukses
-                else if (isRealFailure) {
-                    // Hanya tambahkan ke gagal jika Card ID belum ada di Set sukses periode ini
-                    if (!uniqueSuccess[period].has(cardId)) {
-                        uniqueFailure[period].add(cardId);
-                    }
-                }
-                // Log dengan status "Gagal (Double Tap Sukses)" diabaikan oleh kedua kondisi di atas.
-            });
-
-            // 4. Hitung hasil akhir berdasarkan jumlah elemen unik (size) di setiap Set
-            logCounters.pagi.success = uniqueSuccess.pagi.size;
-            logCounters.pagi.fail = uniqueFailure.pagi.size;
-            logCounters.siang.success = uniqueSuccess.siang.size;
-            logCounters.siang.fail = uniqueFailure.siang.size;
-            logCounters.sore.success = uniqueSuccess.sore.size;
-            logCounters.sore.fail = uniqueFailure.sore.size;
-            logCounters.malam.success = uniqueSuccess.malam.size;
-            logCounters.malam.fail = uniqueFailure.malam.size;
-
-            console.log("Log Harian Unik berhasil dimuat dari Supabase:", logCounters);
-            updateUILogCounters();
-
-        } catch (e) {
-            console.error("Gagal memuat log harian dari Supabase:", e);
-        }
-    }
-
-    /**
-     * Menampilkan status ketika kartu sudah sukses absen (Double Tap)
-     * dan memutar audio 'sudah_absen.mp3'.
-     */
-    function showAlreadyTappedStatus(rfidId, nama) {
-        // Ini adalah status khusus untuk double tap, tidak dihitung sebagai 'gagal' murni
-        appContainer.classList.add('scale-105'); 
-        appContainer.classList.remove('bg-success-green/20', 'bg-error-red/20'); 
-        appContainer.classList.add('bg-blue-200/50'); 
-
-        statusCard.classList.replace('bg-warning-yellow/20', 'bg-blue-100'); 
-        statusIcon.classList.replace('bg-warning-yellow', 'bg-primary-blue'); 
-        statusIcon.classList.remove('status-icon', 'animate-spin'); 
-        statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-        
-        statusMessage.textContent = 'Anda Sudah Melakukan Tap Kartu! (Duplikasi)';
-        statusMessage.classList.remove('text-success-green', 'text-error-red', 'text-warning-yellow');
-        statusMessage.classList.add('text-primary-blue');
-        
-        hasilTitle.textContent = 'Informasi Absensi';
-        hasilNama.textContent = nama || 'Terdaftar';
-        hasilID.textContent = rfidId;
-        
-        // --- LOGIKA AUDIO DUPLIKASI (sudah_absen.mp3) ---
-        if (audioDuplicate) {
-            audioDuplicate.currentTime = 0; 
-            audioDuplicate.play().catch(e => console.error("Gagal memutar audio duplikasi:", e));
-        }
-        // -------------------------------------------------
-
-        hasilContainer.classList.remove('hidden');
-
-        setTimeout(() => {
-            isProcessing = false;
-            appContainer.classList.remove('bg-blue-200/50'); 
-            resetStatus();
-        }, 5000); 
-    }
-
-
-    function resetStatus() {
-        // Pastikan semua class warna dihilangkan
-        appContainer.classList.remove('scale-105', 'bg-success-green/20', 'bg-error-red/20', 'bg-blue-200/50'); 
-        statusCard.classList.remove('bg-success-green/20', 'bg-error-red/20', 'bg-warning-yellow/20', 'bg-blue-100'); 
-        statusIcon.classList.remove('bg-success-green', 'bg-error-red', 'bg-warning-yellow', 'animate-none');
-
-        statusCard.classList.add('bg-blue-50');
-        statusIcon.classList.add('bg-primary-blue/80', 'status-icon');
-        statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>`;
-        statusMessage.classList.remove('text-success-green', 'text-error-red', 'text-warning-yellow', 'text-primary-blue'); 
-        statusMessage.classList.add('text-primary-blue');
-
-        hasilContainer.classList.add('hidden');
-        hasilNama.textContent = '-';
-        hasilID.textContent = '-';
-        
-        statusMessage.textContent = 'Reader Siap. Tap Kartu.';
-        readerStatusHint.textContent = 'Listener Keyboard (HID) aktif. Tempelkan kartu.';
-    }
-
-    function showProcessingStatus() {
-        statusCard.classList.replace('bg-blue-50', 'bg-warning-yellow/20');
-        statusIcon.classList.replace('bg-primary-blue/80', 'bg-warning-yellow');
-        statusIcon.classList.remove('status-icon'); 
-        statusIcon.innerHTML = `<svg class="animate-spin w-7 h-7" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>`;
-        statusMessage.textContent = 'Memproses Data Kartu...';
-        statusMessage.classList.replace('text-primary-blue', 'text-warning-yellow');
-        hasilContainer.classList.add('hidden');
-    }
-
-    /**
-     * Mengupdate tampilan UI setelah proses presensi, 
-     * kemudian memicu pembaruan Log Harian dari Supabase.
-     */
-    function updateUI({ success, message, rfidId, nama, status_log }) {
-        
-        appContainer.classList.remove('bg-blue-200/50');
-        statusCard.classList.remove('bg-blue-100');
-
-        if (success) {
-            appContainer.classList.add('scale-105', 'bg-success-green/20');
-            statusCard.classList.replace('bg-warning-yellow/20', 'bg-success-green/20');
-            statusIcon.classList.replace('bg-warning-yellow', 'bg-success-green');
-            statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-            statusMessage.textContent = message;
-            statusMessage.classList.replace('text-warning-yellow', 'text-success-green');
-            hasilTitle.textContent = 'Detail Presensi Sukses';
-
-            // --- LOGIKA AUDIO SUKSES (audio_absen_SUKSES.mp3) ---
-            if (audioSuccess) {
-                audioSuccess.currentTime = 0; 
-                audioSuccess.play().catch(e => console.error("Gagal memutar audio sukses:", e));
-            }
-            // -----------------------------------------------------
-
-        } else {
-            // Khusus untuk kegagalan (BUKAN double tap)
-            appContainer.classList.add('scale-105', 'bg-error-red/20');
-            statusCard.classList.replace('bg-warning-yellow/20', 'bg-error-red/20');
-            statusIcon.classList.replace('bg-warning-yellow', 'bg-error-red');
-            statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-            statusMessage.textContent = message;
-            statusMessage.classList.replace('text-warning-yellow', 'text-error-red');
-            hasilTitle.textContent = 'Detail Kegagalan';
-
-            // --- LOGIKA AUDIO GAGAL (audio_absen_GAGAL.mp3) ---
-            if (audioFail) {
-                audioFail.currentTime = 0; 
-                audioFail.play().catch(e => console.error("Gagal memutar audio gagal:", e));
-            }
-            // --------------------------------------------------
-        }
-
-        hasilNama.textContent = nama;
-        hasilID.textContent = rfidId;
-        hasilContainer.classList.remove('hidden');
-        
-        // PENTING: Panggil fungsi fetch untuk memperbarui log Harian dari Supabase
-        fetchDailyLogCounters();
-
-        setTimeout(() => {
-            isProcessing = false;
-            resetStatus();
-        }, 5000); 
-    }
-
-
-    // ===================================
-    // PRESENSI LOGIC (SUPABASE)
-    // ===================================
-
-    async function checkCardSupabase(rfidId) {
-        if (isProcessing) return; 
-        isProcessing = true;
-
-        showProcessingStatus();
-        
-        const currentPeriod = getCurrentMealPeriod();
-        
-        let result = {
-            success: false,
-            message: 'Kartu Tidak Dikenal! Absen Gagal.', // Pesan diperjelas
-            rfidId: rfidId,
-            nama: 'Pengguna tidak terdaftar',
-            status_log: "Gagal (Unknown Card)",
-            currentPeriod: currentPeriod 
-        };
-        
-        try {
-            // 1. Cek apakah kartu sudah terdaftar di data_master
-            const { data: userData, error: userError } = await db
-                .from("data_master")
-                .select("nama, pagi, siang, sore, malam")
-                .eq("card", rfidId)
-                .maybeSingle();
-
-            if (userError) throw userError;
-
-            if (userData) {
-                result.nama = userData.nama;
-                
-                // 2. Tentukan rentang waktu untuk pengecekan log Supabase (dari 00:00:00 hari ini)
-                const todayStartUTC = getTodayStartTimeUTC(); 
-                
-                // 3. Cek apakah kartu sudah melakukan presensi SUKSES hari ini untuk periode ini
-                const { data: logData, error: logError } = await db
-                    .from("log_absen")
-                    .select("id")
-                    .eq("card", rfidId)
-                    .eq("periode", currentPeriod)
-                    .eq("status", "Sukses") // KUNCI: Hanya cek status "Sukses"
-                    .gte("created_at", todayStartUTC); 
-
-                if (logError) throw logError;
-                
-                // === LOGIKA PENCEGAHAN TAP GANDA (Duplikasi) ===
-                if (logData && logData.length > 0) {
-                    // KUNCI PERUBAHAN: Catat status spesifik untuk double tap
-                    result.success = false; 
-                    result.message = `Gagal Absen! Anda sudah TAP SUKSES untuk periode ${currentPeriod.toUpperCase()} hari ini.`;
-                    result.status_log = `Gagal (Double Tap Sukses)`; // STATUS KHUSUS INI AKAN DIFILTER OLEH fetchDailyLogCounters
-                    
-                    // Log absensi Duplikasi
-                    const { error: logErrorInsert } = await db.from("log_absen").insert({
-                        card: rfidId,
-                        nama: result.nama,
-                        status: result.status_log,
-                        periode: currentPeriod 
-                    });
-                    if (logErrorInsert) console.error("Gagal log absensi double tap:", logErrorInsert);
-
-                    // --- PANGGIL showAlreadyTappedStatus agar memutar audio DUPLIKASI ---
-                    isProcessing = true; 
-                    showAlreadyTappedStatus(rfidId, userData.nama);
-                    // PENTING: Panggil fetchDailyLogCounters() di sini juga
-                    fetchDailyLogCounters(); 
-                    return; // Hentikan proses di sini
-                }
-                // =======================================
-
-
-                // 4. Jika belum tap SUKSES, cek jatah makannya
-                const statusMakanSaatIni = userData[currentPeriod];
-
-                if (statusMakanSaatIni && statusMakanSaatIni.toLowerCase() === "kantin") {
-                    result.success = true;
-                    result.message = `Absensi ${currentPeriod.toUpperCase()} Berhasil! Absen Sukses Bersuara.`; // Pesan diperjelas
-                    result.status_log = `Sukses`;
-                } else {
-                    result.message = `Absensi ${currentPeriod.toUpperCase()} Gagal: Status **${statusMakanSaatIni || 'KOSONG'}**! Absen Gagal Bersuara.`; // Pesan diperjelas
-                    result.status_log = `Gagal (Not Kantin for ${currentPeriod.toUpperCase()})`;
-                }
-            }
-            
-            // 5. Log absensi ke Supabase (HANYA jika bukan double tap yang di-return di atas)
-            const { error: logErrorInsert } = await db.from("log_absen").insert({
-                card: rfidId,
-                nama: result.nama,
-                status: result.status_log,
-                periode: currentPeriod 
-            });
-
-            if (logErrorInsert) console.error("Gagal log absensi:", logErrorInsert);
-
-        } catch (e) {
-            // Jika terjadi error 
-            console.error("Kesalahan Supabase/Jaringan:", e);
-            result.message = 'Kesalahan Server/Jaringan! Absen Gagal Bersuara.'; // Pesan diperjelas
-            result.nama = 'Kesalahan Koneksi';
-            result.status_log = "Gagal (Error)";
-        }
-        
-        // PENTING: Update UI, yang di dalamnya terdapat logika pemutaran audio Sukses/Gagal
-        updateUI(result);
-    }
-
-    // ===================================
-    // HID KEYBOARD LISTENER LOGIC
-    // ===================================
-
-    function setupHIDListener() {
-        document.addEventListener('keydown', (e) => {
-            if (isProcessing || e.repeat) {
-                e.preventDefault(); 
-                return;
-            }
-
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                
-                const rfidId = currentRFID.trim();
-                if (rfidId.length > 0) {
-                    checkCardSupabase(rfidId);
-                }
-                currentRFID = '';
-                
-                readerStatusHint.textContent = `Input ID diterima. Menunggu reset...`;
-                return;
-            }
-
-            if (e.key.length === 1 && /[\w\d]/.test(e.key) && currentRFID.length < 20) {
-                currentRFID += e.key;
-                
-                readerStatusHint.textContent = `ID Diterima: ${currentRFID} | Menunggu Enter...`;
-                return;
-            }
-
-            if (e.key === 'Backspace') {
-                currentRFID = currentRFID.slice(0, -1);
-                readerStatusHint.textContent = `ID Diterima: ${currentRFID} | Menunggu Enter...`;
-            }
-        });
-
-        resetStatus();
-    }
-
-    // ===================================
-    // INISIALISASI
-    // ===================================
-
-    window.onload = () => {
-        // 1. Tampilkan tanggal hari ini
-        displayCurrentDate();
-        
-        // 2. Ambil dan tampilkan Log Harian dari Supabase saat aplikasi dimuat
-        fetchDailyLogCounters(); 
-        
-        // 3. Setup listener
-        setupHIDListener();
-    };
   </script>
+</head>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
+
+  <div id="app-container" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 sm:p-8 text-center transition-all duration-500 transform scale-100">
+
+    <div class="mb-6">
+      <svg class="w-12 h-12 mx-auto text-primary-blue mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+      <h1 class="text-2xl font-extrabold text-gray-900">Sistem Presensi RFID</h1>
+      <p class="text-xs text-gray-500 mt-1">Mode Koneksi Keyboard Emulator (HID)</p>
+    </div>
+    
+    <div class="mb-5 border-b pb-3">
+        <h2 class="text-xl font-bold mb-3 text-gray-800">Log Presensi Harian</h2>
+        
+        <!-- Grid untuk Counter Absensi Harian -->
+        <div class="grid grid-cols-2 gap-2">
+
+            <!-- Pagi -->
+            <div class="period-box bg-blue-50/50">
+                <h3 class="text-xs font-semibold text-primary-blue mb-1">Pagi</h3>
+                <div class="flex justify-between items-center text-xs">
+                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
+                        <p class="text-success-green font-bold text-base" id="log-sukses-pagi">0</p>
+                        <p class="text-gray-500 text-xs">Sukses</p>
+                    </div>
+                    <div class="flex-1 p-1 ml-1">
+                        <p class="text-error-red font-bold text-base" id="log-gagal-pagi">0</p>
+                        <p class="text-gray-500 text-xs">Gagal</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Siang -->
+            <div class="period-box bg-yellow-50/50">
+                <h3 class="text-xs font-semibold text-yellow-600 mb-1">Siang</h3>
+                <div class="flex justify-between items-center text-xs">
+                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
+                        <p class="text-success-green font-bold text-base" id="log-sukses-siang">0</p>
+                        <p class="text-gray-500 text-xs">Sukses</p>
+                    </div>
+                    <div class="flex-1 p-1 ml-1">
+                        <p class="text-error-red font-bold text-base" id="log-gagal-siang">0</p>
+                        <p class="text-gray-500 text-xs">Gagal</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sore -->
+            <div class="period-box bg-orange-50/50">
+                <h3 class="text-xs font-semibold text-orange-600 mb-1">Sore</h3>
+                <div class="flex justify-between items-center text-xs">
+                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
+                        <p class="text-success-green font-bold text-base" id="log-sukses-sore">0</p>
+                        <p class="text-gray-500 text-xs">Sukses</p>
+                    </div>
+                    <div class="flex-1 p-1 ml-1">
+                        <p class="text-error-red font-bold text-base" id="log-gagal-sore">0</p>
+                        <p class="text-gray-500 text-xs">Gagal</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Malam -->
+            <div class="period-box bg-purple-50/50">
+                <h3 class="text-xs font-semibold text-purple-600 mb-1">Malam</h3>
+                <div class="flex justify-between items-center text-xs">
+                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
+                        <p class="text-success-green font-bold text-base" id="log-sukses-malam">0</p>
+                        <p class="text-gray-500 text-xs">Sukses</p>
+                    </div>
+                    <div class="flex-1 p-1 ml-1">
+                        <p class="text-error-red font-bold text-base" id="log-gagal-malam">0</p>
+                        <p class="text-gray-500 text-xs">Gagal</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    <div id="status-card" class="p-4 rounded-2xl transition-all duration-300 bg-blue-50">
+      <div id="status-icon" class="status-icon w-14 h-14 mx-auto mb-3 flex items-center justify-center rounded-full bg-primary-blue/80 shadow-lg text-white">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+      </div>
+      <p id="status-message" class="text-lg font-semibold text-primary-blue">Reader Siap. Tap Kartu.</p>
+      <p class="text-xs text-gray-400 mt-1" id="reader-status-hint">Listener Keyboard (HID) aktif. Tempelkan kartu.</p>
+    </div>
+
+    <div id="hasil-container" class="mt-4 p-4 border-t border-gray-100 hidden">
+      <h3 class="text-lg font-bold text-left mb-3" id="hasil-title">Detail Presensi</h3>
+      <div class="space-y-2 text-left">
+        <div class="flex justify-between items-center pb-1 border-b border-dashed">
+          <span class="text-gray-500 font-medium text-sm">Nama:</span>
+          <span class="text-gray-900 font-semibold text-sm" id="hasil-nama">-</span>
+        </div>
+        <div class="flex justify-between items-center pb-1">
+          <span class="text-gray-500 font-medium text-sm">ID Kartu:</span>
+          <span class="text-gray-900 font-semibold text-xs" id="hasil-id">-</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Tambahkan elemen audio di bawah container utama -->
+  <audio id="audio-success" src="assets/audio_absen_SUKSES.mp3" preload="auto"></audio>
+  <audio id="audio-fail" src="assets/audio_absen_GAGAL.mp3" preload="auto"></audio>
+  <audio id="audio-duplicate" src="assets/sudah_absen.mp3" preload="auto"></audio>
+  
+  <script type="module" src="app.js"></script>
 </body>
 </html>
