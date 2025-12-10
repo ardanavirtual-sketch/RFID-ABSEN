@@ -28,127 +28,156 @@
         border-radius: 0.5rem; 
         padding: 0.5rem; 
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        height: 100%; 
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .text-success-green { color: #10B981; /* emerald-500 */ }
+    .bg-success-green\/20 { background-color: rgba(16, 185, 129, 0.2); }
+    .bg-success-green { background-color: #10B981; }
+
+    .text-error-red { color: #EF4444; /* red-500 */ }
+    .bg-error-red\/20 { background-color: rgba(239, 68, 68, 0.2); }
+    .bg-error-red { background-color: #EF4444; }
+
+    .text-warning-yellow { color: #F59E0B; /* amber-500 */ }
+    .bg-warning-yellow\/20 { background-color: rgba(245, 158, 11, 0.2); }
+    .bg-warning-yellow { background-color: #F59E0B; }
+
+    .text-primary-blue { color: #3B82F6; /* blue-500 */ }
+    .bg-primary-blue\/80 { background-color: rgba(59, 130, 246, 0.8); }
+
+    .app-card {
+        max-width: 600px;
+        margin: auto;
+        transition: transform 0.3s ease;
     }
     
-    /* Responsive adjustment for status card on small screens */
-    #status-card-message {
-        font-size: 1.125rem; 
+    .grid-period-log {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr); /* 2 kolom untuk Sukses dan Gagal */
+        gap: 0.5rem;
+    }
+    
+    @media (min-width: 640px) {
+        .grid-log-container {
+            grid-template-columns: repeat(4, 1fr);
+        }
     }
   </style>
-  <script>
-    // Konfigurasi warna khusus Tailwind
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'primary-blue': '#1e3a8a', 
-            'success-green': '#10b981',
-            'error-red': '#ef4444',
-            'warning-yellow': '#f59e0b', // Digunakan untuk status 'Processing'
-          }
-        }
-      }
-    }
-  </script>
 </head>
-<body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
+<body class="bg-gray-50 min-h-screen p-4 flex items-center justify-center">
 
-  <div id="app-container" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 sm:p-8 text-center transition-all duration-500 transform scale-100">
-
-    <div class="mb-6">
-      <svg class="w-12 h-12 mx-auto text-primary-blue mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-      <h1 class="text-2xl font-extrabold text-gray-900">Sistem Presensi RFID</h1>
-      <p class="text-xs text-gray-500 mt-1">Mode Koneksi Keyboard Emulator (HID)</p>
-    </div>
+  <main class="w-full max-w-6xl">
     
-    <div class="mb-5 border-b pb-3">
-        <h2 class="text-xl font-bold mb-3 text-gray-800">Log Presensi Harian</h2>
-        
-        <div class="grid grid-cols-2 gap-2">
+    <!-- Header Aplikasi -->
+    <header class="text-center mb-6">
+        <h1 class="text-3xl font-extrabold text-gray-800">Sistem Presensi Kantin</h1>
+        <p class="text-gray-500 mt-1" id="today-date">Memuat tanggal...</p> <!-- ELEMEN BARU UNTUK TANGGAL -->
+    </header>
 
-            <div class="period-box bg-blue-50/50">
-                <h3 class="text-xs font-semibold text-primary-blue mb-1">Pagi</h3>
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                        <p class="text-success-green font-bold text-base" id="log-sukses-pagi">0</p>
-                        <p class="text-gray-500 text-xs">Sukses</p>
-                    </div>
-                    <div class="flex-1 p-1 ml-1">
-                        <p class="text-error-red font-bold text-base" id="log-gagal-pagi">0</p>
-                        <p class="text-gray-500 text-xs">Gagal</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="period-box bg-yellow-50/50">
-                <h3 class="text-xs font-semibold text-yellow-600 mb-1">Siang</h3>
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                        <p class="text-success-green font-bold text-base" id="log-sukses-siang">0</p>
-                        <p class="text-gray-500 text-xs">Sukses</p>
-                    </div>
-                    <div class="flex-1 p-1 ml-1">
-                        <p class="text-error-red font-bold text-base" id="log-gagal-siang">0</p>
-                        <p class="text-gray-500 text-xs">Gagal</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="period-box bg-orange-50/50">
-                <h3 class="text-xs font-semibold text-orange-600 mb-1">Sore</h3>
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                        <p class="text-success-green font-bold text-base" id="log-sukses-sore">0</p>
-                        <p class="text-gray-500 text-xs">Sukses</p>
-                    </div>
-                    <div class="flex-1 p-1 ml-1">
-                        <p class="text-error-red font-bold text-base" id="log-gagal-sore">0</p>
-                        <p class="text-gray-500 text-xs">Gagal</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="period-box bg-purple-50/50">
-                <h3 class="text-xs font-semibold text-purple-600 mb-1">Malam</h3>
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                        <p class="text-success-green font-bold text-base" id="log-sukses-malam">0</p>
-                        <p class="text-gray-500 text-xs">Sukses</p>
-                    </div>
-                    <div class="flex-1 p-1 ml-1">
-                        <p class="text-error-red font-bold text-base" id="log-gagal-malam">0</p>
-                        <p class="text-gray-500 text-xs">Gagal</p>
-                    </div>
-                </div>
-            </div>
-
+    <div class="app-card bg-white p-6 rounded-xl shadow-2xl transition-all" id="app-container">
+      
+      <!-- Status Reader Utama -->
+      <div id="status-card" class="text-center p-4 bg-blue-50 rounded-lg shadow-inner">
+        <div id="status-icon" class="mx-auto w-14 h-14 rounded-full flex items-center justify-center mb-2 text-white bg-primary-blue/80 status-icon">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
         </div>
-    </div>
-    <div id="status-card" class="p-4 rounded-2xl transition-all duration-300 bg-blue-50">
-      <div id="status-icon" class="status-icon w-14 h-14 mx-auto mb-3 flex items-center justify-center rounded-full bg-primary-blue/80 shadow-lg text-white">
-        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+        <p id="status-message" class="text-lg font-semibold text-primary-blue">Reader Siap. Tap Kartu.</p>
+        <p class="text-xs text-gray-400 mt-1" id="reader-status-hint">Listener Keyboard (HID) aktif. Tempelkan kartu.</p>
       </div>
-      <p id="status-message" class="text-lg font-semibold text-primary-blue">Reader Siap. Tap Kartu.</p>
-      <p class="text-xs text-gray-400 mt-1" id="reader-status-hint">Listener Keyboard (HID) aktif. Tempelkan kartu.</p>
-    </div>
 
-    <div id="hasil-container" class="mt-4 p-4 border-t border-gray-100 hidden">
-      <h3 class="text-lg font-bold text-left mb-3" id="hasil-title">Detail Presensi</h3>
-      <div class="space-y-2 text-left">
-        <div class="flex justify-between items-center pb-1 border-b border-dashed">
-          <span class="text-gray-500 font-medium text-sm">Nama:</span>
-          <span class="text-gray-900 font-semibold text-sm" id="hasil-nama">-</span>
-        </div>
-        <div class="flex justify-between items-center pb-1">
-          <span class="text-gray-500 font-medium text-sm">ID Kartu:</span>
-          <span class="text-gray-900 font-semibold text-xs" id="hasil-id">-</span>
+      <!-- Detail Hasil Tap -->
+      <div id="hasil-container" class="mt-4 p-4 border-t border-gray-100 hidden">
+        <h3 class="text-lg font-bold text-left mb-3" id="hasil-title">Detail Presensi</h3>
+        <div class="space-y-2 text-left">
+          <div class="flex justify-between items-center pb-1 border-b border-dashed">
+            <span class="text-gray-500 font-medium text-sm">Nama:</span>
+            <span id="hasil-nama" class="text-gray-800 font-bold text-lg">-</span>
+          </div>
+          <div class="flex justify-between items-center">
+            <span class="text-gray-500 font-medium text-sm">ID Kartu (RFID):</span>
+            <span id="hasil-id" class="text-gray-800 font-mono text-xs">-</span>
+          </div>
         </div>
       </div>
+
     </div>
-  </div>
-  <audio id="audio-success" src="assets/audio_absen_SUKSES.mp3" preload="auto"></audio>
-  <audio id="audio-fail" src="assets/audio_absen_GAGAL.mp3" preload="auto"></audio>
-  <audio id="audio-duplicate" src="assets/sudah_absen.mp3" preload="auto"></audio> <script type="module" src="app.js"></script>
+
+    <!-- Log Harian -->
+    <h2 class="text-xl font-bold text-gray-700 mt-8 mb-4 text-center sm:text-left">Log Presensi Harian</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 grid-log-container">
+      
+      <!-- Pagi -->
+      <div class="period-box bg-white shadow-lg border border-gray-200">
+        <h4 class="font-bold text-gray-800 text-sm mb-2">Pagi (04:00 - 09:59)</h4>
+        <div class="grid-period-log">
+            <div class="text-center p-2 bg-success-green/10 rounded-md">
+                <p class="text-xs font-medium text-gray-500">Sukses</p>
+                <p id="log-sukses-pagi" class="text-xl font-extrabold text-success-green">0</p>
+            </div>
+            <div class="text-center p-2 bg-error-red/10 rounded-md">
+                <p class="text-xs font-medium text-gray-500">Gagal</p>
+                <p id="log-gagal-pagi" class="text-xl font-extrabold text-error-red">0</p>
+            </div>
+        </div>
+      </div>
+
+      <!-- Siang -->
+      <div class="period-box bg-white shadow-lg border border-gray-200">
+        <h4 class="font-bold text-gray-800 text-sm mb-2">Siang (10:00 - 15:59)</h4>
+        <div class="grid-period-log">
+            <div class="text-center p-2 bg-success-green/10 rounded-md">
+                <p class="text-xs font-medium text-gray-500">Sukses</p>
+                <p id="log-sukses-siang" class="text-xl font-extrabold text-success-green">0</p>
+            </div>
+            <div class="text-center p-2 bg-error-red/10 rounded-md">
+                <p class="text-xs font-medium text-gray-500">Gagal</p>
+                <p id="log-gagal-siang" class="text-xl font-extrabold text-error-red">0</p>
+            </div>
+        </div>
+      </div>
+
+      <!-- Sore -->
+      <div class="period-box bg-white shadow-lg border border-gray-200">
+        <h4 class="font-bold text-gray-800 text-sm mb-2">Sore (16:00 - 20:59)</h4>
+        <div class="grid-period-log">
+            <div class="text-center p-2 bg-success-green/10 rounded-md">
+                <p class="text-xs font-medium text-gray-500">Sukses</p>
+                <p id="log-sukses-sore" class="text-xl font-extrabold text-success-green">0</p>
+            </div>
+            <div class="text-center p-2 bg-error-red/10 rounded-md">
+                <p class="text-xs font-medium text-gray-500">Gagal</p>
+                <p id="log-gagal-sore" class="text-xl font-extrabold text-error-red">0</p>
+            </div>
+        </div>
+      </div>
+
+      <!-- Malam -->
+      <div class="period-box bg-white shadow-lg border border-gray-200">
+        <h4 class="font-bold text-gray-800 text-sm mb-2">Malam (21:00 - 03:59)</h4>
+        <div class="grid-period-log">
+            <div class="text-center p-2 bg-success-green/10 rounded-md">
+                <p class="text-xs font-medium text-gray-500">Sukses</p>
+                <p id="log-sukses-malam" class="text-xl font-extrabold text-success-green">0</p>
+            </div>
+            <div class="text-center p-2 bg-error-red/10 rounded-md">
+                <p class="text-xs font-medium text-gray-500">Gagal</p>
+                <p id="log-gagal-malam" class="text-xl font-extrabold text-error-red">0</p>
+            </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Audio untuk Feedback -->
+    <audio id="audio-success" src="https://assets.mixkit.co/sfx/preview/mixkit-positive-notification-951.mp3" preload="auto"></audio>
+    <audio id="audio-fail" src="https://assets.mixkit.co/sfx/preview/mixkit-alert-alarm-sound-2763.mp3" preload="auto"></audio>
+    <audio id="audio-duplicate" src="https://assets.mixkit.co/sfx/preview/mixkit-bonus-earned-in-video-game-2055.mp3" preload="auto"></audio>
+
+  </main>
+
+  <script src="./app.js"></script>
 </body>
 </html>
