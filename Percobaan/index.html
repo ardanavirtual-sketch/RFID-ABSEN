@@ -49,10 +49,6 @@
     .text-primary-blue { color: #3B82F6; /* blue-500 */ }
     .bg-primary-blue\/80 { background-color: rgba(59, 130, 246, 0.8); }
 
-    /* Menghapus class .app-card yang sebelumnya memiliki lebar tetap, 
-       kini lebar diatur langsung di elemen div menggunakan Tailwind CSS. */
-    /* .app-card { ... } */ 
-    
     .grid-period-log {
         display: grid;
         grid-template-columns: repeat(2, 1fr); /* 2 kolom untuk Sukses dan Gagal */
@@ -65,13 +61,10 @@
             grid-template-columns: repeat(4, 1fr);
         }
     }
-    /* Di layar kecil (mobile), default 2 kolom pada grid-log-container tetap berlaku */
   </style>
 </head>
-<!-- Menggunakan p-4 di body untuk padding di Handphone -->
 <body class="bg-gray-50 min-h-screen p-4 flex items-center justify-center">
 
-  <!-- Mengatur max-w-6xl dan mx-auto agar konten tetap terpusat di layar lebar -->
   <main class="w-full max-w-6xl mx-auto">
     
     <!-- Header Aplikasi -->
@@ -80,12 +73,7 @@
         <p class="text-gray-500 mt-1" id="today-date">Memuat tanggal...</p> <!-- ELEMEN UNTUK TANGGAL -->
     </header>
 
-    <!-- KARTU UTAMA: 
-         - w-full: Memastikan lebar penuh di mobile
-         - max-w-lg: Membatasi lebar maksimum di layar besar (sekitar 512px)
-         - mx-auto: Memastikan kartu terpusat
-         - p-4 sm:p-6: Padding lebih kecil di mobile, lebih besar di desktop
-    -->
+    <!-- KARTU UTAMA -->
     <div class="bg-white p-4 sm:p-6 rounded-xl shadow-2xl transition-all w-full max-w-lg mx-auto" id="app-container">
       
       <!-- Status Reader Utama -->
@@ -116,7 +104,6 @@
 
     <!-- Log Harian -->
     <h2 class="text-xl font-bold text-gray-700 mt-8 mb-4 text-center sm:text-left w-full max-w-6xl mx-auto">Log Presensi Harian</h2>
-    <!-- Grid Log Harian: 2 kolom di Handphone (default), 4 kolom di layar medium ke atas (md:grid-cols-4) -->
     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 grid-log-container">
       
       <!-- Pagi -->
@@ -241,11 +228,6 @@
         malam: { success: 0, fail: 0 }
     };
 
-    // State Deduplikasi UI (Mencegah notifikasi berulang di UI dalam 60 detik)
-    const lastTapStatus = new Map(); 
-    const DEDUPLICATION_WINDOW_MS = 60000; // 60 detik
-
-
     // ===================================
     // UTILITY/UI FUNCTIONS
     // ===================================
@@ -309,6 +291,8 @@
     /**
      * Mengambil data log presensi untuk hari ini dari Supabase, 
      * menghitungnya per periode & status, lalu mengupdate UI.
+     * MODIFIKASI: Log dengan status "Gagal (Double Tap Sukses)" diabaikan 
+     * agar tidak menambah hitungan 'Gagal'.
      */
     async function fetchDailyLogCounters() {
         // 1. Dapatkan titik awal hari ini dalam UTC yang dikoreksi
@@ -335,19 +319,28 @@
             // 3. Hitung log per periode
             dailyLogs.forEach(log => {
                 const period = log.periode.toLowerCase();
+                const status = log.status;
+                
+                // KUNCI PERUBAHAN: Jika status adalah Double Tap, kita ABAIKAN dari counter Gagal
+                if (status === "Gagal (Double Tap Sukses)") {
+                    console.log(`Log diabaikan dari counter Gagal: ${status}`);
+                    return; 
+                }
+                
                 // Status dianggap Sukses jika mengandung kata "Sukses" (case-insensitive)
-                const isSuccess = log.status.toLowerCase().includes('sukses'); 
+                const isSuccess = status.toLowerCase().includes('sukses'); 
                 
                 if (logCounters[period]) {
                     if (isSuccess) {
                         logCounters[period].success++;
                     } else {
+                        // Ini akan menangkap Gagal (Unknown Card) dan Gagal (Not Kantin)
                         logCounters[period].fail++;
                     }
                 }
             });
 
-            console.log("Log Harian berhasil dimuat dari Supabase:", logCounters);
+            console.log("Log Harian berhasil dimuat dari Supabase (setelah filter double tap):", logCounters);
             updateUILogCounters();
 
         } catch (e) {
@@ -357,6 +350,7 @@
 
 
     function showAlreadyTappedStatus(rfidId, nama) {
+        // Ini adalah status khusus untuk double tap, tidak dihitung sebagai 'gagal' murni
         appContainer.classList.add('scale-105'); 
         appContainer.classList.remove('bg-success-green/20', 'bg-error-red/20'); 
         appContainer.classList.add('bg-blue-200/50'); 
@@ -366,7 +360,7 @@
         statusIcon.classList.remove('status-icon', 'animate-spin'); 
         statusIcon.innerHTML = `<svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
         
-        statusMessage.textContent = 'Anda Sudah Melakukan Tap Kartu!';
+        statusMessage.textContent = 'Anda Sudah Melakukan Tap Kartu! (Duplikasi)';
         statusMessage.classList.remove('text-success-green', 'text-error-red', 'text-warning-yellow');
         statusMessage.classList.add('text-primary-blue');
         
@@ -423,7 +417,7 @@
      * Mengupdate tampilan UI setelah proses presensi, 
      * kemudian memicu pembaruan Log Harian dari Supabase.
      */
-    function updateUI({ success, message, rfidId, nama }) {
+    function updateUI({ success, message, rfidId, nama, status_log }) {
         
         appContainer.classList.remove('bg-blue-200/50');
         statusCard.classList.remove('bg-blue-100');
@@ -443,6 +437,7 @@
             }
 
         } else {
+            // Khusus untuk kegagalan (BUKAN double tap)
             appContainer.classList.add('scale-105', 'bg-error-red/20');
             statusCard.classList.replace('bg-warning-yellow/20', 'bg-error-red/20');
             statusIcon.classList.replace('bg-warning-yellow', 'bg-error-red');
@@ -506,7 +501,6 @@
                 result.nama = userData.nama;
                 
                 // 2. Tentukan rentang waktu untuk pengecekan log Supabase (dari 00:00:00 hari ini)
-                // Menggunakan fungsi yang sudah dikoreksi
                 const todayStartUTC = getTodayStartTimeUTC(); 
                 
                 // 3. Cek apakah kartu sudah melakukan presensi SUKSES hari ini untuk periode ini
@@ -516,20 +510,31 @@
                     .eq("card", rfidId)
                     .eq("periode", currentPeriod)
                     .eq("status", "Sukses") // KUNCI: Hanya cek status "Sukses"
-                    .gte("created_at", todayStartUTC); // MENGGUNAKAN TITIK MULAI UTC YANG DIKOREKSI
+                    .gte("created_at", todayStartUTC); 
 
                 if (logError) throw logError;
                 
                 // === LOGIKA PENCEGAHAN TAP GANDA ===
                 if (logData && logData.length > 0) {
-                    // Jika sudah ada log 'Sukses' untuk kartu ini pada periode ini hari ini
-                    result.success = false; // Tetap false karena ini tap kedua
+                    // KUNCI PERUBAHAN: Catat status spesifik untuk double tap
+                    result.success = false; 
                     result.message = `Gagal Absen! Anda sudah TAP SUKSES untuk periode ${currentPeriod.toUpperCase()} hari ini.`;
-                    result.status_log = `Gagal (Double Tap Sukses)`;
+                    result.status_log = `Gagal (Double Tap Sukses)`; // STATUS KHUSUS INI AKAN DIFILTER OLEH fetchDailyLogCounters
                     
+                    // Log absensi Duplikasi
+                    const { error: logErrorInsert } = await db.from("log_absen").insert({
+                        card: rfidId,
+                        nama: result.nama,
+                        status: result.status_log,
+                        periode: currentPeriod 
+                    });
+                    if (logErrorInsert) console.error("Gagal log absensi double tap:", logErrorInsert);
+
                     // --- Tampilkan Status Sudah Tap ---
                     isProcessing = true; 
                     showAlreadyTappedStatus(rfidId, userData.nama);
+                    // Tidak perlu panggil updateUI, karena status khusus ini sudah diatasi oleh showAlreadyTappedStatus
+                    fetchDailyLogCounters(); // Update log counter di UI setelah log duplikasi dicatat
                     return; 
                 }
                 // =======================================
@@ -548,7 +553,7 @@
                 }
             }
             
-            // 5. Log absensi ke Supabase 
+            // 5. Log absensi ke Supabase (HANYA jika bukan double tap yang di-return di atas)
             const { error: logErrorInsert } = await db.from("log_absen").insert({
                 card: rfidId,
                 nama: result.nama,
