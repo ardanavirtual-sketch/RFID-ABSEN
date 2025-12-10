@@ -290,9 +290,10 @@
 
     /**
      * Mengambil data log presensi untuk hari ini dari Supabase, 
-     * menghitungnya per periode & status, lalu mengupdate UI.
-     * MODIFIKASI: Log dengan status "Gagal (Double Tap Sukses)" diabaikan 
-     * agar tidak menambah hitungan 'Gagal'.
+     * menghitungnya berdasarkan kartu unik (unique card ID) per periode, 
+     * lalu mengupdate UI.
+     * * LOGIKA BARU: Menghitung jumlah Card ID unik yang berhasil/gagal, 
+     * dengan memprioritaskan "Sukses" jika ada multi-tap (sukses/gagal).
      */
     async function fetchDailyLogCounters() {
         // 1. Dapatkan titik awal hari ini dalam UTC yang dikoreksi
@@ -305,42 +306,63 @@
             sore: { success: 0, fail: 0 },
             malam: { success: 0, fail: 0 }
         };
-        
+
         try {
-            // 2. Ambil semua log untuk hari ini, menggunakan titik awal UTC yang benar
+            // 2. Ambil semua log hari ini, diurutkan berdasarkan waktu (ASCENDING = dari yang paling awal)
             const { data: dailyLogs, error } = await db
                 .from("log_absen")
-                .select("periode, status")
-                .gte("created_at", todayStartUTC) // MENGGUNAKAN TITIK MULAI UTC YANG DIKOREKSI
-                .order("created_at", { ascending: false }); 
+                .select("card, periode, status")
+                .gte("created_at", todayStartUTC)
+                .order("created_at", { ascending: true }); 
 
             if (error) throw error;
+            
+            // Map untuk melacak ID Kartu unik yang berhasil atau gagal di setiap periode.
+            // Jika Card ID ada di Set 'Success', ia tidak boleh ada di Set 'Failure'.
+            const uniqueSuccess = { pagi: new Set(), siang: new Set(), sore: new Set(), malam: new Set() };
+            const uniqueFailure = { pagi: new Set(), siang: new Set(), sore: new Set(), malam: new Set() };
 
-            // 3. Hitung log per periode
+            // 3. Iterasi log (dari yang paling awal) untuk menentukan status akhir per Card/Periode
             dailyLogs.forEach(log => {
                 const period = log.periode.toLowerCase();
                 const status = log.status;
+                const cardId = log.card;
+
+                // Pastikan periode valid
+                if (!['pagi', 'siang', 'sore', 'malam'].includes(period)) return;
+
+                const isSuccess = status.toLowerCase().includes('sukses');
+                // Status kegagalan "nyata" (bukan double tap sukses)
+                const isRealFailure = status !== "Gagal (Double Tap Sukses)";
                 
-                // KUNCI PERUBAHAN: Jika status adalah Double Tap, kita ABAIKAN dari counter Gagal
-                if (status === "Gagal (Double Tap Sukses)") {
-                    console.log(`Log diabaikan dari counter Gagal: ${status}`);
-                    return; 
-                }
+                // Logika Prioritas: Sukses selalu mengalahkan Gagal dalam periode yang sama
+                if (isSuccess) {
+                    uniqueSuccess[period].add(cardId);
+                    // Hapus dari set kegagalan, karena kartu ini akhirnya sukses di periode ini
+                    uniqueFailure[period].delete(cardId); 
+                } 
                 
-                // Status dianggap Sukses jika mengandung kata "Sukses" (case-insensitive)
-                const isSuccess = status.toLowerCase().includes('sukses'); 
-                
-                if (logCounters[period]) {
-                    if (isSuccess) {
-                        logCounters[period].success++;
-                    } else {
-                        // Ini akan menangkap Gagal (Unknown Card) dan Gagal (Not Kantin)
-                        logCounters[period].fail++;
+                // Jika log adalah kegagalan nyata, dan kartu ini belum tercatat sukses
+                else if (isRealFailure) {
+                    // Hanya tambahkan ke gagal jika Card ID belum ada di Set sukses periode ini
+                    if (!uniqueSuccess[period].has(cardId)) {
+                        uniqueFailure[period].add(cardId);
                     }
                 }
+                // Log dengan status "Gagal (Double Tap Sukses)" diabaikan oleh kedua kondisi di atas.
             });
 
-            console.log("Log Harian berhasil dimuat dari Supabase (setelah filter double tap):", logCounters);
+            // 4. Hitung hasil akhir berdasarkan jumlah elemen unik (size) di setiap Set
+            logCounters.pagi.success = uniqueSuccess.pagi.size;
+            logCounters.pagi.fail = uniqueFailure.pagi.size;
+            logCounters.siang.success = uniqueSuccess.siang.size;
+            logCounters.siang.fail = uniqueFailure.siang.size;
+            logCounters.sore.success = uniqueSuccess.sore.size;
+            logCounters.sore.fail = uniqueFailure.sore.size;
+            logCounters.malam.success = uniqueSuccess.malam.size;
+            logCounters.malam.fail = uniqueFailure.malam.size;
+
+            console.log("Log Harian Unik berhasil dimuat dari Supabase:", logCounters);
             updateUILogCounters();
 
         } catch (e) {
@@ -533,8 +555,8 @@
                     // --- Tampilkan Status Sudah Tap ---
                     isProcessing = true; 
                     showAlreadyTappedStatus(rfidId, userData.nama);
-                    // Tidak perlu panggil updateUI, karena status khusus ini sudah diatasi oleh showAlreadyTappedStatus
-                    fetchDailyLogCounters(); // Update log counter di UI setelah log duplikasi dicatat
+                    // PENTING: Panggil fetchDailyLogCounters() di sini juga
+                    fetchDailyLogCounters(); 
                     return; 
                 }
                 // =======================================
