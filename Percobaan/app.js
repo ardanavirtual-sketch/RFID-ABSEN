@@ -18,8 +18,7 @@ const hasilContainer = document.getElementById('hasil-container');
 const hasilTitle = document.getElementById('hasil-title');
 const hasilNama = document.getElementById('hasil-nama');
 const hasilID = document.getElementById('hasil-id');
-// hasilWaktu dihapus di versi sebelumnya dan tidak digunakan, jadi saya hapus juga dari daftar DOM Elements
-
+// hasilWaktu dihapus di versi sebelumnya dan tidak digunakan
 const appContainer = document.getElementById('app-container');
 const readerStatusHint = document.getElementById('reader-status-hint');
 
@@ -85,7 +84,7 @@ function getCurrentMealPeriod() {
         return 'malam';
     } else {
         // Di luar jam makan (01:00-03:59 atau 23:00-00:59)
-        return 'pagi'; 
+        return 'pagi'; // Default ke Pagi untuk mencatat log
     }
 }
 
@@ -120,16 +119,22 @@ function updateUILogCounters() {
 }
 
 /**
+ * Menyimpan counter log ke Local Storage.
+ */
+function saveLogCounters() {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logCounters));
+}
+
+/**
  * Mengambil semua log presensi untuk hari ini (logis) dari Supabase 
  * dan memperbarui counter di UI/Local Storage.
  */
-async function fetchAndSetupCountersFromSupabase() {
-    const today = getTodayDateString(); 
+async function fetchAndSetupCountersFromSupabase(today) {
     // Rentang waktu untuk pengecekan log Supabase (dari 00:00:00 hingga 23:59:59 hari logis)
     const todayStart = `${today}T00:00:00+00:00`;
     const todayEnd = `${today}T23:59:59+00:00`;
 
-    // Reset counter UI sebelum diisi dari data Supabase
+    // Reset counter UI/State sebelum diisi dari data Supabase
     logCounters = {
         total: { success: 0, fail: 0 },
         pagi: { success: 0, fail: 0 },
@@ -139,6 +144,7 @@ async function fetchAndSetupCountersFromSupabase() {
     };
 
     try {
+        // Ambil data log presensi untuk tanggal logis hari ini
         const { data: logs, error } = await db
             .from("log_absen")
             .select("card, status, periode")
@@ -148,15 +154,18 @@ async function fetchAndSetupCountersFromSupabase() {
         if (error) throw error;
 
         // Map untuk deduplikasi per kartu/periode/status berdasarkan data Supabase
+        // Ini KUNCI agar hitungan di UI sinkron dengan logika tap ganda.
+        // Contoh: Kartu A tap Gagal 5x di Pagi, hanya dihitung 1x Gagal Pagi.
         const uniqueTaps = new Map();
 
         // 1. Proses log dari Supabase
         logs.forEach(log => {
             const period = log.periode.toLowerCase();
             const status = log.status.includes('Sukses') ? 'SUCCESS' : 'FAIL';
-            const key = `${log.card}-${period}-${status}`; // Kunci unik (kartu-periode-status)
+            // Kunci unik: kartu + periode + status (contoh: 12345-pagi-SUCCESS)
+            const key = `${log.card}-${period}-${status}`; 
             
-            // Simpan log, jika ada duplikat, hanya log pertama yang dihitung (berdasarkan Supabase)
+            // Hanya hitung log yang unik
             if (!uniqueTaps.has(key)) {
                 uniqueTaps.set(key, true);
                 
@@ -175,63 +184,62 @@ async function fetchAndSetupCountersFromSupabase() {
         // 3. Update UI dan Local Storage
         updateUILogCounters();
         saveLogCounters();
-        console.log(`Counter presensi dimuat dari Supabase untuk tanggal logis ${today}: Pagi Sukses ${logCounters.pagi.success}, Gagal ${logCounters.pagi.fail}.`);
+        console.log(`[INFO] Counter dimuat dari Supabase untuk tanggal logis ${today}.`);
 
     } catch (e) {
-        console.error("Gagal memuat counter dari Supabase, menggunakan Local Storage terakhir:", e);
-        // Jika gagal, gunakan logika Local Storage yang sudah ada
-        const savedCounters = localStorage.getItem(LOCAL_STORAGE_KEY);
-        if (savedCounters) {
-             try {
-                logCounters = JSON.parse(savedCounters);
-            } catch (error) {
-                 console.error("Gagal parse Local Storage.");
-            }
-        }
+        console.error("[ERROR] Gagal memuat counter dari Supabase:", e);
+        // Jika gagal koneksi, set logCounters ke nol dan biarkan UI menampilkan 0
+        updateUILogCounters();
+        saveLogCounters();
     }
 }
 
 
+/**
+ * Mengatur state awal aplikasi (reset harian dan sinkronisasi data).
+ */
 async function setupInitialState() {
-    const savedDate = localStorage.getItem(LOCAL_STORAGE_DATE_KEY);
     const today = getTodayDateString(); 
+    const savedDate = localStorage.getItem(LOCAL_STORAGE_DATE_KEY);
+    const savedCounters = localStorage.getItem(LOCAL_STORAGE_KEY);
+    
+    let shouldFetchFromSupabase = false;
 
-    // Reset jika tanggal logis berbeda
+    // A. Cek Reset Harian
     if (savedDate !== today) {
-        console.log("Counter presensi direset karena pergantian hari logis (01:00 WIT).");
+        console.log("[INFO] Counter presensi direset karena pergantian hari logis.");
         localStorage.setItem(LOCAL_STORAGE_DATE_KEY, today);
         localStorage.removeItem(LOCAL_STORAGE_KEY); 
         lastTapStatus.clear(); // Hapus status deduplikasi UI
-        
-        // Karena ada reset, panggil fungsi untuk memuat ulang dari Supabase
-        await fetchAndSetupCountersFromSupabase(); 
-
+        shouldFetchFromSupabase = true;
+    } 
+    
+    // B. Cek Local Storage (Hanya jika belum di-reset)
+    else if (!savedCounters) {
+        // Jika tidak ada di Local Storage (misal: browser baru), perlu muat dari Supabase
+         console.log("[INFO] Local Storage kosong/tidak valid. Memuat dari Supabase.");
+         shouldFetchFromSupabase = true;
     } else {
-        // Jika tanggal sama, coba muat dari Local Storage
-        const savedCounters = localStorage.getItem(LOCAL_STORAGE_KEY);
-
-        if (savedCounters) {
-            try {
-                logCounters = JSON.parse(savedCounters);
-                if (!logCounters.pagi) { 
-                    throw new Error("Invalid logCounters structure, resetting.");
-                }
-            } catch (e) {
-                console.error("Gagal memuat state logCounters dari Local Storage:", e);
-                // Jika Local Storage rusak, muat dari Supabase
-                await fetchAndSetupCountersFromSupabase(); 
-            }
-        } else {
-             // Jika tidak ada di Local Storage (misal: browser baru), muat dari Supabase
-             await fetchAndSetupCountersFromSupabase(); 
+        // Muat dari Local Storage jika tanggal sama dan ada data
+        try {
+            logCounters = JSON.parse(savedCounters);
+            if (!logCounters.pagi) throw new Error("Invalid logCounters structure.");
+        } catch (e) {
+            console.error("[ERROR] Gagal parse Local Storage. Memuat dari Supabase.", e);
+            shouldFetchFromSupabase = true; // Local storage corrupt
         }
     }
+    
+    // C. Ambil data dari Supabase jika ada reset/LS kosong/LS corrupt
+    if (shouldFetchFromSupabase) {
+        // PENTING: Menarik data Supabase untuk mendapatkan ground truth.
+        await fetchAndSetupCountersFromSupabase(today); 
+    }
+    
     updateUILogCounters();
 }
 
-function saveLogCounters() {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(logCounters));
-}
+// ... (Fungsi saveLogCounters sudah dipindahkan ke atas)
 
 function updateLogCounters(rfidId, isSuccess, period) {
     const statusKey = isSuccess ? 'SUCCESS' : 'FAIL';
@@ -248,16 +256,15 @@ function updateLogCounters(rfidId, isSuccess, period) {
              // Kurangi hitungan lama
              if (logCounters[period] && logCounters[period][prevCounterKey] > 0) {
                  logCounters[period][prevCounterKey]--;
+                 logCounters.total[prevCounterKey]--; 
              }
         }
 
         // Tambahkan hitungan baru
         if (logCounters[period]) {
             logCounters[period][counterKey]++;
-        } else {
-            // Fallback ke total jika period tidak dikenali
-            logCounters.total[counterKey]++; 
-        }
+            logCounters.total[counterKey]++;
+        } // Tidak perlu else karena logCounters sudah terjamin strukturnya
 
         // Simpan status tap baru
         lastTapStatus.set(rfidId, { timestamp: Date.now(), status: statusKey, period: period });
@@ -267,7 +274,7 @@ function updateLogCounters(rfidId, isSuccess, period) {
         saveLogCounters();
         return true; 
     } else if (previousTap.status === statusKey) {
-        // Perpanjang window jika duplikat
+        // Perpanjang window jika duplikat (tetap tidak menambah hitungan)
         lastTapStatus.set(rfidId, { timestamp: Date.now(), status: statusKey, period: period });
     }
     return false;
@@ -390,7 +397,8 @@ function updateUI({ success, message, rfidId, nama, status_log, currentPeriod })
 
 async function checkCardSupabase(rfidId) {
     // 0. Cek kembali state harian (untuk reset counter UI pada 01:00)
-    await setupInitialState(); // Pastikan state awal sudah dimuat/direset
+    // PENTING: Gunakan await untuk memastikan sinkronisasi selesai sebelum tap diproses
+    await setupInitialState(); 
     
     if (isProcessing) return; 
     isProcessing = true;
@@ -438,7 +446,7 @@ async function checkCardSupabase(rfidId) {
 
             if (logError) throw logError;
             
-            // === LOGIKA PENCEGAHAN TAP GANDA (FIX) ===
+            // === LOGIKA PENCEGAHAN TAP GANDA ===
             if (logData && logData.length > 0) {
                 // Jika sudah ada log 'Sukses' untuk kartu ini pada periode ini hari ini
                 result.success = false; // Tetap false karena ini tap kedua
@@ -533,9 +541,8 @@ function setupHIDListener() {
 // ===================================
 
 window.onload = async () => {
-    // 1. Setup state awal (memuat dari Local Storage atau mereset harian)
-    // Fungsi ini sekarang akan memprioritaskan pengambilan data dari Supabase 
-    // jika data di Local Storage kosong atau sudah kadaluarsa (ganti hari).
+    // 1. Setup state awal (memuat dari Supabase jika Local Storage perlu refresh/reset)
+    // PENTING: Gunakan await untuk memastikan data Supabase selesai dimuat sebelum app siap.
     await setupInitialState(); 
     
     // 2. Setup listener
