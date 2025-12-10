@@ -1,4 +1,4 @@
-// app.js (KODE PERBAIKAN TOMBOL LOG DETAIL)
+// app.js (KODE LENGKAP - MEMASTIKAN TOMBOL LOG DETAIL BERFUNGSI)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -18,7 +18,6 @@ const hasilContainer = document.getElementById('hasil-container');
 const hasilTitle = document.getElementById('hasil-title');
 const hasilNama = document.getElementById('hasil-nama');
 const hasilID = document.getElementById('hasil-id');
-const hasilWaktu = document.getElementById('hasil-waktu');
 const appContainer = document.getElementById('app-container');
 const readerStatusHint = document.getElementById('reader-status-hint');
 
@@ -27,12 +26,11 @@ const audioSuccess = document.getElementById('audio-success');
 const audioFail = document.getElementById('audio-fail');
 const audioDuplicate = document.getElementById('audio-duplicate'); 
 
-// --- ELEMEN MODAL TIDAK LAGI DI SINI, TAPI DI setupModalListeners() ---
-
 // State
 let currentRFID = ''; 
 let isProcessing = false; 
 let logCounters = {
+    // Logika ini dipertahankan untuk pencegahan double-tap harian
     total: { success: 0, fail: 0 },
     pagi: { success: 0, fail: 0 },
     siang: { success: 0, fail: 0 },
@@ -45,7 +43,8 @@ const DEDUPLICATION_WINDOW_MS = 60000;
 
 const LOCAL_STORAGE_KEY = 'rfid_log_counters';
 const LOCAL_STORAGE_DATE_KEY = 'rfid_log_date';
-const RESET_HOUR = 1; 
+const RESET_HOUR = 1; // Waktu reset harian pada pukul 01:00 WIT
+
 
 // ===================================
 // UTILITY/UI FUNCTIONS
@@ -79,7 +78,7 @@ function getTodayDateString() {
 }
 
 function updateUILogCounters() {
-    // Fungsi ini dikosongkan karena tampilan counter harian sudah dihilangkan dari index.html
+    // Dikosongkan karena tampilan counter harian telah dihapus.
 }
 
 function setupInitialState() {
@@ -275,8 +274,6 @@ async function pruneOldLogs() {
     threeDaysAgo.setDate(today.getDate() - 3);
 
     const pruneDate = threeDaysAgo.toISOString();
-
-    console.log(`Memeriksa dan menghapus log absensi sebelum: ${pruneDate}`);
     
     try {
         const { error, count } = await db
@@ -290,7 +287,7 @@ async function pruneOldLogs() {
         }
 
         const deletedCount = count || 0;
-        console.log(`Berhasil membersihkan ${deletedCount} log absensi lama (lebih dari 3 hari).`);
+        console.log(`Berhasil membersihkan ${deletedCount} log absensi lama.`);
         return deletedCount;
 
     } catch (e) {
@@ -325,14 +322,10 @@ async function fetchRecentLogs() {
 }
 
 async function displayLogsInModal() {
-    // Memastikan elemen modal tersedia
     const logListContainer = document.getElementById('log-list-container');
     const logStatusElement = document.getElementById('log-status');
     
-    if (!logListContainer || !logStatusElement) {
-        console.error("Kesalahan: Elemen container log tidak ditemukan.");
-        return;
-    }
+    if (!logListContainer || !logStatusElement) return;
     
     logStatusElement.textContent = 'Memuat log absensi...';
     logListContainer.innerHTML = ''; 
@@ -392,7 +385,7 @@ async function displayLogsInModal() {
 }
 
 // ===================================
-// PRESENSI LOGIC (checkCardSupabase - Tetap Sama)
+// PRESENSI LOGIC (checkCardSupabase)
 // ===================================
 
 async function checkCardSupabase(rfidId) {
@@ -481,7 +474,7 @@ async function checkCardSupabase(rfidId) {
 }
 
 // ===================================
-// HID KEYBOARD LISTENER LOGIC (Tetap Sama)
+// HID KEYBOARD LISTENER LOGIC
 // ===================================
 
 function setupHIDListener() {
@@ -540,30 +533,32 @@ function setupDailyReset() {
     }, delay);
 }
 
+/**
+ * Memastikan tombol dan modal ditemukan dan event listener dipasang
+ */
 function setupModalListeners() {
-    // KUNCI PERBAIKAN: Dapatkan elemen DOM di sini, di mana DOM dipastikan sudah dimuat
     const openLogModalButton = document.getElementById('open-log-modal');
     const logModal = document.getElementById('log-modal');
     const closeLogModalButton = document.getElementById('close-log-modal');
 
-    if (!openLogModalButton) {
-        console.error("Kesalahan: Tombol Log Detail (ID: open-log-modal) tidak ditemukan.");
+    if (!openLogModalButton || !logModal || !closeLogModalButton) {
+        // Log ini akan muncul di console jika ada masalah ID di HTML
+        console.error("Kesalahan: Elemen modal/tombol log tidak ditemukan. Periksa ID di index.html.");
         return;
     }
-    if (!logModal) {
-        console.error("Kesalahan: Modal Log (ID: log-modal) tidak ditemukan.");
-        return;
-    }
-
+    
+    // Listener Tombol Buka
     openLogModalButton.addEventListener('click', () => {
-        logModal.style.display = 'flex';
+        logModal.style.display = 'flex'; // Menampilkan Modal
         displayLogsInModal(); 
     });
 
+    // Listener Tombol Tutup (X)
     closeLogModalButton.addEventListener('click', () => {
-        logModal.style.display = 'none';
+        logModal.style.display = 'none'; // Menyembunyikan Modal
     });
 
+    // Listener Overlay (Tutup saat klik di luar konten modal)
     logModal.addEventListener('click', (e) => {
         if (e.target === logModal) {
             logModal.style.display = 'none';
@@ -582,7 +577,7 @@ window.onload = async () => {
     // 3. Setup listener untuk reset harian 
     setupDailyReset();
     
-    // 4. Setup Modal Log Absensi (Sekarang dijamin berfungsi)
+    // 4. Setup Modal Log Absensi (Akan berjalan setelah DOM dimuat)
     setupModalListeners();
     
     // 5. Setup HID listener
