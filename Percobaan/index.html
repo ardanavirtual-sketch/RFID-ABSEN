@@ -169,6 +169,7 @@
     </div>
 
     <!-- Audio untuk Feedback -->
+    <!-- PASTIKAN FILE AUDIO ADA DI LOKASI YANG BENAR: assets/ -->
     <audio id="audio-success" src="assets/audio_absen_SUKSES.mp3" preload="auto"></audio>
     <audio id="audio-fail" src="assets/audio_absen_GAGAL.mp3" preload="auto"></audio>
     <audio id="audio-duplicate" src="assets/sudah_absen.mp3" preload="auto"></audio>
@@ -370,7 +371,10 @@
         }
     }
 
-
+    /**
+     * Menampilkan status ketika kartu sudah sukses absen (Double Tap)
+     * dan memutar audio 'sudah_absen.mp3'.
+     */
     function showAlreadyTappedStatus(rfidId, nama) {
         // Ini adalah status khusus untuk double tap, tidak dihitung sebagai 'gagal' murni
         appContainer.classList.add('scale-105'); 
@@ -390,10 +394,12 @@
         hasilNama.textContent = nama || 'Terdaftar';
         hasilID.textContent = rfidId;
         
+        // --- LOGIKA AUDIO DUPLIKASI (sudah_absen.mp3) ---
         if (audioDuplicate) {
             audioDuplicate.currentTime = 0; 
             audioDuplicate.play().catch(e => console.error("Gagal memutar audio duplikasi:", e));
         }
+        // -------------------------------------------------
 
         hasilContainer.classList.remove('hidden');
 
@@ -453,10 +459,12 @@
             statusMessage.classList.replace('text-warning-yellow', 'text-success-green');
             hasilTitle.textContent = 'Detail Presensi Sukses';
 
+            // --- LOGIKA AUDIO SUKSES (audio_absen_SUKSES.mp3) ---
             if (audioSuccess) {
                 audioSuccess.currentTime = 0; 
                 audioSuccess.play().catch(e => console.error("Gagal memutar audio sukses:", e));
             }
+            // -----------------------------------------------------
 
         } else {
             // Khusus untuk kegagalan (BUKAN double tap)
@@ -468,10 +476,12 @@
             statusMessage.classList.replace('text-warning-yellow', 'text-error-red');
             hasilTitle.textContent = 'Detail Kegagalan';
 
+            // --- LOGIKA AUDIO GAGAL (audio_absen_GAGAL.mp3) ---
             if (audioFail) {
                 audioFail.currentTime = 0; 
                 audioFail.play().catch(e => console.error("Gagal memutar audio gagal:", e));
             }
+            // --------------------------------------------------
         }
 
         hasilNama.textContent = nama;
@@ -502,7 +512,7 @@
         
         let result = {
             success: false,
-            message: 'Kartu Tidak Dikenal!',
+            message: 'Kartu Tidak Dikenal! Absen Gagal.', // Pesan diperjelas
             rfidId: rfidId,
             nama: 'Pengguna tidak terdaftar',
             status_log: "Gagal (Unknown Card)",
@@ -536,7 +546,7 @@
 
                 if (logError) throw logError;
                 
-                // === LOGIKA PENCEGAHAN TAP GANDA ===
+                // === LOGIKA PENCEGAHAN TAP GANDA (Duplikasi) ===
                 if (logData && logData.length > 0) {
                     // KUNCI PERUBAHAN: Catat status spesifik untuk double tap
                     result.success = false; 
@@ -552,12 +562,12 @@
                     });
                     if (logErrorInsert) console.error("Gagal log absensi double tap:", logErrorInsert);
 
-                    // --- Tampilkan Status Sudah Tap ---
+                    // --- PANGGIL showAlreadyTappedStatus agar memutar audio DUPLIKASI ---
                     isProcessing = true; 
                     showAlreadyTappedStatus(rfidId, userData.nama);
                     // PENTING: Panggil fetchDailyLogCounters() di sini juga
                     fetchDailyLogCounters(); 
-                    return; 
+                    return; // Hentikan proses di sini
                 }
                 // =======================================
 
@@ -567,10 +577,10 @@
 
                 if (statusMakanSaatIni && statusMakanSaatIni.toLowerCase() === "kantin") {
                     result.success = true;
-                    result.message = `Absensi ${currentPeriod.toUpperCase()} Berhasil! Selamat Makan!`;
+                    result.message = `Absensi ${currentPeriod.toUpperCase()} Berhasil! Absen Sukses Bersuara.`; // Pesan diperjelas
                     result.status_log = `Sukses`;
                 } else {
-                    result.message = `Absensi ${currentPeriod.toUpperCase()} Gagal: Status **${statusMakanSaatIni || 'KOSONG'}**!`;
+                    result.message = `Absensi ${currentPeriod.toUpperCase()} Gagal: Status **${statusMakanSaatIni || 'KOSONG'}**! Absen Gagal Bersuara.`; // Pesan diperjelas
                     result.status_log = `Gagal (Not Kantin for ${currentPeriod.toUpperCase()})`;
                 }
             }
@@ -588,12 +598,12 @@
         } catch (e) {
             // Jika terjadi error 
             console.error("Kesalahan Supabase/Jaringan:", e);
-            result.message = 'Kesalahan Server/Jaringan!';
+            result.message = 'Kesalahan Server/Jaringan! Absen Gagal Bersuara.'; // Pesan diperjelas
             result.nama = 'Kesalahan Koneksi';
             result.status_log = "Gagal (Error)";
         }
         
-        // PENTING: Update UI dan panggil fetchDailyLogCounters() di dalamnya
+        // PENTING: Update UI, yang di dalamnya terdapat logika pemutaran audio Sukses/Gagal
         updateUI(result);
     }
 
