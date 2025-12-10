@@ -1,4 +1,4 @@
-// app.js (Kode diupdate untuk: Mengambil Log Harian Langsung dari Supabase)
+// app.js (Kode diupdate untuk: Menampilkan Tanggal Hari Ini)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -20,6 +20,7 @@ const hasilNama = document.getElementById('hasil-nama');
 const hasilID = document.getElementById('hasil-id');
 const appContainer = document.getElementById('app-container');
 const readerStatusHint = document.getElementById('reader-status-hint');
+const todayDateElement = document.getElementById('today-date'); // ELEMEN BARU
 
 // Elemen counter untuk setiap periode
 const logSuksesPagiElement = document.getElementById('log-sukses-pagi');
@@ -58,6 +59,18 @@ const DEDUPLICATION_WINDOW_MS = 60000; // 60 detik
 // UTILITY/UI FUNCTIONS
 // ===================================
 
+/**
+ * Menampilkan tanggal hari ini dalam format Bahasa Indonesia
+ */
+function displayCurrentDate() {
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const dateString = new Date().toLocaleDateString('id-ID', options);
+    if (todayDateElement) {
+        todayDateElement.textContent = dateString;
+    }
+}
+
+
 function getCurrentMealPeriod() {
     const hour = new Date().getHours();
     
@@ -79,8 +92,6 @@ function getCurrentMealPeriod() {
 
 /**
  * Mendapatkan string tanggal hari ini (YYYY-MM-DD), 
- * disesuaikan agar hari baru (untuk tujuan presensi) dimulai pada pukul 01:00 WIT.
- * Kami menggunakan waktu 00:00:00 hingga 23:59:59 dari hari YYYY-MM-DD
  * berdasarkan WAKTU LOKAL browser saat ini.
  */
 function getTodayDateString() {
@@ -105,11 +116,9 @@ function updateUILogCounters() {
 /**
  * Mengambil data log presensi untuk hari ini dari Supabase, 
  * menghitungnya per periode & status, lalu mengupdate UI.
- * * Logika ini secara otomatis mengatasi duplikasi data di log_absen 
- * (meskipun seharusnya dicegah oleh logika Absensi) dengan hanya 
- * menghitung total data yang ada.
  */
 async function fetchDailyLogCounters() {
+    // 1. Dapatkan tanggal hari ini
     const today = getTodayDateString(); 
     // Supabase menggunakan format timestampz. Kita asumsikan hari dimulai dari 00:00:00 hari ini
     const todayStart = `${today}T00:00:00.000Z`; // Waktu awal hari dalam format UTC (sesuai Supabase)
@@ -123,7 +132,7 @@ async function fetchDailyLogCounters() {
     };
     
     try {
-        // Ambil semua log untuk hari ini (berdasarkan kolom created_at di Supabase)
+        // 2. Ambil semua log untuk hari ini
         const { data: dailyLogs, error } = await db
             .from("log_absen")
             .select("periode, status")
@@ -132,7 +141,7 @@ async function fetchDailyLogCounters() {
 
         if (error) throw error;
 
-        // Hitung log per periode
+        // 3. Hitung log per periode
         dailyLogs.forEach(log => {
             const period = log.periode.toLowerCase();
             const isSuccess = log.status.toLowerCase().includes('sukses');
@@ -307,8 +316,6 @@ async function checkCardSupabase(rfidId) {
             result.nama = userData.nama;
             
             // Tentukan rentang waktu untuk pengecekan log Supabase (dari 00:00:00 hari ini)
-            // Supabase menggunakan created_at dengan timezone, menggunakan tanggal YYYY-MM-DD
-            // dan operator GTE akan mencari log mulai dari 00:00:00 UTC pada tanggal tersebut.
             const todayStart = `${today}T00:00:00.000Z`; // UTC start of day
             
             // 2. Cek apakah kartu sudah melakukan presensi SUKSES hari ini untuk periode ini
@@ -417,9 +424,12 @@ function setupHIDListener() {
 // ===================================
 
 window.onload = () => {
-    // 1. Ambil dan tampilkan Log Harian dari Supabase saat aplikasi dimuat
+    // 1. Tampilkan tanggal hari ini
+    displayCurrentDate();
+    
+    // 2. Ambil dan tampilkan Log Harian dari Supabase saat aplikasi dimuat
     fetchDailyLogCounters(); 
     
-    // 2. Setup listener
+    // 3. Setup listener
     setupHIDListener();
 };
