@@ -61,7 +61,7 @@ const WIT_OFFSET_HOURS = 9; // WIT = UTC+9
 // ===================================
 
 /**
- * Memutar elemen audio, memastikan di-reset ke awal.
+ * Memutar elemen audio, memastikan di-reset ke awal dan menangani Promise.
  * @param {HTMLAudioElement | null} audioElement 
  */
 function playAudio(audioElement) {
@@ -72,13 +72,10 @@ function playAudio(audioElement) {
         
         // Coba putar dan tangani Promise yang mungkin ditolak (misalnya karena autoplay policy)
         audioElement.play().catch(e => {
-            // Tampilkan error di console jika pemutaran gagal
-            console.error("Gagal memutar audio:", e);
-            // Catatan: Di beberapa browser, ini bisa terjadi jika pengguna belum berinteraksi dengan halaman.
+            console.error("Gagal memutar audio (Autoplay diblokir?):", e);
         });
     }
 }
-
 
 function getCurrentMealPeriod() {
     const hour = new Date().getHours();
@@ -244,7 +241,8 @@ function showAlreadyTappedStatus(rfidId, nama) {
     hasilNama.textContent = nama || 'Terdaftar';
     hasilID.textContent = rfidId;
     
-    playAudio(audioDuplicate); // Diperbaiki menggunakan fungsi playAudio
+    // FIX AUDIO: Menggunakan fungsi playAudio yang lebih robust
+    playAudio(audioDuplicate);
 
     hasilContainer.classList.remove('hidden');
 
@@ -290,8 +288,6 @@ function showProcessingStatus() {
 
 function updateUI({ success, message, rfidId, nama, currentPeriod }) {
     
-    // updateLogCounters DIHAPUS karena log counter sekarang diambil langsung dari Supabase di resetStatus()
-
     appContainer.classList.remove('bg-blue-200/50');
     statusCard.classList.remove('bg-blue-100');
 
@@ -304,7 +300,8 @@ function updateUI({ success, message, rfidId, nama, currentPeriod }) {
         statusMessage.classList.replace('text-warning-yellow', 'text-success-green');
         hasilTitle.textContent = 'Detail Presensi Sukses';
 
-        playAudio(audioSuccess); // Diperbaiki menggunakan fungsi playAudio
+        // FIX AUDIO: Menggunakan fungsi playAudio yang lebih robust
+        playAudio(audioSuccess);
 
     } else {
         appContainer.classList.add('scale-105', 'bg-error-red/20');
@@ -315,7 +312,8 @@ function updateUI({ success, message, rfidId, nama, currentPeriod }) {
         statusMessage.classList.replace('text-warning-yellow', 'text-error-red');
         hasilTitle.textContent = 'Detail Kegagalan';
 
-        playAudio(audioFail); // Diperbaiki menggunakan fungsi playAudio
+        // FIX AUDIO: Menggunakan fungsi playAudio yang lebih robust
+        playAudio(audioFail);
     }
 
     hasilNama.textContent = nama;
