@@ -54,6 +54,17 @@
 </head>
 <body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
 
+  <div id="audio-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-90 z-50 flex flex-col items-center justify-center transition-opacity duration-500">
+    <div class="p-8 bg-white rounded-xl shadow-2xl text-center">
+        <svg class="w-16 h-16 mx-auto mb-4 text-primary-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1 1 0 00.55-.494l2.05-3.076a1 1 0 011.66 0l2.05 3.076a1 1 0 00.55.494V5.882m-6 0V5a2 2 0 114 0v.882M18 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+        <h2 class="text-xl font-bold text-gray-800 mb-2">Aktifkan Suara</h2>
+        <p class="text-sm text-gray-500 mb-6">Browser membutuhkan izin Anda untuk memutar notifikasi suara.</p>
+        <button id="activate-audio-btn" class="bg-primary-blue hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transform transition-transform duration-200 hover:scale-105 focus:outline-none focus:ring-4 focus:ring-blue-300">
+            Klik untuk Memulai Presensi
+        </button>
+    </div>
+  </div>
+  
   <div id="app-container" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 sm:p-8 text-center transition-all duration-500 transform scale-100">
 
     <div class="mb-6">
@@ -64,6 +75,7 @@
     
     <div class="mb-5 border-b pb-3">
         <h2 class="text-xl font-bold mb-3 text-gray-800">Log Presensi Harian</h2>
+        <p class="text-xs font-medium text-gray-600 mb-3" id="log-tanggal-hari-ini">Memuat Tanggal...</p> 
         
         <div class="grid grid-cols-2 gap-2">
 
