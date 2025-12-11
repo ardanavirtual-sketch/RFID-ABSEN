@@ -6,9 +6,6 @@
   <title>Sistem Presensi RFID (Keyboard HID) - Log Supabase</title>
   
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <script src="tailwind.config.js"></script> 
-  
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   
   <style>
@@ -39,8 +36,22 @@
         font-size: 1.125rem; 
     }
   </style>
-  
-  </head>
+  <script>
+    // Konfigurasi warna khusus Tailwind
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'primary-blue': '#1e3a8a', 
+            'success-green': '#10b981',
+            'error-red': '#ef4444',
+            'warning-yellow': '#f59e0b', // Digunakan untuk status 'Processing'
+          }
+        }
+      }
+    }
+  </script>
+</head>
 <body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
 
   <div id="app-container" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 sm:p-8 text-center transition-all duration-500 transform scale-100">
