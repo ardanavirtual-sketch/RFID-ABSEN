@@ -1,4 +1,4 @@
-// app.js (Kode Lengkap dengan Perubahan Utama untuk Fetch Log Supabase & WIT Timezone)
+// app.js (Kode Lengkap dengan Perubahan untuk menampilkan Tanggal Logis WIT)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -32,6 +32,9 @@ const logGagalSoreElement = document.getElementById('log-gagal-sore');
 const logSuksesMalamElement = document.getElementById('log-sukses-malam');
 const logGagalMalamElement = document.getElementById('log-gagal-malam');
 
+// BARU: Elemen untuk menampilkan tanggal
+const logTanggalHariIniElement = document.getElementById('log-tanggal-hari-ini');
+
 
 // Tambahkan elemen audio
 const audioSuccess = document.getElementById('audio-success');
@@ -64,7 +67,6 @@ const RESET_HOUR = 1; // Waktu reset harian pada pukul 01:00 WIT
 // ===================================
 
 function getCurrentMealPeriod() {
-    // Fungsi ini tidak perlu diubah karena hanya mengambil jam lokal
     const hour = new Date().getHours();
     
     // Asumsi: WIT = UTC+9. Kode ini bekerja berdasarkan jam lokal browser.
@@ -89,8 +91,7 @@ function getCurrentMealPeriod() {
  */
 function getLogDateRangeWIT() {
     const now = new Date();
-    // Gunakan offset WIT (UTC+8) untuk menyesuaikan waktu lokal ke zona WIT
-    // WIT = UTC+9 (Beda dengan UTC+8 yang saya gunakan sebelumnya, mari kita asumsikan WIT = UTC+9)
+    // Gunakan offset WIT (UTC+9) untuk menyesuaikan waktu lokal ke zona WIT
     const WIT_OFFSET_HOURS = 9; 
     
     // Buat waktu berdasarkan zona WIT
@@ -138,7 +139,7 @@ function updateUILogCounters() {
     if(logSuksesPagiElement) logSuksesPagiElement.textContent = logCounters.pagi.success;
     if(logGagalPagiElement) logGagalPagiElement.textContent = logCounters.pagi.fail;
     if(logSuksesSiangElement) logSuksesSiangElement.textContent = logCounters.siang.success;
-    if(logGagalSiangElement) logSuksesSiangElement.textContent = logCounters.siang.fail;
+    if(logGagalSiangElement) logGagalSiangElement.textContent = logCounters.siang.fail;
     if(logSuksesSoreElement) logSuksesSoreElement.textContent = logCounters.sore.success;
     if(logGagalSoreElement) logGagalSoreElement.textContent = logCounters.sore.fail;
     if(logSuksesMalamElement) logSuksesMalamElement.textContent = logCounters.malam.success;
@@ -148,8 +149,25 @@ function updateUILogCounters() {
 
 // FUNGSI BARU: Mengambil dan Menghitung Log dari Supabase
 async function fetchAndDisplayLogs() {
-    const { todayStart, todayEnd } = getLogDateRangeWIT(); 
+    const { dateString, todayStart, todayEnd } = getLogDateRangeWIT(); 
     
+    // BARU: Menampilkan Tanggal Hari Ini (Logis WIT)
+    if (logTanggalHariIniElement) {
+        // Gunakan todayStart (Waktu UTC yang merepresentasikan awal hari logis WIT)
+        const logicalDateUTC = new Date(todayStart); 
+        
+        // Formatter untuk menampilkan tanggal lengkap di WIT (Asia/Jayapura)
+        const dateFormatter = new Intl.DateTimeFormat('id-ID', {
+            weekday: 'long', 
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric',
+            timeZone: 'Asia/Jayapura' // Kunci untuk memastikan tanggal dan hari sesuai WIT
+        });
+
+        logTanggalHariIniElement.textContent = `Tanggal: ${dateFormatter.format(logicalDateUTC)}`;
+    }
+
     try {
         const { data: logData, error } = await db
             .from("log_absen")
@@ -175,7 +193,7 @@ async function fetchAndDisplayLogs() {
             const key = `${log.periode}-${log.card}`;
             
             // Logika Deduplikasi: Hanya catat tap pertama (dalam log) dari setiap kartu per periode
-            // ATAU log dengan status Sukses, karena Sukses lebih penting daripada Gagal.
+            // ATAU log dengan status Sukses, jika tap sebelumnya adalah Gagal
             if (!uniqueTaps.has(key) || (uniqueTaps.get(key) === 'Gagal' && log.status === 'Sukses')) {
                  uniqueTaps.set(key, log.status);
             }
@@ -200,7 +218,10 @@ async function fetchAndDisplayLogs() {
 
     } catch (e) {
         console.error("Gagal memuat log dari Supabase:", e);
-        // Tampilkan pesan error di UI jika perlu
+        if (logTanggalHariIniElement) {
+             // Reset jika ada error
+            logTanggalHariIniElement.textContent = `Tanggal: Gagal Memuat Data`; 
+        }
     }
 }
 
@@ -210,9 +231,8 @@ function setupInitialState() {
     fetchAndDisplayLogs();
 }
 
-// Fungsi saveLogCounters dihapus karena state log sekarang berasal dari Supabase saat dimuat.
-// Fungsi updateLogCounters dihapus, dan logikanya dipindahkan/disimplifikasi ke updateUI setelah presensi baru berhasil.
-
+// ... (Sisa fungsi lain seperti showAlreadyTappedStatus, resetStatus, showProcessingStatus, updateUI, checkCardSupabase, dan setupHIDListener tetap sama seperti kode sebelumnya)
+// Pastikan bagian ini tidak diubah, kecuali jika ada perubahan lain yang diperlukan.
 
 function showAlreadyTappedStatus(rfidId, nama) {
     appContainer.classList.add('scale-105'); 
@@ -266,7 +286,7 @@ function resetStatus() {
     statusMessage.textContent = 'Reader Siap. Tap Kartu.';
     readerStatusHint.textContent = 'Listener Keyboard (HID) aktif. Tempelkan kartu.';
     
-    // PENTING: Refresh log dari Supabase setelah reset (untuk menampilkan hasil tap terakhir)
+    // PENTING: Refresh log dari Supabase setelah reset (untuk menampilkan hasil tap terakhir dan tanggal)
     fetchAndDisplayLogs();
 }
 
@@ -332,8 +352,6 @@ function updateUI({ success, message, rfidId, nama, currentPeriod }) {
 // ===================================
 
 async function checkCardSupabase(rfidId) {
-    // 0. Panggil fetchAndDisplayLogs untuk memastikan counter terbaru dari Supabase sudah dimuat.
-    // fetchAndDisplayLogs(); // Dihapus, karena sudah dipanggil di resetStatus() dan setupInitialState()
     
     if (isProcessing) return; 
     isProcessing = true;
