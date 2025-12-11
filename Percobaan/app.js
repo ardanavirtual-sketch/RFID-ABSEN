@@ -1,4 +1,4 @@
-// app.js (Kode Lengkap dengan Perubahan untuk menampilkan Tanggal Logis WIT)
+// app.js (Kode Lengkap dengan Logika Deduplikasi Ketat per Periode dan Validasi Status Kantin)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -17,8 +17,7 @@ const statusMessage = document.getElementById('status-message');
 const hasilContainer = document.getElementById('hasil-container');
 const hasilTitle = document.getElementById('hasil-title');
 const hasilNama = document.getElementById('hasil-nama');
-const hasilID = document.getElementById('hasil-id');
-const hasilWaktu = document.getElementById('hasil-waktu');
+// const hasilID = document.getElementById('hasil-id'); // Tidak digunakan di sini
 const appContainer = document.getElementById('app-container');
 const readerStatusHint = document.getElementById('reader-status-hint');
 
@@ -32,7 +31,7 @@ const logGagalSoreElement = document.getElementById('log-gagal-sore');
 const logSuksesMalamElement = document.getElementById('log-sukses-malam');
 const logGagalMalamElement = document.getElementById('log-gagal-malam');
 
-// BARU: Elemen untuk menampilkan tanggal
+// Elemen untuk menampilkan tanggal
 const logTanggalHariIniElement = document.getElementById('log-tanggal-hari-ini');
 
 
@@ -54,12 +53,8 @@ let logCounters = {
     malam: { success: 0, fail: 0 }
 };
 
-// State Deduplikasi UI (Mencegah Hitungan Ganda per Kartu di UI)
-const lastTapStatus = new Map(); 
-const DEDUPLICATION_WINDOW_MS = 60000; // 60 detik
-
-// State untuk Reset Harian
 const RESET_HOUR = 1; // Waktu reset harian pada pukul 01:00 WIT
+const WIT_OFFSET_HOURS = 9; // WIT = UTC+9
 
 
 // ===================================
@@ -67,9 +62,9 @@ const RESET_HOUR = 1; // Waktu reset harian pada pukul 01:00 WIT
 // ===================================
 
 function getCurrentMealPeriod() {
+    // Menggunakan waktu lokal browser untuk menentukan periode makan saat ini
     const hour = new Date().getHours();
     
-    // Asumsi: WIT = UTC+9. Kode ini bekerja berdasarkan jam lokal browser.
     if (hour >= 4 && hour < 10) { 
         return 'pagi';
     } else if (hour >= 10 && hour < 16) { 
@@ -79,56 +74,41 @@ function getCurrentMealPeriod() {
     } else if (hour >= 21 && hour < 23) { 
         return 'malam';
     } else {
-        // Di luar jam makan (01:00-03:59 atau 23:00-00:59)
+        // Asumsi default pagi jika di luar jam presensi utama
         return 'pagi'; 
     }
 }
 
 /**
- * Mendapatkan string tanggal hari ini (YYYY-MM-DD), 
- * disesuaikan agar hari baru (untuk tujuan presensi) dimulai pada pukul 01:00 WIT.
- * Fungsi ini mengembalikan tanggal dan waktu start/end untuk query Supabase (UTC).
+ * Menghitung tanggal logis hari ini (berdasarkan 01:00 WIT) dan mengembalikan rentang waktu UTC.
  */
 function getLogDateRangeWIT() {
     const now = new Date();
-    // Gunakan offset WIT (UTC+9) untuk menyesuaikan waktu lokal ke zona WIT
-    const WIT_OFFSET_HOURS = 9; 
     
-    // Buat waktu berdasarkan zona WIT
-    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000); // Waktu UTC
-    const witTime = new Date(utcTime + (3600000 * WIT_OFFSET_HOURS)); // Waktu yang disesuaikan dengan WIT
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000); 
+    const witTime = new Date(utcTime + (3600000 * WIT_OFFSET_HOURS)); 
 
-    // Ambil jam WIT
     const witHour = witTime.getUTCHours();
     
-    // Tentukan tanggal logis WIT
     let logisDate = new Date(witTime);
     
-    // Jika jam WIT < 01:00 (RESET_HOUR), hari logis adalah hari sebelumnya di WIT
     if (witHour < RESET_HOUR) {
         logisDate.setUTCDate(logisDate.getUTCDate() - 1);
     }
     
-    // Format tanggal logis YYYY-MM-DD
     const yyyy = logisDate.getUTCFullYear();
-    const mm = String(logisDate.getUTCMonth() + 1).padStart(2, '0');
-    const dd = String(logisDate.getUTCDate()).padStart(2, '0');
-    const dateString = `${yyyy}-${mm}-${dd}`;
-    
-    // Hitung waktu awal dan akhir hari logis dalam format UTC (untuk Supabase Query)
+    const mm = logisDate.getUTCMonth();
+    const dd = logisDate.getUTCDate();
     
     // Start: YYYY-MM-DD 00:00:00 WIT, dikonversi ke UTC
-    // Untuk mengkonversi YYYY-MM-DD 00:00:00 WIT ke UTC, kita kurangi 9 jam.
-    const startLogisDate = new Date(Date.UTC(yyyy, logisDate.getUTCMonth(), logisDate.getUTCDate(), 0, 0, 0)); // Ini 00:00:00 UTC hari itu
-    startLogisDate.setUTCHours(startLogisDate.getUTCHours() - WIT_OFFSET_HOURS); // Digeser ke waktu awal hari WIT dalam UTC
+    const startLogisDate = new Date(Date.UTC(yyyy, mm, dd, 0, 0, 0));
+    startLogisDate.setUTCHours(startLogisDate.getUTCHours() - WIT_OFFSET_HOURS); 
     
     // End: YYYY-MM-DD 23:59:59 WIT, dikonversi ke UTC
-    // Untuk mengkonversi YYYY-MM-DD 23:59:59 WIT ke UTC, kita kurangi 9 jam.
-    const endLogisDate = new Date(Date.UTC(yyyy, logisDate.getUTCMonth(), logisDate.getUTCDate(), 23, 59, 59));
+    const endLogisDate = new Date(Date.UTC(yyyy, mm, dd, 23, 59, 59));
     endLogisDate.setUTCHours(endLogisDate.getUTCHours() - WIT_OFFSET_HOURS);
 
     return {
-        dateString: dateString, // YYYY-MM-DD Logis (WIT)
         todayStart: startLogisDate.toISOString(), // Waktu Awal Query (UTC)
         todayEnd: endLogisDate.toISOString() // Waktu Akhir Query (UTC)
     };
@@ -147,22 +127,22 @@ function updateUILogCounters() {
 }
 
 
-// FUNGSI BARU: Mengambil dan Menghitung Log dari Supabase
+// FUNGSI UTAMA: Mengambil dan Menghitung Log dari Supabase
 async function fetchAndDisplayLogs() {
-    const { dateString, todayStart, todayEnd } = getLogDateRangeWIT(); 
+    const { todayStart, todayEnd } = getLogDateRangeWIT(); 
     
-    // BARU: Menampilkan Tanggal Hari Ini (Logis WIT)
+    // Menampilkan Tanggal Hari Ini (Logis WIT)
     if (logTanggalHariIniElement) {
-        // Gunakan todayStart (Waktu UTC yang merepresentasikan awal hari logis WIT)
+        // Menggunakan todayStart untuk mendapatkan tanggal awal hari logis dalam zona waktu WIT
         const logicalDateUTC = new Date(todayStart); 
         
-        // Formatter untuk menampilkan tanggal lengkap di WIT (Asia/Jayapura)
         const dateFormatter = new Intl.DateTimeFormat('id-ID', {
             weekday: 'long', 
             day: 'numeric', 
             month: 'long', 
             year: 'numeric',
-            timeZone: 'Asia/Jayapura' // Kunci untuk memastikan tanggal dan hari sesuai WIT
+            // Gunakan timeZone: 'Asia/Jayapura' untuk mencocokkan logika WIT
+            timeZone: 'Asia/Jayapura' 
         });
 
         logTanggalHariIniElement.textContent = `Tanggal: ${dateFormatter.format(logicalDateUTC)}`;
@@ -177,7 +157,6 @@ async function fetchAndDisplayLogs() {
 
         if (error) throw error;
         
-        // 1. Reset Counter Lokal
         logCounters = {
             pagi: { success: 0, fail: 0 },
             siang: { success: 0, fail: 0 },
@@ -188,20 +167,22 @@ async function fetchAndDisplayLogs() {
         // Map untuk deduplikasi: { 'periode-cardId': 'Sukses/Gagal' }
         const uniqueTaps = new Map(); 
 
-        // 2. Proses Deduplikasi dan Hitung
+        // Proses Deduplikasi dan Hitung
         for (const log of logData) {
             const key = `${log.periode}-${log.card}`;
             
-            // Logika Deduplikasi: Hanya catat tap pertama (dalam log) dari setiap kartu per periode
-            // ATAU log dengan status Sukses, jika tap sebelumnya adalah Gagal
-            if (!uniqueTaps.has(key) || (uniqueTaps.get(key) === 'Gagal' && log.status === 'Sukses')) {
+            // Logika Deduplikasi: Prioritaskan status 'Sukses' jika ada, jika tidak, catat status tap pertama
+            if (!uniqueTaps.has(key)) {
+                 uniqueTaps.set(key, log.status);
+            } else if (uniqueTaps.get(key) !== 'Sukses' && log.status === 'Sukses') {
+                 // Jika sudah tercatat 'Gagal', dan tap saat ini adalah 'Sukses', update menjadi 'Sukses'
                  uniqueTaps.set(key, log.status);
             }
         }
         
-        // 3. Isi Log Counters dari Unique Taps
+        // Isi Log Counters dari Unique Taps
         for (const [key, status] of uniqueTaps) {
-            const [periode, cardId] = key.split('-');
+            const [periode] = key.split('-');
             
             if (logCounters[periode]) {
                 if (status === 'Sukses') {
@@ -212,14 +193,11 @@ async function fetchAndDisplayLogs() {
             }
         }
 
-        // 4. Update UI
         updateUILogCounters();
-        console.log("Log presensi harian (unik) berhasil dimuat dari Supabase.");
 
     } catch (e) {
         console.error("Gagal memuat log dari Supabase:", e);
         if (logTanggalHariIniElement) {
-             // Reset jika ada error
             logTanggalHariIniElement.textContent = `Tanggal: Gagal Memuat Data`; 
         }
     }
@@ -227,12 +205,10 @@ async function fetchAndDisplayLogs() {
 
 
 function setupInitialState() {
-    // Kunci: Panggil fetchAndDisplayLogs untuk memuat data dari Supabase saat start
     fetchAndDisplayLogs();
 }
 
-// ... (Sisa fungsi lain seperti showAlreadyTappedStatus, resetStatus, showProcessingStatus, updateUI, checkCardSupabase, dan setupHIDListener tetap sama seperti kode sebelumnya)
-// Pastikan bagian ini tidak diubah, kecuali jika ada perubahan lain yang diperlukan.
+// ... (Fungsi showAlreadyTappedStatus, resetStatus, showProcessingStatus, dan updateUI tetap sama) ...
 
 function showAlreadyTappedStatus(rfidId, nama) {
     appContainer.classList.add('scale-105'); 
@@ -268,7 +244,6 @@ function showAlreadyTappedStatus(rfidId, nama) {
 
 
 function resetStatus() {
-    // Pastikan semua class warna dihilangkan
     appContainer.classList.remove('scale-105', 'bg-success-green/20', 'bg-error-red/20', 'bg-blue-200/50'); 
     statusCard.classList.remove('bg-success-green/20', 'bg-error-red/20', 'bg-warning-yellow/20', 'bg-blue-100'); 
     statusIcon.classList.remove('bg-success-green', 'bg-error-red', 'bg-warning-yellow', 'animate-none');
@@ -286,7 +261,6 @@ function resetStatus() {
     statusMessage.textContent = 'Reader Siap. Tap Kartu.';
     readerStatusHint.textContent = 'Listener Keyboard (HID) aktif. Tempelkan kartu.';
     
-    // PENTING: Refresh log dari Supabase setelah reset (untuk menampilkan hasil tap terakhir dan tanggal)
     fetchAndDisplayLogs();
 }
 
@@ -301,9 +275,6 @@ function showProcessingStatus() {
 }
 
 function updateUI({ success, message, rfidId, nama, currentPeriod }) {
-    // Tidak ada lagi updateLogCounters di sini, karena penghitungan log diambil dari Supabase
-    // melalui `fetchAndDisplayLogs()` di fungsi `resetStatus()`.
-
     appContainer.classList.remove('bg-blue-200/50');
     statusCard.classList.remove('bg-blue-100');
 
@@ -371,7 +342,7 @@ async function checkCardSupabase(rfidId) {
     };
     
     try {
-        // 1. Cek apakah kartu sudah terdaftar di data_master
+        // 1. Cek apakah kartu terdaftar di data_master
         const { data: userData, error: userError } = await db
             .from("data_master")
             .select("nama, pagi, siang, sore, malam")
@@ -383,34 +354,31 @@ async function checkCardSupabase(rfidId) {
         if (userData) {
             result.nama = userData.nama;
             
-            // 2. Cek apakah kartu sudah melakukan presensi SUKSES hari ini (logis) untuk periode ini
+            // 2. CEK DEDUPLIKASI: Cek apakah kartu sudah memiliki log 'Sukses' hari ini (logis) untuk periode ini
             const { data: logData, error: logError } = await db
                 .from("log_absen")
                 .select("id")
                 .eq("card", rfidId)
                 .eq("periode", currentPeriod)
-                .eq("status", "Sukses") // KUNCI: Hanya cek status "Sukses"
+                .eq("status", "Sukses") 
                 .gte("created_at", todayStart)
                 .lt("created_at", todayEnd);
 
             if (logError) throw logError;
             
-            // === LOGIKA PENCEGAHAN TAP GANDA (FIX) ===
+            // LOGIKA PENCEGAHAN TAP GANDA (SUKSES)
             if (logData && logData.length > 0) {
-                // Jika sudah ada log 'Sukses' untuk kartu ini pada periode ini hari ini
-                result.success = false; // Tetap false karena ini tap kedua
+                // Jika sudah ada log 'Sukses', LANGSUNG tampilkan status duplikasi
+                result.success = false; 
                 result.message = `Gagal Absen! Anda sudah TAP SUKSES untuk periode ${currentPeriod.toUpperCase()} hari ini.`;
                 result.status_log = `Gagal (Double Tap Sukses)`;
                 
-                // --- KUNCI PERBAIKAN: Tampilkan Status Sudah Tap ---
                 isProcessing = true; 
                 showAlreadyTappedStatus(rfidId, userData.nama);
-                return; // KELUAR dari fungsi agar tidak dilanjutkan ke langkah 3 dan log Supabase di langkah 4 tidak dibuat 'Sukses'
+                return; // Berhenti di sini, jangan buat log baru
             }
-            // =======================================
 
-
-            // 3. Jika belum tap SUKSES, cek jatah makannya
+            // 3. Jika belum tap SUKSES, cek jatah makannya (VALIDASI KANTIN)
             const statusMakanSaatIni = userData[currentPeriod];
 
             if (statusMakanSaatIni === "Kantin") {
@@ -418,12 +386,13 @@ async function checkCardSupabase(rfidId) {
                 result.message = `Absensi ${currentPeriod.toUpperCase()} Berhasil! Selamat Makan!`;
                 result.status_log = `Sukses`;
             } else {
+                // Gagal karena status bukan 'Kantin'
                 result.message = `Absensi ${currentPeriod.toUpperCase()} Gagal: Status **${statusMakanSaatIni || 'KOSONG'}**!`;
                 result.status_log = `Gagal (Not Kantin for ${currentPeriod.toUpperCase()})`;
             }
         }
         
-        // 4. Log absensi ke Supabase (akan mencatat Sukses atau Gagal, kecuali jika dicegah di langkah 2)
+        // 4. Log absensi ke Supabase (mencatat hasil dari langkah 3 atau kegagalan 'Unknown Card')
         const { error: logErrorInsert } = await db.from("log_absen").insert({
             card: rfidId,
             nama: result.nama,
@@ -434,7 +403,6 @@ async function checkCardSupabase(rfidId) {
         if (logErrorInsert) console.error("Gagal log absensi:", logErrorInsert);
 
     } catch (e) {
-        // Jika terjadi error (seperti yang terlihat pada gambar)
         console.error("Kesalahan Supabase/Jaringan:", e);
         result.message = 'Kesalahan Server/Jaringan!';
         result.nama = 'Kesalahan Koneksi';
