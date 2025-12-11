@@ -54,13 +54,8 @@
 </head>
 <body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
 
-  <div id="app-container" class="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 sm:p-8 text-center transition-all duration-500 transform scale-100">
+  <div id="app-container" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 sm:p-8 text-center transition-all duration-500 transform scale-100">
 
-    <div id="interaction-overlay" class="absolute inset-0 bg-white/90 backdrop-blur-sm flex items-center justify-center z-20 rounded-3xl transition-opacity duration-300">
-        <button id="start-button" class="bg-primary-blue hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-xl transition-colors text-lg">
-            KLIK UNTUK MULAI (Aktifkan Audio)
-        </button>
-    </div>
     <div class="mb-6">
       <svg class="w-12 h-12 mx-auto text-primary-blue mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
       <h1 class="text-2xl font-extrabold text-gray-900">Sistem Presensi RFID</h1>
@@ -154,8 +149,6 @@
   </div>
   <audio id="audio-success" src="assets/audio_absen_SUKSES.mp3" preload="auto"></audio>
   <audio id="audio-fail" src="assets/audio_absen_GAGAL.mp3" preload="auto"></audio>
-  <audio id="audio-duplicate" src="assets/sudah_absen.mp3" preload="auto"></audio> 
-  
-  <script type="module" src="app.js"></script>
+  <audio id="audio-duplicate" src="assets/sudah_absen.mp3" preload="auto"></audio> <script type="module" src="app.js"></script>
 </body>
 </html>
