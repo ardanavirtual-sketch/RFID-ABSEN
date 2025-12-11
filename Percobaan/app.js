@@ -1,4 +1,4 @@
-// app.js (KODE LENGKAP - Deduplikasi Supabase, Tanggal Logis WIT, & Fix Audio)
+// app.js (KODE LENGKAP - Deduplikasi Supabase, Tanggal Logis WIT, & Fix Audio Autoplay)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -40,6 +40,10 @@ const audioSuccess = document.getElementById('audio-success');
 const audioFail = document.getElementById('audio-fail');
 const audioDuplicate = document.getElementById('audio-duplicate'); 
 
+// Elemen untuk Solusi Autoplay Browser
+const interactionOverlay = document.getElementById('interaction-overlay');
+const startButton = document.getElementById('start-button');
+
 // State untuk HID Listener
 let currentRFID = ''; // Buffer untuk menampung input ID kartu
 let isProcessing = false; // Mencegah double tap saat proses masih berjalan
@@ -59,23 +63,6 @@ const WIT_OFFSET_HOURS = 9; // WIT = UTC+9
 // ===================================
 // UTILITY/UI FUNCTIONS
 // ===================================
-
-/**
- * Memutar elemen audio, memastikan di-reset ke awal dan menangani Promise.
- * @param {HTMLAudioElement | null} audioElement 
- */
-function playAudio(audioElement) {
-    if (audioElement) {
-        // Hentikan dan reset posisi
-        audioElement.pause();
-        audioElement.currentTime = 0; 
-        
-        // Coba putar dan tangani Promise yang mungkin ditolak (misalnya karena autoplay policy)
-        audioElement.play().catch(e => {
-            console.error("Gagal memutar audio (Autoplay diblokir?):", e);
-        });
-    }
-}
 
 function getCurrentMealPeriod() {
     const hour = new Date().getHours();
@@ -241,8 +228,11 @@ function showAlreadyTappedStatus(rfidId, nama) {
     hasilNama.textContent = nama || 'Terdaftar';
     hasilID.textContent = rfidId;
     
-    // FIX AUDIO: Menggunakan fungsi playAudio yang lebih robust
-    playAudio(audioDuplicate);
+    // PEMUTARAN AUDIO DUPLIKASI
+    if (audioDuplicate) {
+        audioDuplicate.currentTime = 0; 
+        audioDuplicate.play().catch(e => console.error("Gagal memutar audio duplikasi:", e));
+    }
 
     hasilContainer.classList.remove('hidden');
 
@@ -288,6 +278,8 @@ function showProcessingStatus() {
 
 function updateUI({ success, message, rfidId, nama, currentPeriod }) {
     
+    // updateLogCounters DIHAPUS karena log counter sekarang diambil langsung dari Supabase di resetStatus()
+
     appContainer.classList.remove('bg-blue-200/50');
     statusCard.classList.remove('bg-blue-100');
 
@@ -300,8 +292,11 @@ function updateUI({ success, message, rfidId, nama, currentPeriod }) {
         statusMessage.classList.replace('text-warning-yellow', 'text-success-green');
         hasilTitle.textContent = 'Detail Presensi Sukses';
 
-        // FIX AUDIO: Menggunakan fungsi playAudio yang lebih robust
-        playAudio(audioSuccess);
+        // PEMUTARAN AUDIO SUKSES
+        if (audioSuccess) {
+            audioSuccess.currentTime = 0; 
+            audioSuccess.play().catch(e => console.error("Gagal memutar audio sukses:", e));
+        }
 
     } else {
         appContainer.classList.add('scale-105', 'bg-error-red/20');
@@ -312,8 +307,11 @@ function updateUI({ success, message, rfidId, nama, currentPeriod }) {
         statusMessage.classList.replace('text-warning-yellow', 'text-error-red');
         hasilTitle.textContent = 'Detail Kegagalan';
 
-        // FIX AUDIO: Menggunakan fungsi playAudio yang lebih robust
-        playAudio(audioFail);
+        // PEMUTARAN AUDIO GAGAL
+        if (audioFail) {
+            audioFail.currentTime = 0; 
+            audioFail.play().catch(e => console.error("Gagal memutar audio gagal:", e));
+        }
     }
 
     hasilNama.textContent = nama;
@@ -418,7 +416,7 @@ async function checkCardSupabase(rfidId) {
         result.status_log = "Gagal (Error)";
     }
     
-    // PENTING: Update UI
+    // PENTING: Update UI (Termasuk memutar audio sukses/gagal)
     updateUI(result);
 }
 
@@ -463,13 +461,37 @@ function setupHIDListener() {
 }
 
 // ===================================
-// INISIALISASI
+// INISIALISASI (Perbaikan Autoplay)
 // ===================================
 
 window.onload = () => {
     // 1. Setup state awal (memuat log dari Supabase)
     setupInitialState(); 
     
-    // 2. Setup listener
-    setupHIDListener();
+    // 2. Setup listener HANYA SETELAH TOMBOL DIKLIK
+    if (startButton) {
+        startButton.addEventListener('click', () => {
+            if (interactionOverlay) {
+                // Hilangkan overlay secara bertahap
+                interactionOverlay.classList.add('opacity-0');
+                setTimeout(() => {
+                    interactionOverlay.style.display = 'none';
+                }, 300);
+            }
+            // Setelah interaksi pertama, pasang listener keyboard
+            setupHIDListener();
+            
+            // Coba putar dan hentikan audio sukses sebagai "unlock" audio API
+            audioSuccess.play().catch(e => { 
+                console.warn("Gagal memutar audio dummy, tapi interaksi sudah dilakukan:", e); 
+            });
+            audioSuccess.pause();
+            audioSuccess.currentTime = 0;
+            
+            console.log("Audio dan HID Listener diaktifkan.");
+        });
+    } else {
+        // Fallback jika elemen tombol tidak ditemukan (tidak disarankan)
+        setupHIDListener();
+    }
 };
