@@ -1,4 +1,4 @@
-// app.js (KODE LENGKAP - Deduplikasi Supabase, Tanggal Logis WIT, & Fix Audio)
+// app.js (KODE LENGKAP - Dengan Fix Audio Autoplay)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -40,6 +40,11 @@ const audioSuccess = document.getElementById('audio-success');
 const audioFail = document.getElementById('audio-fail');
 const audioDuplicate = document.getElementById('audio-duplicate'); 
 
+// NEW: Elemen untuk Overlay Aktivasi Audio
+const audioOverlay = document.getElementById('audio-overlay');
+const activateAudioBtn = document.getElementById('activate-audio-btn');
+
+
 // State untuk HID Listener
 let currentRFID = ''; // Buffer untuk menampung input ID kartu
 let isProcessing = false; // Mencegah double tap saat proses masih berjalan
@@ -59,6 +64,36 @@ const WIT_OFFSET_HOURS = 9; // WIT = UTC+9
 // ===================================
 // UTILITY/UI FUNCTIONS
 // ===================================
+
+/**
+ * Memainkan dan menghentikan sebentar semua audio untuk memenuhi 
+ * kebijakan Autoplay browser yang membutuhkan interaksi pengguna.
+ */
+function activateAudioContext() {
+    
+    // Nonaktifkan overlay
+    audioOverlay.style.opacity = '0';
+    setTimeout(() => audioOverlay.style.display = 'none', 500); // Tunggu transisi
+
+    // Coba putar semua audio sebentar
+    [audioSuccess, audioFail, audioDuplicate].forEach(audio => {
+        if (audio) {
+            audio.volume = 0; // Agar tidak berbunyi saat diaktifkan
+            audio.play()
+                .then(() => {
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.volume = 1; // Kembalikan volume
+                })
+                .catch(e => {
+                    console.warn("Gagal mengaktifkan audio (Autoplay Policy):", e);
+                    // Jika gagal, set volume ke 1
+                    if (audio) audio.volume = 1;
+                });
+        }
+    });
+}
+
 
 function getCurrentMealPeriod() {
     const hour = new Date().getHours();
@@ -143,6 +178,8 @@ async function fetchAndDisplayLogs() {
             timeZone: 'Asia/Jayapura' 
         });
 
+        // Catatan: logicalDateUTC di sini sebenarnya adalah 00:00:00 WIT hari logis, 
+        // yang saat diformat dengan timeZone Asia/Jayapura akan menunjukkan tanggal yang benar.
         logTanggalHariIniElement.textContent = `Tanggal: ${dateFormatter.format(logicalDateUTC)}`;
     }
 
@@ -273,8 +310,6 @@ function showProcessingStatus() {
 
 function updateUI({ success, message, rfidId, nama, currentPeriod }) {
     
-    // updateLogCounters DIHAPUS karena log counter sekarang diambil langsung dari Supabase di resetStatus()
-
     appContainer.classList.remove('bg-blue-200/50');
     statusCard.classList.remove('bg-blue-100');
 
@@ -458,9 +493,12 @@ function setupHIDListener() {
 // ===================================
 
 window.onload = () => {
-    // 1. Setup state awal (memuat log dari Supabase)
-    setupInitialState(); 
-    
-    // 2. Setup listener
-    setupHIDListener();
+    // 1. TUNGGU SAMPAI PENGGUNA KLIK (INTERAKSI WAJIB UNTUK AUTOPLAY AUDIO)
+    activateAudioBtn.addEventListener('click', () => {
+        activateAudioContext(); // Coba aktifkan audio
+        
+        // Lanjutkan inisialisasi aplikasi hanya setelah interaksi pengguna
+        setupInitialState(); 
+        setupHIDListener();
+    }, { once: true }); // Hanya perlu klik sekali
 };
