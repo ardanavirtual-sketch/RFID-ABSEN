@@ -31,12 +31,7 @@
         height: 100%; 
     }
     
-    /* Responsive adjustment for status card on small screens */
-    #status-card-message {
-        font-size: 1.125rem; 
-    }
-    
-    /* STYLE UNTUK OVERLAY INTERAKSI AUDIO (DIBUTUHKAN app.js) */
+    /* STYLE UNTUK OVERLAY INTERAKSI AUDIO (Solusi Autoplay) */
     #interaction-overlay {
         position: fixed;
         top: 0;
@@ -150,6 +145,7 @@
 
         </div>
     </div>
+    
     <div id="status-card" class="p-4 rounded-2xl transition-all duration-300 bg-blue-50">
       <div id="status-icon" class="status-icon w-14 h-14 mx-auto mb-3 flex items-center justify-center rounded-full bg-primary-blue/80 shadow-lg text-white">
         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
@@ -172,9 +168,11 @@
       </div>
     </div>
   </div>
+  
   <audio id="audio-success" src="assets/audio_absen_SUKSES.mp3" preload="auto"></audio>
   <audio id="audio-fail" src="assets/audio_absen_GAGAL.mp3" preload="auto"></audio>
   <audio id="audio-duplicate" src="assets/sudah_absen.mp3" preload="auto"></audio> 
+  
   <script type="module" src="app.js"></script>
 </body>
 </html>
