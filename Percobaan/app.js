@@ -56,6 +56,7 @@ let logCounters = {
     malam: { success: 0, fail: 0 }
 };
 
+// **PERBAIKAN:** Hapus RESET_HOUR. Atur offset WIT saja.
 const WIT_OFFSET_HOURS = 9; // WIT = UTC+9
 
 
@@ -80,12 +81,15 @@ function getCurrentMealPeriod() {
 }
 
 /**
+ * **PERBAIKAN FUNGSI KRITIS**
  * Mendapatkan rentang tanggal logis (24 jam) untuk query Supabase (UTC).
  * Hari baru (reset log) ditetapkan tepat pada pukul 00:00:00 WIT.
  */
 function getLogDateRangeWIT() {
     const now = new Date();
     
+    // Hitung waktu saat ini dalam WIT
+    // Offset Waktu Lokal (menit) ke ms, lalu tambahkan offset WIT (jam) ke ms
     const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000); 
     const witTime = new Date(utcTime + (3600000 * WIT_OFFSET_HOURS)); 
 
@@ -132,7 +136,7 @@ async function fetchAndDisplayLogs() {
     
     // Menampilkan Tanggal Hari Ini (Logis WIT)
     if (logTanggalHariIniElement) {
-        // Gunakan todayStart untuk mendapatkan tanggal WIT yang benar
+        // Gunakan todayStart untuk mendapatkan tanggal WIT yang benar (karena 00:00:00 WIT)
         const logicalDateUTC = new Date(todayStart); 
         
         const dateFormatter = new Intl.DateTimeFormat('id-ID', {
@@ -148,7 +152,7 @@ async function fetchAndDisplayLogs() {
     }
 
     try {
-        // Ambil semua log dalam rentang 24 jam hari ini (00:00:00 WIT sampai 23:59:59.999 WIT)
+        // Ambil semua log dalam rentang 24 jam hari ini (00:00:00 WIT sampai sebelum 00:00:00 WIT hari berikutnya)
         const { data: logData, error } = await db
             .from("log_absen")
             .select("card, periode, status")
@@ -207,8 +211,8 @@ function setupInitialState() {
     // 1. Panggil fetchAndDisplayLogs untuk memuat data dari Supabase saat start
     fetchAndDisplayLogs();
     
-    // 2. Tambahkan Polling: Set interval untuk refresh data log setiap 1 menit 
-    // Ini penting agar log kereset otomatis segera setelah 00:00 WIT tanpa perlu tap kartu.
+    // **PERBAIKAN:** Tambahkan Polling untuk refresh otomatis setiap 1 menit
+    // Ini memastikan data log dan tanggal otomatis kereset setelah 00:00 WIT.
     setInterval(fetchAndDisplayLogs, 60 * 1000); // Setiap 60.000 ms (1 menit)
     console.log("Auto-refresh log aktif setiap 1 menit.");
 }
