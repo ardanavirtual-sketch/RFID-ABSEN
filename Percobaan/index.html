@@ -35,6 +35,23 @@
     #status-card-message {
         font-size: 1.125rem; 
     }
+    
+    /* Overlay untuk solusi Autoplay Audio */
+    #interaction-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(5px);
+        z-index: 50;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.3s ease;
+    }
   </style>
   <script>
     // Konfigurasi warna khusus Tailwind
@@ -54,6 +71,16 @@
 </head>
 <body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
 
+  <div id="interaction-overlay">
+    <div class="p-8 bg-white rounded-xl shadow-2xl text-center max-w-sm">
+        <h2 class="text-xl font-bold text-gray-800 mb-4">Akses Dibutuhkan</h2>
+        <p class="text-gray-600 mb-6">Klik 'Mulai Presensi' untuk mengaktifkan pendengar kartu dan memutar suara.</p>
+        <button id="start-button" class="px-6 py-3 bg-primary-blue text-white font-semibold rounded-lg hover:bg-primary-blue/90 transition duration-150 shadow-lg">
+            Mulai Presensi
+        </button>
+    </div>
+  </div>
+  
   <div id="app-container" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 sm:p-8 text-center transition-all duration-500 transform scale-100">
 
     <div class="mb-6">
@@ -63,7 +90,8 @@
     </div>
     
     <div class="mb-5 border-b pb-3">
-        <h2 class="text-xl font-bold mb-3 text-gray-800">Log Presensi Harian</h2>
+        <h2 class="text-xl font-bold mb-2 text-gray-800">Log Presensi Harian</h2>
+        <p class="text-sm font-medium text-primary-blue mb-3" id="log-tanggal-hari-ini">Tanggal: Memuat...</p>
         
         <div class="grid grid-cols-2 gap-2">
 
@@ -149,6 +177,8 @@
   </div>
   <audio id="audio-success" src="assets/audio_absen_SUKSES.mp3" preload="auto"></audio>
   <audio id="audio-fail" src="assets/audio_absen_GAGAL.mp3" preload="auto"></audio>
-  <audio id="audio-duplicate" src="assets/sudah_absen.mp3" preload="auto"></audio> <script type="module" src="app.js"></script>
+  <audio id="audio-duplicate" src="assets/sudah_absen.mp3" preload="auto"></audio> 
+  
+  <script type="module" src="app.js"></script>
 </body>
 </html>
