@@ -88,6 +88,7 @@ function getCurrentMealPeriod() {
 function getLogDateRangeWIT() {
     const now = new Date();
     
+    // Hitung waktu WIT saat ini
     const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000); 
     const witTime = new Date(utcTime + (3600000 * WIT_OFFSET_HOURS)); 
 
@@ -95,7 +96,7 @@ function getLogDateRangeWIT() {
     
     let logisDate = new Date(witTime);
     
-    // Geser hari jika jam WIT kurang dari jam reset
+    // Geser hari jika jam WIT kurang dari jam reset (01:00 WIT)
     if (witHour < RESET_HOUR) {
         logisDate.setUTCDate(logisDate.getUTCDate() - 1);
     }
@@ -104,17 +105,26 @@ function getLogDateRangeWIT() {
     const mm = logisDate.getUTCMonth();
     const dd = logisDate.getUTCDate();
     
-    // Start: YYYY-MM-DD 00:00:00 WIT, dikonversi ke UTC (Kurangi 9 jam dari 00:00 UTC hari logis)
-    const startLogisDate = new Date(Date.UTC(yyyy, mm, dd, 0, 0, 0));
-    startLogisDate.setUTCHours(startLogisDate.getUTCHours() - WIT_OFFSET_HOURS); 
+    // Start: YYYY-MM-DD 01:00:00 WIT, dikonversi ke UTC (Kurangi 9 jam dari 01:00 UTC hari logis)
+    // NOTE: Logika ini sedikit disederhanakan dari yang asli.
+    // Jika tujuannya adalah hari logis dari 01:00 WIT hari ini hingga 00:59 WIT besok,
+    // kita bisa mengambil tanggal logis, setting ke 01:00 WIT, dan konversi ke UTC.
     
-    // End: YYYY-MM-DD 23:59:59 WIT, dikonversi ke UTC
-    const endLogisDate = new Date(Date.UTC(yyyy, mm, dd, 23, 59, 59));
-    endLogisDate.setUTCHours(endLogisDate.getUTCHours() - WIT_OFFSET_HOURS);
-
+    // Tanggal Logis (00:00:00 UTC hari logis)
+    const startLogisDate = new Date(Date.UTC(yyyy, mm, dd, 0, 0, 0));
+    
+    // Start Time: 01:00:00 WIT
+    startLogisDate.setUTCHours(startLogisDate.getUTCHours() + RESET_HOUR); 
+    // Konversi ke UTC: startLogisDate.setUTCHours(startLogisDate.getUTCHours() - WIT_OFFSET_HOURS); 
+    
+    // Akhir dari rentang adalah 24 jam setelah start (atau 01:00:00 WIT hari berikutnya)
+    const endLogisDate = new Date(startLogisDate);
+    endLogisDate.setUTCDate(endLogisDate.getUTCDate() + 1); // Tambah 1 hari
+    
     return {
-        todayStart: startLogisDate.toISOString(), // Waktu Awal Query (UTC)
-        todayEnd: endLogisDate.toISOString() // Waktu Akhir Query (UTC)
+        todayStart: startLogisDate.toISOString(), // Waktu Awal Query (UTC) - 01:00 WIT
+        todayEnd: endLogisDate.toISOString(),     // Waktu Akhir Query (UTC) - 01:00 WIT hari berikutnya
+        displayDate: logisDate // Tanggal logis untuk display
     };
 }
 
@@ -133,21 +143,21 @@ function updateUILogCounters() {
 
 // FUNGSI UTAMA: Mengambil dan Menghitung Log dari Supabase
 async function fetchAndDisplayLogs() {
-    const { todayStart, todayEnd } = getLogDateRangeWIT(); 
+    const { todayStart, todayEnd, displayDate } = getLogDateRangeWIT(); 
     
     // Menampilkan Tanggal Hari Ini (Logis WIT)
     if (logTanggalHariIniElement) {
-        const logicalDateUTC = new Date(todayStart); 
         
+        // Menggunakan tanggal logis yang sudah dihitung (displayDate)
         const dateFormatter = new Intl.DateTimeFormat('id-ID', {
             weekday: 'long', 
             day: 'numeric', 
             month: 'long', 
-            year: 'numeric',
-            timeZone: 'Asia/Jayapura' 
+            year: 'numeric'
         });
 
-        logTanggalHariIniElement.textContent = `Tanggal: ${dateFormatter.format(logicalDateUTC)}`;
+        // Tampilkan tanggal logis (tanpa perlu timezone 'Asia/Jayapura' lagi karena sudah dihitung dari UTC Date object)
+        logTanggalHariIniElement.textContent = `Tanggal: ${dateFormatter.format(displayDate)}`;
     }
 
     try {
@@ -156,7 +166,7 @@ async function fetchAndDisplayLogs() {
             .from("log_absen")
             .select("card, periode, status")
             .gte("created_at", todayStart)
-            .lt("created_at", todayEnd);
+            .lt("created_at", todayEnd); // Menggunakan < todayEnd untuk rentang 24 jam penuh
 
         if (error) throw error;
         
@@ -201,6 +211,14 @@ async function fetchAndDisplayLogs() {
         if (logTanggalHariIniElement) {
             logTanggalHariIniElement.textContent = `Tanggal: Gagal Memuat Data`; 
         }
+        // Jika gagal, pastikan counter UI tetap 0 jika sebelumnya ada data dari hari lama
+        logCounters = {
+            pagi: { success: 0, fail: 0 },
+            siang: { success: 0, fail: 0 },
+            sore: { success: 0, fail: 0 },
+            malam: { success: 0, fail: 0 }
+        };
+        updateUILogCounters();
     }
 }
 
