@@ -1,185 +1,111 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Presensi RFID (Keyboard HID)</title>
-  
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
-  <style>
-    /* Mengatur font dan transisi */
-    body {
-      font-family: 'Inter', sans-serif;
-      transition: background-color 0.5s ease;
-    }
-    /* Animasi pulse untuk ikon saat menunggu input */
-    .status-icon {
-      animation: pulse-ring 1.5s infinite;
-    }
-    @keyframes pulse-ring {
-      0% { transform: scale(0.9); opacity: 0.7; }
-      50% { transform: scale(1.05); opacity: 1; }
-      100% { transform: scale(0.9); opacity: 0.7; }
-    }
-    /* Style untuk kotak periode */
-    .period-box {
-        border-radius: 0.5rem; 
-        padding: 0.5rem; 
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        height: 100%; 
-    }
-    
-    /* Responsive adjustment for status card on small screens */
-    #status-card-message {
-        font-size: 1.125rem; 
-    }
-    
-    /* Overlay untuk solusi Autoplay Audio */
-    #interaction-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(5px);
-        z-index: 50;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        transition: opacity 0.3s ease;
-    }
-  </style>
-  <script>
-    // Konfigurasi warna khusus Tailwind
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            'primary-blue': '#1e3a8a', 
-            'success-green': '#10b981',
-            'error-red': '#ef4444',
-            'warning-yellow': '#f59e0b', // Digunakan untuk status 'Processing'
-          }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Absensi RFID Kantin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .status-icon {
+            animation: pulse 1.5s infinite;
         }
-      }
-    }
-  </script>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .bg-primary-blue { background-color: #3b82f6; } /* Blue 500 */
+        .text-primary-blue { color: #3b82f6; }
+        .bg-success-green { background-color: #10b981; } /* Emerald 500 */
+        .text-success-green { color: #10b981; }
+        .bg-error-red { background-color: #ef4444; } /* Red 500 */
+        .text-error-red { color: #ef4444; }
+        .bg-warning-yellow { background-color: #f59e0b; } /* Amber 500 */
+        .text-warning-yellow { color: #f59e0b; }
+        
+        #interaction-overlay {
+            transition: opacity 0.3s ease-in-out;
+            z-index: 50;
+        }
+    </style>
 </head>
-<body class="bg-gray-50 flex items-center justify-center min-h-screen p-4">
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
 
-  <div id="interaction-overlay">
-    <div class="p-8 bg-white rounded-xl shadow-2xl text-center max-w-sm">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">Akses Dibutuhkan</h2>
-        <p class="text-gray-600 mb-6">Klik 'Mulai Presensi' untuk mengaktifkan pendengar kartu dan memutar suara.</p>
-        <button id="start-button" class="px-6 py-3 bg-primary-blue text-white font-semibold rounded-lg hover:bg-primary-blue/90 transition duration-150 shadow-lg">
-            Mulai Presensi
+    <div id="interaction-overlay" class="fixed inset-0 bg-gray-900 bg-opacity-90 flex flex-col items-center justify-center transition-opacity">
+        <h1 class="text-white text-3xl font-bold mb-6">Sistem Absensi Kantin Siap</h1>
+        <p class="text-gray-300 mb-8">Klik tombol di bawah untuk mengaktifkan sistem dan listener kartu.</p>
+        <button id="start-button" class="px-8 py-3 bg-success-green text-white text-lg font-semibold rounded-lg shadow-lg hover:bg-emerald-600 transition duration-150">
+            Mulai Absensi
         </button>
     </div>
-  </div>
-  
-  <div id="app-container" class="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 sm:p-8 text-center transition-all duration-500 transform scale-100">
 
-    <div class="mb-6">
-      <svg class="w-12 h-12 mx-auto text-primary-blue mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-      <h1 class="text-2xl font-extrabold text-gray-900">Sistem Presensi RFID</h1>
-      <p class="text-xs text-gray-500 mt-1">Mode Koneksi Keyboard Emulator (HID)</p>
+    <div id="app-container" class="w-full max-w-5xl transition-transform duration-500 ease-out p-6 rounded-xl shadow-2xl bg-white border border-gray-200">
+        <header class="text-center mb-6">
+            <h1 class="text-3xl font-extrabold text-gray-800">Sistem Absensi Kantin</h1>
+            <p id="log-tanggal-hari-ini" class="text-xl font-semibold text-primary-blue mt-2">Tanggal: Memuat...</p>
+        </header>
+
+        <main class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-2">
+                <div id="status-card" class="bg-blue-50 p-6 rounded-lg shadow-inner flex items-start space-x-4">
+                    <div id="status-icon" class="flex-shrink-0 w-12 h-12 rounded-full bg-primary-blue/80 flex items-center justify-center status-icon">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                    </div>
+                    <div>
+                        <p id="status-message" class="text-xl font-bold text-primary-blue">Reader Siap. Tap Kartu.</p>
+                        <p id="reader-status-hint" class="text-sm text-gray-600 mt-1">Listener Keyboard (HID) aktif. Tempelkan kartu.</p>
+                    </div>
+                </div>
+
+                <div id="hasil-container" class="hidden mt-6 p-5 bg-white border border-gray-200 rounded-lg shadow-md">
+                    <h3 id="hasil-title" class="text-lg font-semibold text-gray-700 mb-2">Detail Absensi</h3>
+                    <p class="text-sm text-gray-600">Nama: <span id="hasil-nama" class="font-medium text-gray-800">-</span></p>
+                    <p class="text-sm text-gray-600">ID Kartu: <span id="hasil-id" class="font-medium text-gray-800">-</span></p>
+                </div>
+            </div>
+
+            <div class="md:col-span-1 bg-gray-50 p-5 rounded-lg shadow-inner">
+                <h3 class="text-lg font-bold text-gray-700 mb-4 border-b pb-2">Rekap Absensi Hari Ini</h3>
+                
+                <div class="space-y-3 text-sm">
+                    <div class="flex justify-between items-center py-1 border-b">
+                        <span class="font-semibold text-gray-600">Pagi</span>
+                        <div>
+                            <span class="text-success-green font-bold mr-3">✔ <span id="log-sukses-pagi">0</span></span>
+                            <span class="text-error-red font-bold">✘ <span id="log-gagal-pagi">0</span></span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center py-1 border-b">
+                        <span class="font-semibold text-gray-600">Siang</span>
+                        <div>
+                            <span class="text-success-green font-bold mr-3">✔ <span id="log-sukses-siang">0</span></span>
+                            <span class="text-error-red font-bold">✘ <span id="log-gagal-siang">0</span></span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center py-1 border-b">
+                        <span class="font-semibold text-gray-600">Sore</span>
+                        <div>
+                            <span class="text-success-green font-bold mr-3">✔ <span id="log-sukses-sore">0</span></span>
+                            <span class="text-error-red font-bold">✘ <span id="log-gagal-sore">0</span></span>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center py-1">
+                        <span class="font-semibold text-gray-600">Malam</span>
+                        <div>
+                            <span class="text-success-green font-bold mr-3">✔ <span id="log-sukses-malam">0</span></span>
+                            <span class="text-error-red font-bold">✘ <span id="log-gagal-malam">0</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
     </div>
+
+    <audio id="audio-success" src="path/to/success.mp3" preload="auto"></audio>
+    <audio id="audio-fail" src="path/to/fail.mp3" preload="auto"></audio>
+    <audio id="audio-duplicate" src="path/to/duplicate.mp3" preload="auto"></audio>
     
-    <div class="mb-5 border-b pb-3">
-        <h2 class="text-xl font-bold mb-2 text-gray-800">Log Presensi Harian</h2>
-        <p class="text-sm font-medium text-primary-blue mb-3" id="log-tanggal-hari-ini">Tanggal: Memuat...</p>
-
-        
-        <div class="grid grid-cols-2 gap-2">
-
-            <div class="period-box bg-blue-50/50">
-                <h3 class="text-xs font-semibold text-primary-blue mb-1">Pagi</h3>
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                        <p class="text-success-green font-bold text-base" id="log-sukses-pagi">0</p>
-                        <p class="text-gray-500 text-xs">Sukses</p>
-                    </div>
-                    <div class="flex-1 p-1 ml-1">
-                        <p class="text-error-red font-bold text-base" id="log-gagal-pagi">0</p>
-                        <p class="text-gray-500 text-xs">Gagal</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="period-box bg-yellow-50/50">
-                <h3 class="text-xs font-semibold text-yellow-600 mb-1">Siang</h3>
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                        <p class="text-success-green font-bold text-base" id="log-sukses-siang">0</p>
-                        <p class="text-gray-500 text-xs">Sukses</p>
-                    </div>
-                    <div class="flex-1 p-1 ml-1">
-                        <p class="text-error-red font-bold text-base" id="log-gagal-siang">0</p>
-                        <p class="text-gray-500 text-xs">Gagal</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="period-box bg-orange-50/50">
-                <h3 class="text-xs font-semibold text-orange-600 mb-1">Sore</h3>
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                        <p class="text-success-green font-bold text-base" id="log-sukses-sore">0</p>
-                        <p class="text-gray-500 text-xs">Sukses</p>
-                    </div>
-                    <div class="flex-1 p-1 ml-1">
-                        <p class="text-error-red font-bold text-base" id="log-gagal-sore">0</p>
-                        <p class="text-gray-500 text-xs">Gagal</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="period-box bg-purple-50/50">
-                <h3 class="text-xs font-semibold text-purple-600 mb-1">Malam</h3>
-                <div class="flex justify-between items-center text-xs">
-                    <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                        <p class="text-success-green font-bold text-base" id="log-sukses-malam">0</p>
-                        <p class="text-gray-500 text-xs">Sukses</p>
-                    </div>
-                    <div class="flex-1 p-1 ml-1">
-                        <p class="text-error-red font-bold text-base" id="log-gagal-malam">0</p>
-                        <p class="text-gray-500 text-xs">Gagal</p>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </div>
-    <div id="status-card" class="p-4 rounded-2xl transition-all duration-300 bg-blue-50">
-      <div id="status-icon" class="status-icon w-14 h-14 mx-auto mb-3 flex items-center justify-center rounded-full bg-primary-blue/80 shadow-lg text-white">
-        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-      </div>
-      <p id="status-message" class="text-lg font-semibold text-primary-blue">Reader Siap. Tap Kartu.</p>
-      <p class="text-xs text-gray-400 mt-1" id="reader-status-hint">Listener Keyboard (HID) aktif. Tempelkan kartu.</p>
-    </div>
-
-    <div id="hasil-container" class="mt-4 p-4 border-t border-gray-100 hidden">
-      <h3 class="text-lg font-bold text-left mb-3" id="hasil-title">Detail Presensi</h3>
-      <div class="space-y-2 text-left">
-        <div class="flex justify-between items-center pb-1 border-b border-dashed">
-          <span class="text-gray-500 font-medium text-sm">Nama:</span>
-          <span class="text-gray-900 font-semibold text-sm" id="hasil-nama">-</span>
-        </div>
-        <div class="flex justify-between items-center pb-1">
-          <span class="text-gray-500 font-medium text-sm">ID Kartu:</span>
-          <span class="text-gray-900 font-semibold text-xs" id="hasil-id">-</span>
-        </div>
-      </div>
-    </div>
-  </div>
-  <audio id="audio-success" src="assets/audio_absen_SUKSES.mp3" preload="auto"></audio>
-  <audio id="audio-fail" src="assets/audio_absen_GAGAL.mp3" preload="auto"></audio>
-  <audio id="audio-duplicate" src="assets/sudah_absen.mp3" preload="auto"></audio> 
-  
-  <script type="module" src="app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script src="app.js"></script>
 </body>
 </html>
