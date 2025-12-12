@@ -1,11 +1,11 @@
-// app.js (KODE LENGKAP - Fokus pada perbaikan getLogDateRangeWIT)
+// app.js (KODE LENGKAP - Sudah termasuk Timer Otomatis)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
 // ===================================
 
 const SUPABASE_URL = "https://ymzcvyumplerqccaplxi.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI"; // Ganti dengan key Anda
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI";
 
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -77,9 +77,7 @@ function getCurrentMealPeriod() {
     } else if (hour >= 21 && hour < 23) { 
         return 'malam';
     } else {
-        // Asumsikan jam 23:00 - 03:59 masuk ke periode pagi hari berikutnya
-        // Agar presensi dini hari (setelah jam 01:00 WIT) tetap tercatat di logis hari ini, 
-        // kita tetap tentukan 'pagi' sebagai periode default.
+        // Asumsikan periode di luar jam kerja/makan besar masuk ke periode pagi
         return 'pagi'; 
     }
 }
@@ -87,7 +85,6 @@ function getCurrentMealPeriod() {
 /**
  * Mendapatkan rentang tanggal logis (24 jam) untuk query Supabase (dalam format ISO UTC), 
  * di mana hari baru dimulai pada pukul 01:00 WIT.
- * * Perbaikan utama: Memastikan rentang waktu adalah 24 jam penuh.
  */
 function getLogDateRangeWIT() {
     const now = new Date();
@@ -111,8 +108,6 @@ function getLogDateRangeWIT() {
     const dd = logisDate.getUTCDate();
     
     // 1. Waktu Mulai (todayStart): 01:00 WIT pada Tanggal Logis. 
-    //    Kita buat objek Date baru dari Tanggal Logis (00:00:00 UTC) dan tambahkan RESET_HOUR (1 jam) 
-    //    dan kurangi WIT_OFFSET_HOURS (9 jam) untuk mendapatkan waktu start dalam UTC.
     const startLogisDate = new Date(Date.UTC(yyyy, mm, dd, RESET_HOUR, 0, 0));
     startLogisDate.setUTCHours(startLogisDate.getUTCHours() - WIT_OFFSET_HOURS);
     
@@ -124,8 +119,8 @@ function getLogDateRangeWIT() {
     const displayDate = new Date(Date.UTC(yyyy, mm, dd, 0, 0, 0));
     
     return {
-        todayStart: startLogisDate.toISOString(), // Waktu Awal Query (UTC) -> Contoh: 2025-12-11T16:00:00.000Z
-        todayEnd: endLogisDate.toISOString(),     // Waktu Akhir Query (UTC) -> Contoh: 2025-12-12T16:00:00.000Z
+        todayStart: startLogisDate.toISOString(), 
+        todayEnd: endLogisDate.toISOString(),     
         displayDate: displayDate // Tanggal logis untuk display
     };
 }
@@ -167,10 +162,11 @@ async function fetchAndDisplayLogs() {
             .from("log_absen")
             .select("card, periode, status")
             .gte("created_at", todayStart)
-            .lt("created_at", todayEnd); // Menggunakan < todayEnd untuk rentang 24 jam penuh
+            .lt("created_at", todayEnd); 
 
         if (error) throw error;
         
+        // Reset counters
         logCounters = {
             pagi: { success: 0, fail: 0 },
             siang: { success: 0, fail: 0 },
@@ -224,7 +220,7 @@ async function fetchAndDisplayLogs() {
 
 
 function setupInitialState() {
-    // Kunci: Panggil fetchAndDisplayLogs untuk memuat data dari Supabase saat start
+    // Panggil fetchAndDisplayLogs untuk memuat data dari Supabase saat start
     fetchAndDisplayLogs();
 }
 
@@ -296,8 +292,6 @@ function showProcessingStatus() {
 
 function updateUI({ success, message, rfidId, nama, currentPeriod }) {
     
-    // updateLogCounters DIHAPUS karena log counter sekarang diambil langsung dari Supabase di resetStatus()
-
     appContainer.classList.remove('bg-blue-200/50');
     statusCard.classList.remove('bg-blue-100');
 
@@ -479,7 +473,7 @@ function setupHIDListener() {
 }
 
 // ===================================
-// INISIALISASI (Perbaikan Autoplay)
+// INISIALISASI (Perbaikan Autoplay + Timer)
 // ===================================
 
 window.onload = () => {
@@ -506,10 +500,15 @@ window.onload = () => {
             audioSuccess.pause();
             audioSuccess.currentTime = 0;
             
-            console.log("Audio dan HID Listener diaktifkan.");
+            // 3. PASANG TIMER OTOMATIS DI SINI (SETELAH INTERAKSI AWAL)
+            setInterval(fetchAndDisplayLogs, 300000); // Update setiap 5 menit (300,000 ms)
+            console.log("Audio dan HID Listener diaktifkan. Timer log absensi aktif (Interval: 5 menit).");
         });
     } else {
         // Fallback jika elemen tombol tidak ditemukan (tidak disarankan)
         setupHIDListener();
+        
+        // Pasang timer otomatis jika tidak ada overlay interaksi
+        setInterval(fetchAndDisplayLogs, 300000); 
     }
 };
