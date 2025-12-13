@@ -3,486 +3,866 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Admin Sistem - Modern</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>Admin Dashboard - Sistem Absensi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Custom styles */
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; } 
-        
-        /* Gaya Tabel Admin */
-        .admin-table th, .admin-table td { padding: 12px 16px; text-align: left; }
-        .admin-table th { 
-            background-color: #374151; /* Dark Gray */
-            color: white; 
-            font-weight: 600;
-            font-size: 0.8rem;
-            letter-spacing: 0.05em;
-            position: sticky; top: 0; z-index: 10;
-            border-top: 1px solid #4b5563;
+        :root {
+            --primary-color: #4f46e5;
+            --primary-dark: #4338ca;
+            --secondary-color: #10b981;
+            --danger-color: #ef4444;
+            --warning-color: #f59e0b;
+            --info-color: #3b82f6;
+            
+            --bg-light: #f8fafc;
+            --bg-card-light: #ffffff;
+            --text-light: #1e293b;
+            --text-secondary-light: #64748b;
+            --border-light: #e2e8f0;
+            
+            --bg-dark: #0f172a;
+            --bg-card-dark: #1e293b;
+            --text-dark: #f1f5f9;
+            --text-secondary-dark: #94a3b8;
+            --border-dark: #334155;
         }
-        .admin-table tbody tr:nth-child(even) { background-color: #f9fafb; }
 
-        /* Gaya Tabel Review */
-        .review-table th, .review-table td { padding: 8px; font-size: 0.75rem; white-space: nowrap; }
-        .review-table th { background-color: #e5e7eb; font-weight: 600; position: sticky; top: 0; z-index: 5; }
-        
-        /* Transisi dan Tombol */
-        .btn-primary { 
-            transition: all 0.2s ease-in-out; 
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); 
+        .dark-mode {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
         }
-        .btn-primary:hover { 
-            transform: translateY(-2px); 
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15); 
+
+        .light-mode {
+            background-color: var(--bg-light);
+            color: var(--text-light);
         }
-        
-        /* Sidebar Link */
-        .sidebar-link {
-            transition: all 0.2s;
-            cursor: pointer;
+
+        .card-light {
+            background-color: var(--bg-card-light);
+            border: 1px solid var(--border-light);
         }
-        .sidebar-link:hover {
-            background-color: #1e293b; /* Darker Slate */
-            transform: translateX(2px);
+
+        .card-dark {
+            background-color: var(--bg-card-dark);
+            border: 1px solid var(--border-dark);
         }
-        .sidebar-active {
-            background-color: #4f46e5; /* Primary Indigo */
-            font-weight: 700; 
-            color: white; 
-            box-shadow: 0 4px 8px rgba(79, 70, 229, 0.4);
+
+        .sidebar-light {
+            background: linear-gradient(180deg, #4f46e5 0%, #3730a3 100%);
         }
-        
-        .text-success-green { color: #059669; }
-        .text-error-red { color: #dc2626; }
-        
-        /* Sticky header log absensi */
-        .log-table-header { 
-            position: sticky; top: 0; z-index: 10; 
-            background-color: #f3f4f6; 
-            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+        .sidebar-dark {
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
         }
-        
-        /* Penyesuaian Scrollbar */
-        .custom-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
-        .custom-scroll::-webkit-scrollbar-thumb { background-color: #94a3b8; border-radius: 4px; } /* Gray-400 */
-        .custom-scroll::-webkit-scrollbar-track { background-color: #f1f5f9; }
-        
-        /* Gaya Modal */
-        .modal-overlay { background-color: rgba(30, 41, 59, 0.7); backdrop-filter: blur(4px); }
+
+        .transition-theme {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+
+        .stat-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .pulse-animation {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .gradient-text {
+            background: linear-gradient(90deg, #4f46e5, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .table-row-hover:hover {
+            background-color: rgba(79, 70, 229, 0.05);
+        }
+
+        .dark .table-row-hover:hover {
+            background-color: rgba(79, 70, 229, 0.1);
+        }
     </style>
 </head>
-<body>
-
+<body class="font-inter transition-theme">
+    
     <div id="admin-app" class="min-h-screen flex">
-
-        <div class="w-64 bg-gray-800 text-white flex flex-col shadow-2xl z-20 hidden lg:flex">
-            
-            <div class="p-6 border-b border-gray-700">
-                <h1 class="text-2xl font-extrabold text-indigo-400">
-                    <span class="text-white">Admin</span> Panel 🚀
-                </h1>
-                <p class="text-xs text-gray-400 mt-1">Sistem Data & Absensi</p>
+        <!-- Sidebar -->
+        <div id="sidebar" class="w-64 text-white flex flex-col shadow-2xl z-20 hidden lg:flex sidebar-dark">
+            <div class="p-6 border-b border-slate-700">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-extrabold">
+                            <span class="gradient-text">Admin</span>
+                            <span class="text-white">Hub</span>
+                        </h1>
+                        <p class="text-xs text-slate-400 mt-1">Sistem Manajemen Absensi</p>
+                    </div>
+                    <div class="theme-toggle">
+                        <button id="theme-toggle" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 transition">
+                            <i class="fas fa-moon text-yellow-300"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <nav class="flex-grow p-4 space-y-2">
-                
                 <div id="sidebar-data-karyawan" onclick="switchView('data-karyawan')" 
-                    class="sidebar-link flex items-center p-3 rounded-xl text-sm text-gray-200 sidebar-active">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                    Data Karyawan
+                    class="sidebar-link flex items-center p-3 rounded-xl text-sm text-slate-200 sidebar-active bg-slate-800/50">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center mr-3">
+                        <i class="fas fa-users text-indigo-400"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Data Karyawan</p>
+                        <p class="text-xs text-slate-400">Kelola data pegawai</p>
+                    </div>
                 </div>
                 
                 <div id="sidebar-laporan-absen" onclick="switchView('laporan-absen')" 
-                    class="sidebar-link flex items-center p-3 rounded-xl text-sm text-gray-200">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                    Log Absensi Arsip
+                    class="sidebar-link flex items-center p-3 rounded-xl text-sm text-slate-200 hover:bg-slate-800/50 transition">
+                    <div class="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center mr-3">
+                        <i class="fas fa-clipboard-list text-blue-400"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Log Absensi</p>
+                        <p class="text-xs text-slate-400">Arsip 7 hari terakhir</p>
+                    </div>
                 </div>
-                
+
+                <div id="sidebar-statistik" onclick="switchView('statistik')" 
+                    class="sidebar-link flex items-center p-3 rounded-xl text-sm text-slate-200 hover:bg-slate-800/50 transition">
+                    <div class="w-8 h-8 rounded-lg bg-green-500/20 flex items-center justify-center mr-3">
+                        <i class="fas fa-chart-bar text-green-400"></i>
+                    </div>
+                    <div>
+                        <p class="font-semibold">Statistik</p>
+                        <p class="text-xs text-slate-400">Analisis data absensi</p>
+                    </div>
+                </div>
             </nav>
 
-            <div class="p-4 border-t border-gray-700">
-                 <button id="logout-button" onclick="handleLogout()" class="w-full bg-red-600 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-red-700 transition duration-300 btn-primary flex items-center justify-center">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3v-3m13-13h-2M6 10h.01"></path></svg>
-                    Keluar (Logout)
+            <div class="p-4 border-t border-slate-700">
+                <div class="mb-4 p-3 bg-slate-800/50 rounded-lg">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center mr-3">
+                            <i class="fas fa-user text-white text-sm"></i>
+                        </div>
+                        <div>
+                            <p class="text-sm font-semibold" id="admin-name">Administrator</p>
+                            <p class="text-xs text-slate-400">Super Admin</p>
+                        </div>
+                    </div>
+                </div>
+                <button id="logout-button" onclick="handleLogout()" class="w-full bg-gradient-to-r from-red-600 to-red-500 text-white px-4 py-3 rounded-xl font-semibold text-sm hover:from-red-700 hover:to-red-600 transition duration-300 flex items-center justify-center shadow-lg">
+                    <i class="fas fa-sign-out-alt mr-2"></i>
+                    Keluar
                 </button>
             </div>
         </div>
 
-        <div class="flex-grow flex flex-col p-4 lg:p-8">
-            
-            <div id="global-message" class="w-full mb-6 p-4 rounded-xl text-center font-medium hidden"></div>
-
-            <header class="w-full mb-6 bg-white p-4 rounded-xl shadow-md border-t-4 border-indigo-600 lg:hidden">
-                <h1 class="text-2xl font-extrabold text-gray-900 leading-tight">
-                    <span class="text-indigo-600">Admin</span> Panel 📊
-                </h1>
-                <nav class="flex border-b border-gray-100 mt-3">
-                    <button id="tab-data-karyawan-mobile" onclick="switchView('data-karyawan')" 
-                        class="tab-button py-2 px-3 text-xs sm:text-sm tab-active border-b-2 border-indigo-600 text-indigo-600 font-semibold">
-                        Karyawan
-                    </button>
-                    <button id="tab-laporan-absen-mobile" onclick="switchView('laporan-absen')" 
-                        class="tab-button py-2 px-3 text-xs sm:text-sm">
-                        Log Absensi
-                    </button>
-                </nav>
+        <!-- Main Content -->
+        <div class="flex-grow flex flex-col transition-theme">
+            <!-- Mobile Header -->
+            <header class="w-full bg-white dark:bg-slate-800 p-4 shadow-md lg:hidden">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-xl font-extrabold text-gray-900 dark:text-white">
+                            <span class="text-indigo-600 dark:text-indigo-400">Admin</span> Dashboard
+                        </h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="mobile-theme-toggle" class="p-2 rounded-lg bg-gray-100 dark:bg-slate-700">
+                            <i class="fas fa-moon text-gray-600 dark:text-yellow-300"></i>
+                        </button>
+                        <button onclick="toggleMobileMenu()" class="p-2 rounded-lg bg-gray-100 dark:bg-slate-700">
+                            <i class="fas fa-bars text-gray-600 dark:text-white"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Mobile Menu -->
+                <div id="mobile-menu" class="mt-4 hidden">
+                    <nav class="flex flex-col space-y-2">
+                        <button onclick="switchView('data-karyawan')" class="tab-mobile tab-active py-3 px-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-semibold flex items-center">
+                            <i class="fas fa-users mr-3"></i>
+                            Data Karyawan
+                        </button>
+                        <button onclick="switchView('laporan-absen')" class="tab-mobile py-3 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-semibold flex items-center">
+                            <i class="fas fa-clipboard-list mr-3"></i>
+                            Log Absensi
+                        </button>
+                        <button onclick="switchView('statistik')" class="tab-mobile py-3 px-4 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-semibold flex items-center">
+                            <i class="fas fa-chart-bar mr-3"></i>
+                            Statistik
+                        </button>
+                    </nav>
+                </div>
             </header>
 
-            <div id="data-karyawan-view" class="w-full flex-grow">
-                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl h-full flex flex-col">
-                    
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 space-y-4 sm:space-y-0">
-                        <h2 class="text-3xl font-extrabold text-gray-800">
-                            Employee Data Management
-                        </h2>
-                        <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full sm:w-auto">
-                            <button onclick="openImportModal()" class="bg-blue-600 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-blue-700 transition duration-300 btn-primary flex items-center justify-center">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-                                Import Data
-                            </button>
-                            <button onclick="openFormModal('create')" class="bg-green-600 text-white px-4 py-2 rounded-xl font-semibold text-sm hover:bg-green-700 transition duration-300 btn-primary flex items-center justify-center">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                Tambah Baru
-                            </button>
+            <!-- Content Area -->
+            <div class="flex-grow p-4 lg:p-6 transition-theme">
+                <!-- Global Message -->
+                <div id="global-message" class="w-full mb-6 p-4 rounded-xl text-center font-medium hidden shadow-lg"></div>
+
+                <!-- Data Karyawan View -->
+                <div id="data-karyawan-view" class="w-full fade-in">
+                    <div class="card-light dark:card-dark rounded-2xl shadow-2xl h-full flex flex-col p-6">
+                        <!-- Header -->
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
+                            <div>
+                                <h2 class="text-2xl lg:text-3xl font-extrabold text-gray-800 dark:text-white">
+                                    <i class="fas fa-users mr-3 text-indigo-500"></i>
+                                    Manajemen Data Karyawan
+                                </h2>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                    Kelola informasi karyawan dan jadwal absensi
+                                </p>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-3 mt-4 lg:mt-0">
+                                <button onclick="openImportModal()" class="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:from-blue-700 hover:to-blue-600 transition duration-300 flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-file-import mr-2"></i>
+                                    Import Excel
+                                </button>
+                                <button onclick="openFormModal('create')" class="bg-gradient-to-r from-green-600 to-green-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:from-green-700 hover:to-green-600 transition duration-300 flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-user-plus mr-2"></i>
+                                    Tambah Karyawan
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Search Section -->
+                        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4 mb-6 p-5 bg-gray-50 dark:bg-slate-800/50 rounded-xl border border-gray-200 dark:border-slate-700">
+                            <div class="lg:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cari Card ID</label>
+                                <div class="relative">
+                                    <i class="fas fa-id-card absolute left-3 top-3 text-gray-400"></i>
+                                    <input type="text" id="search-card" placeholder="Masukkan Card ID..." 
+                                           class="pl-10 p-3 w-full border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                           onkeypress="if(event.key === 'Enter') applySearchFilter()">
+                                </div>
+                            </div>
+                            <div class="lg:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Cari Nama</label>
+                                <div class="relative">
+                                    <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                    <input type="text" id="search-nama" placeholder="Masukkan nama karyawan..." 
+                                           class="pl-10 p-3 w-full border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                           onkeypress="if(event.key === 'Enter') applySearchFilter()">
+                                </div>
+                            </div>
+                            <div class="flex items-end space-x-3">
+                                <button onclick="applySearchFilter()" class="bg-gradient-to-r from-indigo-600 to-indigo-500 text-white px-5 py-3 rounded-lg font-semibold hover:from-indigo-700 hover:to-indigo-600 transition duration-300 flex items-center justify-center flex-1">
+                                    <i class="fas fa-search mr-2"></i>
+                                    Cari
+                                </button>
+                                <button onclick="clearSearchFilter()" class="bg-gray-300 dark:bg-slate-700 text-gray-700 dark:text-gray-300 px-5 py-3 rounded-lg font-semibold hover:bg-gray-400 dark:hover:bg-slate-600 transition duration-300 flex items-center justify-center">
+                                    <i class="fas fa-redo mr-2"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Stats Summary -->
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="employee-stats">
+                            <!-- Stats will be loaded here -->
+                        </div>
+
+                        <!-- Data Table -->
+                        <div class="overflow-x-auto relative rounded-xl border border-gray-200 dark:border-slate-700 custom-scrollbar">
+                            <table class="w-full text-sm text-left text-gray-600 dark:text-gray-300">
+                                <thead class="text-xs uppercase bg-gray-50 dark:bg-slate-800">
+                                    <tr>
+                                        <th class="px-6 py-4 font-semibold">Card ID</th>
+                                        <th class="px-6 py-4 font-semibold">NIK</th>
+                                        <th class="px-6 py-4 font-semibold">Nama</th>
+                                        <th class="px-6 py-4 font-semibold">Departemen</th>
+                                        <th class="px-6 py-4 font-semibold text-blue-600 dark:text-blue-400">Pagi</th>
+                                        <th class="px-6 py-4 font-semibold text-blue-600 dark:text-blue-400">Siang</th>
+                                        <th class="px-6 py-4 font-semibold text-blue-600 dark:text-blue-400">Sore</th>
+                                        <th class="px-6 py-4 font-semibold text-blue-600 dark:text-blue-400">Malam</th>
+                                        <th class="px-6 py-4 font-semibold text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="data-table-body" class="divide-y divide-gray-200 dark:divide-slate-700">
+                                    <!-- Data will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- No Data Message -->
+                        <div id="no-data-message" class="text-center py-10 hidden">
+                            <div class="max-w-sm mx-auto">
+                                <i class="fas fa-users text-4xl text-gray-300 dark:text-slate-600 mb-4"></i>
+                                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Belum ada data karyawan</h3>
+                                <p class="text-gray-500 dark:text-gray-400">Mulai dengan menambahkan karyawan baru atau mengimpor data dari Excel.</p>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6 p-4 bg-gray-50 rounded-lg border">
-                        <input type="text" id="search-card" placeholder="Cari Card ID..." 
-                               class="p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 col-span-2 md:col-span-1"
-                               onkeypress="if(event.key === 'Enter') applySearchFilter()">
-                        <input type="text" id="search-nama" placeholder="Cari Nama..." 
-                               class="p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 col-span-2 md:col-span-2"
-                               onkeypress="if(event.key === 'Enter') applySearchFilter()">
-                        <button onclick="applySearchFilter()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition duration-300 btn-primary flex items-center justify-center text-sm">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                            Cari
-                        </button>
-                        <button onclick="clearSearchFilter()" class="bg-gray-400 text-white px-4 py-2 rounded-lg font-semibold hover:bg-gray-500 transition duration-300 flex items-center justify-center text-sm">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m-15.356-2a8.001 8.001 0 0115.357-2m0 0H15"></path></svg>
-                            Reset
-                        </button>
-                    </div>
-                    
-                    <div class="overflow-x-auto relative shadow-xl rounded-xl custom-scroll flex-grow">
-                        <table class="w-full text-sm text-left text-gray-500 admin-table">
-                            <thead class="text-xs uppercase">
-                                <tr>
-                                    <th>Card ID</th>
-                                    <th>NIK</th>
-                                    <th>Nama</th>
-                                    <th>Departemen</th>
-                                    <th class="text-blue-400">Pagi</th>
-                                    <th class="text-blue-400">Siang</th>
-                                    <th class="text-blue-400">Sore</th>
-                                    <th class="text-blue-400">Malam</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody id="data-table-body" class="bg-white divide-y divide-gray-100">
-                                </tbody>
-                        </table>
-                    </div>
+                <!-- Log Absensi View -->
+                <div id="laporan-absen-view" class="w-full hidden fade-in">
+                    <div class="card-light dark:card-dark rounded-2xl shadow-2xl h-full flex flex-col p-6">
+                        <!-- Header -->
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
+                            <div>
+                                <h2 class="text-2xl lg:text-3xl font-extrabold text-gray-800 dark:text-white">
+                                    <i class="fas fa-history mr-3 text-indigo-500"></i>
+                                    Log Absensi (7 Hari Terakhir)
+                                </h2>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                    Arsip lengkap tapping kartu dengan analisis statistik
+                                </p>
+                            </div>
+                            <div class="flex items-center space-x-3 mt-4 lg:mt-0">
+                                <div class="text-sm text-gray-500 dark:text-gray-400" id="deletion-status"></div>
+                                <button onclick="exportAllLogsToExcel()" class="bg-gradient-to-r from-emerald-600 to-emerald-500 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:from-emerald-700 hover:to-emerald-600 transition duration-300 flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-file-excel mr-2"></i>
+                                    Export Semua
+                                </button>
+                            </div>
+                        </div>
 
-                    <div id="no-data-message" class="text-center py-10 text-gray-500 font-medium hidden">
-                        Belum ada data karyawan yang tersimpan.
+                        <!-- Stats Cards -->
+                        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6" id="attendance-stats">
+                            <!-- Stats will be loaded here -->
+                        </div>
+
+                        <!-- Period Tabs -->
+                        <div class="mb-6">
+                            <div class="flex space-x-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl">
+                                <button onclick="filterLogsByPeriod('all')" class="period-tab period-tab-active px-4 py-2 rounded-lg font-medium text-sm transition">Semua</button>
+                                <button onclick="filterLogsByPeriod('pagi')" class="period-tab px-4 py-2 rounded-lg font-medium text-sm transition">Pagi</button>
+                                <button onclick="filterLogsByPeriod('siang')" class="period-tab px-4 py-2 rounded-lg font-medium text-sm transition">Siang</button>
+                                <button onclick="filterLogsByPeriod('sore')" class="period-tab px-4 py-2 rounded-lg font-medium text-sm transition">Sore</button>
+                                <button onclick="filterLogsByPeriod('malam')" class="period-tab px-4 py-2 rounded-lg font-medium text-sm transition">Malam</button>
+                            </div>
+                        </div>
+
+                        <!-- Log Container -->
+                        <div id="log-per-tanggal-container" class="space-y-6 flex-grow overflow-y-auto custom-scrollbar">
+                            <!-- Logs will be loaded here -->
+                        </div>
+
+                        <!-- Loading and No Data Messages -->
+                        <div id="loading-log-message" class="py-10 text-center">
+                            <div class="inline-block">
+                                <div class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                                <p class="mt-3 text-gray-600 dark:text-gray-400">Memuat log absensi...</p>
+                            </div>
+                        </div>
+                        <div id="no-log-message" class="py-10 text-center hidden">
+                            <i class="fas fa-inbox text-4xl text-gray-300 dark:text-slate-600 mb-4"></i>
+                            <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Tidak ada data absensi</h3>
+                            <p class="text-gray-500 dark:text-gray-400">Belum ada aktivitas absensi dalam 7 hari terakhir.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Statistik View -->
+                <div id="statistik-view" class="w-full hidden fade-in">
+                    <div class="card-light dark:card-dark rounded-2xl shadow-2xl h-full flex flex-col p-6">
+                        <!-- Header -->
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
+                            <div>
+                                <h2 class="text-2xl lg:text-3xl font-extrabold text-gray-800 dark:text-white">
+                                    <i class="fas fa-chart-bar mr-3 text-indigo-500"></i>
+                                    Analisis Statistik Absensi
+                                </h2>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                                    Insight dan trend data absensi karyawan
+                                </p>
+                            </div>
+                            <div class="flex items-center space-x-3 mt-4 lg:mt-0">
+                                <select id="stat-period" onchange="loadStatistics()" class="bg-white dark:bg-slate-700 border border-gray-300 dark:border-slate-600 rounded-lg px-4 py-2 text-sm text-gray-700 dark:text-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <option value="7">7 Hari Terakhir</option>
+                                    <option value="30">30 Hari Terakhir</option>
+                                    <option value="90">90 Hari Terakhir</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Stats Cards -->
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6" id="analytics-stats">
+                            <!-- Stats will be loaded here -->
+                        </div>
+
+                        <!-- Charts -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-lg">
+                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Trend Absensi Harian</h3>
+                                <div class="h-64">
+                                    <canvas id="attendanceTrendChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-lg">
+                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Distribusi per Periode</h3>
+                                <div class="h-64">
+                                    <canvas id="periodDistributionChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Department Stats -->
+                        <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-lg mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Statistik per Departemen</h3>
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead>
+                                        <tr class="border-b border-gray-200 dark:border-slate-700">
+                                            <th class="px-4 py-3 text-left font-semibold">Departemen</th>
+                                            <th class="px-4 py-3 text-left font-semibold">Total Karyawan</th>
+                                            <th class="px-4 py-3 text-left font-semibold">Rata-rata Absensi/Hari</th>
+                                            <th class="px-4 py-3 text-left font-semibold">% Kehadiran</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="department-stats-body">
+                                        <!-- Data will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Top Performers -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-lg">
+                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Top 5 Performers</h3>
+                                <div id="top-performers">
+                                    <!-- Data will be loaded here -->
+                                </div>
+                            </div>
+                            <div class="bg-white dark:bg-slate-800 rounded-xl p-5 shadow-lg">
+                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">Insight</h3>
+                                <div id="insights-container">
+                                    <!-- Insights will be loaded here -->
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            
-            <div id="laporan-absen-view" class="w-full flex-grow hidden">
-                <div class="bg-white p-6 md:p-8 rounded-2xl shadow-2xl h-full flex flex-col">
-                    
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4">
-                        <h2 class="text-3xl font-extrabold text-gray-800">Log Absensi (Arsip 7 Hari)</h2>
-                        <p id="deletion-status" class="text-sm text-gray-500 font-medium mt-2 sm:mt-0"></p>
-                    </div>
-
-                    <p class="text-sm text-gray-600 mb-6 border-l-4 border-indigo-400 pl-3 py-1 bg-indigo-50 rounded-md">
-                        Menampilkan log tap kartu (sukses dan gagal) yang tersimpan untuk **7 hari terakhir**. Data log di luar periode ini otomatis dihapus.
-                    </p>
-                    
-                    <div id="log-per-tanggal-container" class="space-y-6 flex-grow overflow-y-auto custom-scroll">
-                        </div>
-                    
-                    <div id="loading-log-message" class="py-6 text-center text-gray-500 font-medium">Memuat detail log absensi...</div>
-                    <div id="no-log-message" class="py-6 text-center text-gray-500 font-medium hidden">Tidak ada data absensi yang terarsip dalam 7 hari terakhir.</div>
-
-                </div>
-            </div>
         </div>
     </div>
 
-    <div id="import-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-5xl transform transition-all duration-300 scale-95 opacity-0" id="import-content">
-            <h3 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Import Data Karyawan (Ganti Total)</h3>
-            
-            <form id="import-form">
-                <div id="step-upload" class="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                    <p class="text-sm text-gray-600 mb-4">Unggah file Excel (.xlsx atau .xls) yang berisi **SEMUA** data karyawan aktif.</p>
-                    
-                    <div class="p-3 bg-red-50 border border-red-300 rounded-lg mb-4">
-                        <p class="text-xs text-red-600 font-bold">⚠️ PENTING: Proses ini adalah **PENGGANTIAN TOTAL**.</p>
-                        <p class="text-xs text-red-600 mt-1">Kolom Wajib: <code class="font-mono text-xs bg-red-100 p-1 rounded font-semibold">Card ID, NIK, Nama, Departemen, Pagi, Siang, Sore, Malam</code>.</p>
-                        <p class="text-xs text-red-600 mt-1">Semua data karyawan lama di database akan **DIHAPUS** dan digantikan dengan data dari file Excel ini.</p>
-                    </div>
-                    <div class="mb-4">
-                        <label for="excel-file-input" class="block text-sm font-medium text-gray-700 mb-2">Pilih File Excel:</label>
-                        <input type="file" id="excel-file-input" accept=".xlsx, .xls" required 
-                            class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
-                    </div>
-                </div>
-
-                <div id="step-review" class="hidden mt-6">
-                    <h4 class="text-xl font-bold text-gray-800 mb-4">Review Data yang Akan Diproses</h4>
-                    <div class="overflow-x-auto max-h-96 border rounded-lg p-2 custom-scroll">
-                        <table class="w-full text-left review-table">
-                            <thead class="sticky top-0">
-                                <tr>
-                                    <th class="w-1/12">Card ID</th>
-                                    <th class="w-1/12">NIK</th>
-                                    <th class="w-2/12">Nama</th>
-                                    <th class="w-2/12">Departemen</th>
-                                    <th class="w-1/12 text-blue-600">Pagi</th>
-                                    <th class="w-1/12 text-blue-600">Siang</th>
-                                    <th class="w-1/12 text-blue-600">Sore</th>
-                                    <th class="w-1/12 text-blue-600">Malam</th>
-                                    <th class="w-1/12">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="review-table-body">
-                                </tbody>
-                        </table>
-                    </div>
-                    <p id="review-summary" class="text-sm mt-4 text-gray-700 font-medium"></p>
-                    <p id="deletion-warning" class="text-sm text-red-600 font-semibold mt-2 hidden p-2 bg-red-100 rounded-md">⚠️ Peringatan Akhir: Proses ini akan **MENGHAPUS SEMUA DATA LAMA** dan menggantinya dengan data yang di-review di atas.</p>
-                    </div>
-
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button type="button" onclick="closeImportModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition duration-150">Batal</button>
-                    <button type="button" id="review-button" onclick="parseExcelFile()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition duration-150 btn-primary flex items-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                        Review Data
-                    </button>
-                    <button type="submit" id="import-submit-button" class="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition duration-150 btn-primary hidden flex items-center" disabled>
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
-                        Hapus Lama & Ganti Baru
-                    </button>
-                    </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="form-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-lg transform transition-all duration-300 scale-95 opacity-0" id="form-content">
-            <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Tambah Karyawan Baru</h3>
-            <form id="crud-form">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="mb-4">
-                        <label for="form-card" class="block text-sm font-medium text-gray-700">Card ID</label>
-                        <input type="text" id="form-card" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100" autocomplete="off">
-                    </div>
-                    <div class="mb-4">
-                        <label for="form-nik" class="block text-sm font-medium text-gray-700">NIK</label>
-                        <input type="text" id="form-nik" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" autocomplete="off">
-                    </div>
-                </div>
-                
-                <div class="mb-4">
-                    <label for="form-nama" class="block text-sm font-medium text-gray-700">Nama</label>
-                    <input type="text" id="form-nama" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" autocomplete="off">
-                </div>
-                <div class="mb-6">
-                    <label for="form-departemen" class="block text-sm font-medium text-gray-700">Departemen</label>
-                    <input type="text" id="form-departemen" required class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" autocomplete="off">
-                </div>
-
-                <div class="border-t border-gray-200 my-6"></div>
-                <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                    Absensi/Makan Periode 🍽️
-                </h4>
-                
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="mb-4">
-                        <label for="form-pagi" class="block text-sm font-medium text-gray-700">Pagi</label>
-                        <input type="text" id="form-pagi" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
-                    </div>
-                    <div class="mb-4">
-                        <label for="form-siang" class="block text-sm font-medium text-gray-700">Siang</label>
-                        <input type="text" id="form-siang" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
-                    </div>
-                    <div class="mb-4">
-                        <label for="form-sore" class="block text-sm font-medium text-gray-700">Sore</label>
-                        <input type="text" id="form-sore" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
-                    </div>
-                    <div class="mb-6">
-                        <label for="form-malam" class="block text-sm font-medium text-gray-700">Malam</label>
-                        <input type="text" id="form-malam" class="mt-1 p-3 w-full border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500" placeholder="Contoh: Kantin atau kosong">
-                    </div>
-                </div>
-                
-                <div class="flex justify-end space-x-3 mt-4">
-                    <button type="button" onclick="closeFormModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition duration-150">Batal</button>
-                    <button type="submit" id="submit-button" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition duration-150 btn-primary flex items-center">
-                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-                        Simpan
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-    
-    <div id="delete-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden">
-        <div class="bg-white rounded-xl shadow-2xl p-6 w-11/12 max-w-md transform transition-all duration-300 scale-95 opacity-0" id="delete-content">
-            <h3 class="text-2xl font-bold text-red-600 mb-4 flex items-center">
-                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                Konfirmasi Penghapusan
-            </h3>
-            <p class="text-gray-700 mb-6">Anda yakin ingin menghapus data karyawan dengan Card ID: <span id="delete-card-id" class="font-bold text-red-700"></span>? **Aksi ini tidak dapat dibatalkan.**</p>
-            <div class="flex justify-end space-x-3">
-                <button type="button" onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition duration-150">Batal</button>
-                <button type="button" onclick="executeDelete()" class="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 transition duration-150 btn-primary flex items-center">
-                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3"></path></svg>
-                    Hapus Permanen
+    <!-- Modal Import -->
+    <div id="import-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden bg-black/50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 w-11/12 max-w-4xl transform transition-all duration-300" id="import-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold text-gray-800 dark:text-white">Import Data Karyawan</h3>
+                <button onclick="closeImportModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
+            
+            <form id="import-form">
+                <!-- Upload Step -->
+                <div id="step-upload" class="space-y-6">
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-xl border border-blue-200 dark:border-blue-800">
+                        <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">
+                            <i class="fas fa-upload mr-2 text-blue-500"></i>
+                            Unggah File Excel
+                        </h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                            Upload file Excel (.xlsx atau .xls) yang berisi data karyawan. Format harus sesuai dengan template yang ditentukan.
+                        </p>
+                        
+                        <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-4">
+                            <div class="flex items-start">
+                                <i class="fas fa-exclamation-triangle text-red-500 mt-1 mr-3"></i>
+                                <div>
+                                    <p class="text-sm font-semibold text-red-700 dark:text-red-400">PENTING: Penggantian Total</p>
+                                    <p class="text-xs text-red-600 dark:text-red-300 mt-1">
+                                        Semua data karyawan lama akan dihapus dan digantikan dengan data dari file ini.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pilih File Excel</label>
+                            <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed border-gray-300 dark:border-slate-600 rounded-lg hover:border-indigo-500 dark:hover:border-indigo-400 transition">
+                                <div class="space-y-1 text-center">
+                                    <i class="fas fa-file-excel text-4xl text-green-500"></i>
+                                    <div class="flex text-sm text-gray-600 dark:text-gray-400">
+                                        <label for="excel-file-input" class="relative cursor-pointer bg-white dark:bg-slate-700 rounded-md font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 focus-within:outline-none">
+                                            <span>Upload file</span>
+                                            <input id="excel-file-input" type="file" class="sr-only" accept=".xlsx, .xls" required>
+                                        </label>
+                                        <p class="pl-1">atau drag & drop</p>
+                                    </div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">.xlsx, .xls (max 5MB)</p>
+                                </div>
+                            </div>
+                            <p id="file-name" class="text-sm text-gray-500 dark:text-gray-400 mt-2 hidden"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Review Step -->
+                <div id="step-review" class="hidden space-y-6">
+                    <div class="bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 p-6 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                        <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                            <i class="fas fa-clipboard-check mr-2 text-emerald-500"></i>
+                            Review Data Import
+                        </h4>
+                        
+                        <div class="overflow-x-auto border border-gray-200 dark:border-slate-700 rounded-lg">
+                            <table class="w-full text-sm">
+                                <thead class="bg-gray-50 dark:bg-slate-800">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left font-semibold">Card ID</th>
+                                        <th class="px-4 py-3 text-left font-semibold">NIK</th>
+                                        <th class="px-4 py-3 text-left font-semibold">Nama</th>
+                                        <th class="px-4 py-3 text-left font-semibold">Departemen</th>
+                                        <th class="px-4 py-3 text-left font-semibold text-center">Pagi</th>
+                                        <th class="px-4 py-3 text-left font-semibold text-center">Siang</th>
+                                        <th class="px-4 py-3 text-left font-semibold text-center">Sore</th>
+                                        <th class="px-4 py-3 text-left font-semibold text-center">Malam</th>
+                                        <th class="px-4 py-3 text-left font-semibold">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="review-table-body" class="divide-y divide-gray-200 dark:divide-slate-700">
+                                    <!-- Data will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                            <div class="flex items-start">
+                                <i class="fas fa-exclamation-circle text-amber-500 mt-1 mr-3"></i>
+                                <div>
+                                    <p id="review-summary" class="text-sm font-semibold text-amber-700 dark:text-amber-400"></p>
+                                    <p class="text-xs text-amber-600 dark:text-amber-300 mt-1">
+                                        Pastikan data sudah benar sebelum melanjutkan. Proses ini tidak dapat dibatalkan.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-between pt-6 border-t border-gray-200 dark:border-slate-700">
+                    <button type="button" onclick="closeImportModal()" class="px-5 py-2.5 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition font-medium">
+                        Batal
+                    </button>
+                    <div class="flex space-x-3">
+                        <button type="button" id="review-button" onclick="parseExcelFile()" class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-xl hover:from-blue-700 hover:to-blue-600 transition font-medium flex items-center">
+                            <i class="fas fa-eye mr-2"></i>
+                            Review Data
+                        </button>
+                        <button type="submit" id="import-submit-button" class="px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-500 text-white rounded-xl hover:from-red-700 hover:to-red-600 transition font-medium flex items-center hidden">
+                            <i class="fas fa-sync-alt mr-2"></i>
+                            Proses Import
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 
+    <!-- Modal CRUD -->
+    <div id="form-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden bg-black/50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 w-11/12 max-w-lg transform transition-all duration-300" id="form-content">
+            <div class="flex justify-between items-center mb-6">
+                <h3 id="modal-title" class="text-2xl font-bold text-gray-800 dark:text-white">Tambah Karyawan</h3>
+                <button onclick="closeFormModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form id="crud-form">
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="form-card" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Card ID</label>
+                            <div class="relative">
+                                <i class="fas fa-id-card absolute left-3 top-3 text-gray-400"></i>
+                                <input type="text" id="form-card" required class="pl-10 p-3 w-full border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" autocomplete="off">
+                            </div>
+                        </div>
+                        <div>
+                            <label for="form-nik" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">NIK</label>
+                            <div class="relative">
+                                <i class="fas fa-hashtag absolute left-3 top-3 text-gray-400"></i>
+                                <input type="text" id="form-nik" required class="pl-10 p-3 w-full border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" autocomplete="off">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="form-nama" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nama Lengkap</label>
+                        <div class="relative">
+                            <i class="fas fa-user absolute left-3 top-3 text-gray-400"></i>
+                            <input type="text" id="form-nama" required class="pl-10 p-3 w-full border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" autocomplete="off">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="form-departemen" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Departemen</label>
+                        <div class="relative">
+                            <i class="fas fa-building absolute left-3 top-3 text-gray-400"></i>
+                            <input type="text" id="form-departemen" required class="pl-10 p-3 w-full border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" autocomplete="off">
+                        </div>
+                    </div>
+                    
+                    <div class="pt-4 border-t border-gray-200 dark:border-slate-700">
+                        <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center">
+                            <i class="fas fa-utensils mr-2 text-indigo-500"></i>
+                            Periode Makan
+                        </h4>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="form-pagi" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Pagi</label>
+                                <input type="text" id="form-pagi" class="p-3 w-full border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Contoh: Kantin">
+                            </div>
+                            <div>
+                                <label for="form-siang" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Siang</label>
+                                <input type="text" id="form-siang" class="p-3 w-full border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Contoh: Kantin">
+                            </div>
+                            <div>
+                                <label for="form-sore" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sore</label>
+                                <input type="text" id="form-sore" class="p-3 w-full border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Contoh: Kantin">
+                            </div>
+                            <div>
+                                <label for="form-malam" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Malam</label>
+                                <input type="text" id="form-malam" class="p-3 w-full border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="Contoh: Kantin">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 mt-8 pt-6 border-t border-gray-200 dark:border-slate-700">
+                    <button type="button" onclick="closeFormModal()" class="px-5 py-2.5 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition font-medium">
+                        Batal
+                    </button>
+                    <button type="submit" id="submit-button" class="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 text-white rounded-xl hover:from-indigo-700 hover:to-indigo-600 transition font-medium flex items-center">
+                        <i class="fas fa-save mr-2"></i>
+                        Simpan Data
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Delete -->
+    <div id="delete-modal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center hidden bg-black/50 backdrop-blur-sm">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 w-11/12 max-w-md transform transition-all duration-300" id="delete-content">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 mb-4">
+                    <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Konfirmasi Penghapusan</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-6">
+                    Anda yakin ingin menghapus data karyawan dengan 
+                    <span id="delete-card-id" class="font-bold text-red-600 dark:text-red-400"></span>?
+                    <br>
+                    <span class="text-sm text-gray-500 dark:text-gray-500">Aksi ini tidak dapat dibatalkan.</span>
+                </p>
+                <div class="flex justify-center space-x-3">
+                    <button type="button" onclick="closeDeleteModal()" class="px-5 py-2.5 bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-300 dark:hover:bg-slate-600 transition font-medium">
+                        Batal
+                    </button>
+                    <button type="button" onclick="executeDelete()" class="px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-500 text-white rounded-xl hover:from-red-700 hover:to-red-600 transition font-medium flex items-center">
+                        <i class="fas fa-trash mr-2"></i>
+                        Hapus Permanen
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
-        // --- 1. KONFIGURASI SUPABASE (PASTIKAN INI SESUAI) ---
-        const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co'; 
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI'; 
+        // Konfigurasi
+        const SUPABASE_URL = 'https://ymzcvyumplerqccaplxi.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InltemN2eXVtcGxlcnFjY2FwbHhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNjk3ODUsImV4cCI6MjA3ODY0NTc4NX0.XtX9NMHp3gINRP3zSA-PnC73tiI4vPVcB4D2A13c1TI';
         const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwZ_4ycgdQYQjaL1Ihlg95BD7jgn7f8c05P2HTV4QLF1m1aXNOVGA0SdkEobfEKNgrxuw/exec';
         const TABLE_NAME = 'data_master';
         const LOG_TABLE_NAME = 'log_absen';
-        const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam']; 
-        
+        const REQUIRED_HEADERS = ['Card ID', 'NIK', 'Nama', 'Departemen', 'Pagi', 'Siang', 'Sore', 'Malam'];
+
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         
-        let parsedImportData = []; 
-        let activeCardIds = [];    
+        let parsedImportData = [];
+        let activeCardIds = [];
         let currentMode = 'create';
         let cardIdToDelete = null;
-        let allAbsensiLogs = []; // Untuk menyimpan data log yang akan diexport
+        let allAbsensiLogs = [];
+        let currentPeriodFilter = 'all';
+        let currentTheme = localStorage.getItem('theme') || 'light';
+        
+        // Chart instances
+        let attendanceTrendChart = null;
+        let periodDistributionChart = null;
 
-        document.addEventListener('DOMContentLoaded', () => {
-            checkAdminSession(); 
-            document.getElementById('crud-form').addEventListener('submit', handleFormSubmit);
-            document.getElementById('import-form').addEventListener('submit', handleImportSubmit);
-        });
+        // Inisialisasi tema
+        function initTheme() {
+            document.body.classList.remove('light-mode', 'dark-mode');
+            document.body.classList.add(currentTheme + '-mode');
+            
+            if (currentTheme === 'dark') {
+                document.querySelectorAll('.theme-toggle i').forEach(icon => {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                });
+            }
+            
+            localStorage.setItem('theme', currentTheme);
+        }
 
-        // FUNGSI BARU: Mendapatkan tanggal hari N hari yang lalu
+        // Toggle tema
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            initTheme();
+        }
+
+        // Toggle mobile menu
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        // Format waktu
+        function formatTime(textValue) {
+            if (!textValue) return '-';
+            return String(textValue).trim() || '-';
+        }
+
+        // Format angka dengan separator
+        function formatNumber(num) {
+            return new Intl.NumberFormat('id-ID').format(num);
+        }
+
+        // Format tanggal Indonesia
+        function formatDateID(dateString) {
+            const date = new Date(dateString);
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                timeZone: 'Asia/Jayapura'
+            };
+            return date.toLocaleDateString('id-ID', options);
+        }
+
+        // Format waktu Indonesia
+        function formatTimeID(dateString) {
+            const date = new Date(dateString);
+            const options = { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                timeZone: 'Asia/Jayapura'
+            };
+            return date.toLocaleTimeString('id-ID', options);
+        }
+
+        // Format tanggal untuk key
+        function getDateKey(dateString) {
+            const date = new Date(dateString);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Get date N days ago
         function getDateNDaysAgo(n) {
             const date = new Date();
             date.setDate(date.getDate() - n);
-            // Format YYYY-MM-DD HH:MM:SS (Supabase timestamp format)
-            return date.toISOString(); 
+            return date.toISOString();
         }
 
-        /**
-         * FUNGSI BARU: Menghapus log yang lebih lama dari 7 hari.
-         */
-        async function autoDeleteOldLogs() {
-            const sevenDaysAgo = getDateNDaysAgo(7);
-            const deletionStatusEl = document.getElementById('deletion-status');
-            deletionStatusEl.textContent = 'Memeriksa dan menghapus log lama...';
-
-            const { count, error } = await supabaseClient
-                .from(LOG_TABLE_NAME)
-                .delete({ count: 'exact' })
-                .lt('created_at', sevenDaysAgo); 
+        // Show global message
+        function showGlobalMessage(message, type = 'success') {
+            const msgEl = document.getElementById('global-message');
+            msgEl.textContent = message;
+            msgEl.className = 'w-full mb-6 p-4 rounded-xl text-center font-medium shadow-lg';
             
-            if (error) {
-                console.error("Auto Delete Log Error:", error);
-                deletionStatusEl.textContent = `⚠️ Gagal menghapus log lama: ${error.message}`;
+            if (type === 'success') {
+                msgEl.classList.add('bg-gradient-to-r', 'from-green-500', 'to-emerald-500', 'text-white');
+            } else if (type === 'error') {
+                msgEl.classList.add('bg-gradient-to-r', 'from-red-500', 'to-pink-500', 'text-white');
+            } else if (type === 'warning') {
+                msgEl.classList.add('bg-gradient-to-r', 'from-amber-500', 'to-orange-500', 'text-white');
             } else {
-                deletionStatusEl.textContent = `✅ Log lama (${count} baris sebelum ${new Date(sevenDaysAgo).toLocaleDateString('id-ID')}) berhasil dihapus.`;
+                msgEl.classList.add('bg-gradient-to-r', 'from-blue-500', 'to-indigo-500', 'text-white');
             }
+            
+            msgEl.classList.remove('hidden');
+            setTimeout(() => { msgEl.classList.add('hidden'); }, 5000);
         }
 
-            // --- FUNGSI UTILITAS ZONA WAKTU WIT (UTC+9) ---
-
-                /**
-                 * Mengkonversi timestamp UTC (dari Supabase) untuk mendapatkan kunci tanggal (YYYY-MM-DD) yang sudah disesuaikan ke WIT.
-                 * Ini penting untuk mengelompokkan log harian dengan benar berdasarkan waktu WIT.
-                 * @param {string} utcTimestamp - Timestamp dalam format ISO 8601 (log.created_at).
-                 * @returns {string} Kunci tanggal dalam format YYYY-MM-DD (WIT).
-                 */
-                function getWITDateKey(utcTimestamp) {
-                    const dateObj = new Date(utcTimestamp);
-                    // Tambahkan offset 9 jam (9 * 60 * 60 * 1000 ms) untuk mendapatkan waktu di WIT
-                    const WIT_timeMs = dateObj.getTime() + (9 * 60 * 60 * 1000);
-                    const WIT_Date = new Date(WIT_timeMs);
-                
-                    // Gunakan fungsi UTC (getUTCFullYear, getUTCMonth, getUTCDate) pada objek yang sudah di-offset,
-                    // yang secara efektif memberikan komponen tanggal WIT.
-                    const year = WIT_Date.getUTCFullYear();
-                    const month = String(WIT_Date.getUTCMonth() + 1).padStart(2, '0');
-                    const day = String(WIT_Date.getUTCDate()).padStart(2, '0');
-                
-                    return `${year}-${month}-${day}`;
-                }
-                
-                /**
-                 * Memformat timestamp ke string Tanggal dan Waktu Indonesia dengan Zona Waktu WIT.
-                 * Menggunakan timeZone: 'Asia/Jayapura' untuk memastikan akurasi.
-                 * @param {string} utcTimestamp - Timestamp dalam format ISO 8601 (log.created_at).
-                 * @returns {string} String tanggal dan waktu yang diformat WIT.
-                 */
-                function formatDateTimeWIT(utcTimestamp) {
-                    const dateObj = new Date(utcTimestamp);
-                    const options = {
-                        year: 'numeric', month: 'long', day: 'numeric',
-                        hour: '2-digit', minute: '2-digit', second: '2-digit',
-                        timeZone: 'Asia/Jayapura', // Time zone resmi untuk WIT
-                        hourCycle: 'h23',
-                        timeZoneName: 'short' // Untuk menampilkan "WIT"
-                    };
-                    return dateObj.toLocaleString('id-ID', options);
-                }
-                
-                /**
-                 * Memformat timestamp ke string Tanggal panjang Indonesia dengan Zona Waktu WIT (untuk header grup).
-                 * @param {string} utcTimestamp - Timestamp dalam format ISO 8601 (log.created_at).
-                 * @returns {string} String tanggal panjang yang diformat WIT.
-                 */
-                function formatDateWIT(utcTimestamp) {
-                    const dateObj = new Date(utcTimestamp);
-                    const options = {
-                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                        timeZone: 'Asia/Jayapura'
-                    };
-                    return dateObj.toLocaleString('id-ID', options);
-                }
-                
-                // --- Akhir Fungsi Utilitas WIT ---
-        
-        /**
-         * FUNGSI BARU: Mengecek sesi admin. Jika tidak ada, redirect ke halaman login.
-         */
+        // Check admin session
         async function checkAdminSession() {
             const { data: { session }, error } = await supabaseClient.auth.getSession();
             
             if (error || !session) {
-                window.location.href = './admin_login.html'; 
+                window.location.href = './admin_login.html';
                 return;
             }
             
-            switchView('data-karyawan'); 
+            // Set admin name
+            const adminNameEl = document.getElementById('admin-name');
+            if (session.user.email) {
+                adminNameEl.textContent = session.user.email.split('@')[0];
+            }
+            
+            // Initialize
+            initTheme();
+            switchView('data-karyawan');
+            
+            // Theme toggle event listeners
+            document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+            document.getElementById('mobile-theme-toggle').addEventListener('click', toggleTheme);
         }
 
-        /**
-         * FUNGSI BARU: Menangani proses Logout.
-         */
+        // Handle logout
         async function handleLogout() {
             const logoutBtn = document.getElementById('logout-button');
             logoutBtn.disabled = true;
-            logoutBtn.textContent = 'Keluar...';
+            logoutBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Keluar...';
             
             const { error } = await supabaseClient.auth.signOut();
 
@@ -490,300 +870,107 @@
                 console.error("Logout Error:", error);
                 showGlobalMessage(`Gagal keluar: ${error.message}`, 'error');
                 logoutBtn.disabled = false;
-                logoutBtn.textContent = 'Keluar (Logout)';
+                logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt mr-2"></i>Keluar';
             } else {
                 window.location.href = './admin_login.html';
             }
         }
 
-        // --- Navigasi View (Diperbarui untuk Sidebar/Mobile Tab) ---
+        // Switch view
         function switchView(viewId) {
             // Hide all views
             document.getElementById('data-karyawan-view').classList.add('hidden');
             document.getElementById('laporan-absen-view').classList.add('hidden');
+            document.getElementById('statistik-view').classList.add('hidden');
 
-            // Reset all sidebar links
+            // Update sidebar
             document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('sidebar-active'));
-            // Reset all mobile tabs
-            document.querySelectorAll('.tab-button').forEach(el => {
-                el.classList.remove('border-b-2', 'border-indigo-600', 'text-indigo-600', 'font-semibold');
-            });
+            document.querySelectorAll('.tab-mobile').forEach(el => el.classList.remove('tab-active'));
 
+            // Update mobile menu
+            if (window.innerWidth < 1024) {
+                document.getElementById('mobile-menu').classList.add('hidden');
+            }
 
             if (viewId === 'data-karyawan') {
                 document.getElementById('data-karyawan-view').classList.remove('hidden');
                 document.getElementById('sidebar-data-karyawan').classList.add('sidebar-active');
-                document.getElementById('tab-data-karyawan-mobile').classList.add('border-b-2', 'border-indigo-600', 'text-indigo-600', 'font-semibold');
                 fetchData();
+                loadEmployeeStats();
             } else if (viewId === 'laporan-absen') {
                 document.getElementById('laporan-absen-view').classList.remove('hidden');
                 document.getElementById('sidebar-laporan-absen').classList.add('sidebar-active');
-                document.getElementById('tab-laporan-absen-mobile').classList.add('border-b-2', 'border-indigo-600', 'text-indigo-600', 'font-semibold');
                 autoDeleteOldLogs();
                 loadArchivedAbsensiLog();
+            } else if (viewId === 'statistik') {
+                document.getElementById('statistik-view').classList.remove('hidden');
+                document.getElementById('sidebar-statistik').classList.add('sidebar-active');
+                loadStatistics();
             }
         }
 
-        // --- FUNGSI LOG ABSENSI ARSIP & EXPORT (TETAP SAMA) ---
-
-        /**
-         * Mengambil dan menampilkan semua log absensi 7 hari terakhir.
-         */
-        async function loadArchivedAbsensiLog() {
-            const container = document.getElementById('log-per-tanggal-container');
-            const loadingMsg = document.getElementById('loading-log-message');
-            const noLogMsg = document.getElementById('no-log-message');
-
-            container.innerHTML = '';
-            loadingMsg.classList.remove('hidden');
-            noLogMsg.classList.add('hidden');
-
-            const sevenDaysAgo = getDateNDaysAgo(7);
-
-            const { data: masterData, error: masterError } = await supabaseClient
-                .from(TABLE_NAME)
-                .select('card, nama, departemen');
-
-            if (masterError) {
-                console.error("Error fetching master data:", masterError);
-                showGlobalMessage(`Gagal memuat data master karyawan: ${masterError.message}`, 'error');
-                loadingMsg.classList.add('hidden');
-                return;
-            }
-            
-            const employeeMap = new Map();
-            masterData.forEach(emp => employeeMap.set(emp.card, emp));
-
-            const { data: logs, error: logError } = await supabaseClient
-                .from(LOG_TABLE_NAME)
-                .select('card, status, periode, created_at, nama, departemen')
-                .gte('created_at', sevenDaysAgo)
-                .order('created_at', { ascending: false });
-
-            loadingMsg.classList.add('hidden');
-            
-            if (logError) {
-                console.error("Error fetching logs:", logError);
-                showGlobalMessage(`Gagal memuat log absensi: ${logError.message}`, 'error');
-                container.innerHTML = '<p class="text-center py-4 text-red-500">Gagal memuat data log.</p>';
-                return;
-            }
-
-            const enrichedLogs = logs.map(log => {
-                const isDataMissing = !log.nama || log.nama.trim() === '-' || !log.departemen || log.departemen.trim() === '-';
-                
-                if (log.status === 'Sukses' && isDataMissing) {
-                    const employee = employeeMap.get(log.card);
-                    if (employee) {
-                        return {
-                            ...log,
-                            nama: employee.nama || 'Tidak Terdaftar', 
-                            departemen: employee.departemen || '-' 
-                        };
-                    }
-                } 
-                return log;
-            });
-
-            allAbsensiLogs = enrichedLogs; 
-            renderGroupedLogDetails(enrichedLogs);
-
-            if (enrichedLogs.length === 0) {
-                noLogMsg.classList.remove('hidden');
-            }
-        }
-
-        /**
-         * Mengelompokkan log berdasarkan tanggal (YYYY-MM-DD)
-         */
-        function groupLogsByDate(logs) {
-            const grouped = {};
-            logs.forEach(log => {
-                const dateKey = new Date(log.created_at).toISOString().split('T')[0];
-                if (!grouped[dateKey]) {
-                    grouped[dateKey] = [];
-                }
-                grouped[dateKey].push(log);
-            });
-            return grouped;
-        }
-
-
-       /**
-         * Menampilkan log absensi dengan dikelompokkan berdasarkan tanggal WIT.
-         */
-        function renderGroupedLogDetails(logs) {
-            const container = document.getElementById('log-per-tanggal-container');
-            container.innerHTML = '';
-        
-            // Group logs by date in WIT
-            const logsByDate = logs.reduce((acc, log) => {
-                // Menggunakan fungsi WIT untuk mendapatkan kunci tanggal yang akurat (WIT)
-                const dateKey = getWITDateKey(log.created_at); 
-                
-                if (!acc[dateKey]) {
-                    acc[dateKey] = [];
-                }
-                acc[dateKey].push(log);
-                return acc;
-            }, {});
-        
-            const sortedDates = Object.keys(logsByDate).sort((a, b) => b.localeCompare(a));
-        
-            sortedDates.forEach(dateKey => {
-                const logsForDate = logsByDate[dateKey];
-                
-                // Menggunakan fungsi WIT untuk format tanggal di header
-                const dateForDisplay = formatDateWIT(logsForDate[0].created_at); 
-        
-                // HTML untuk grup log per tanggal...
-                const groupHtml = `
-                    <div class="bg-white border rounded-xl shadow-md overflow-hidden">
-                        <div class="log-table-header p-4 flex justify-between items-center bg-indigo-600 text-white rounded-t-xl">
-                            <div class="flex items-center space-x-3">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h.01M8 21h8a2 2 0 002-2V7a2 2 0 00-2-2H8a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                <span class="text-lg font-bold">${dateForDisplay}</span>
-                                <span class="text-sm bg-indigo-500 px-2 py-0.5 rounded-full font-medium">(${logsForDate.length} log)</span>
-                            </div>
-                            <div class="flex items-center space-x-3">
-                                <button onclick="exportSingleDayLogToExcel('${dateKey}')" class="bg-indigo-700 text-white px-3 py-1.5 rounded-lg font-medium text-sm hover:bg-indigo-800 transition duration-300 flex items-center btn-primary">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                                    Export
-                                </button>
-                                <button onclick="toggleLogDetails(this, 'log-table-${dateKey}')" class="text-white text-sm focus:outline-none p-1 rounded hover:bg-indigo-500">
-                                     <svg class="w-5 h-5 transition-transform duration-300" data-toggle="collapse" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
-                                </button>
-                            </div>
-                        </div>
-                        <div id="log-table-${dateKey}" class="p-4 overflow-x-auto custom-scroll">
-                            <table class="w-full text-sm text-left text-gray-600 review-table">
-                                <thead>
-                                    <tr class="log-table-header">
-                                        <th class="w-3/12">Tanggal & Waktu (WIT)</th>
-                                        <th class="w-1/12">Card ID</th>
-                                        <th class="w-2/12">Nama Karyawan</th>
-                                        <th class="w-2/12">Departemen</th>
-                                        <th class="w-1/12">Periode</th>
-                                        <th class="w-2/12 text-center">Status Tap</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${logsForDate.map(log => {
-                                        // Menggunakan fungsi WIT untuk format tanggal dan waktu
-                                        const logDateTime = formatDateTimeWIT(log.created_at); 
-                                        const statusClass = log.status === 'Sukses' ? 'text-success-green font-semibold' : 'text-error-red font-semibold';
-                                        return `
-                                            <tr>
-                                                <td>${logDateTime}</td>
-                                                <td>${log.card}</td>
-                                                <td>${log.nama || 'Tidak Terdaftar'}</td>
-                                                <td>${log.departemen || '-'}</td>
-                                                <td>${log.periode || '-'}</td>
-                                                <td class="text-center"><span class="${statusClass}">${log.status}</span></td>
-                                            </tr>
-                                        `;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                `;
-                container.insertAdjacentHTML('beforeend', groupHtml);
-                // Collapse the table initially
-                document.getElementById(`log-table-${dateKey}`).classList.add('hidden');
-            });
-        
-            if (logs.length > 0) {
-                 // Pastikan toggle initial state sudah benar
-                 sortedDates.forEach(dateKey => {
-                     const button = container.querySelector(`[onclick="toggleLogDetails(this, 'log-table-${dateKey}')"]`);
-                     const svg = button.querySelector('svg');
-                     svg.style.transform = 'rotate(0deg)';
-                 });
-            }
-}
-        
-        // FUNGSI BARU: Untuk toggle expand/collapse detail log
-        function toggleLogDetails(button, tableId) {
-            const detailElement = document.getElementById(tableId);
-            const svg = button.querySelector('svg');
-            
-            if (detailElement.classList.contains('hidden')) {
-                // Expand
-                detailElement.classList.remove('hidden');
-                svg.style.transform = 'rotate(180deg)';
-            } else {
-                // Collapse
-                detailElement.classList.add('hidden');
-                svg.style.transform = 'rotate(0deg)';
-            }
-        }
-
-        /**
-         * Mengekspor data log absensi untuk satu hari tertentu ke file Excel.
-         */
-        function exportSingleDayLogToExcel(dateKey) {
-    const logsToExport = allAbsensiLogs.filter(log => {
-        // Gunakan fungsi WIT untuk memastikan filter tanggal harian yang benar
-        return getWITDateKey(log.created_at) === dateKey; 
-    });
-
-    if (logsToExport.length === 0) {
-        showGlobalMessage(`Tidak ada data log untuk tanggal ${dateKey}.`, 'error');
-        return;
-    }
-
-    const wsData = [
-        ["Tanggal & Waktu (WIT)", "Card ID", "Nama Karyawan", "Departemen", "Periode", "Status Tap", "created_at (Raw)"]
-    ];
-
-    logsToExport.forEach(log => {
-        // Menggunakan fungsi WIT untuk format tanggal dan waktu
-        const logDateTime = formatDateTimeWIT(log.created_at); 
-        
-        wsData.push([
-            logDateTime,
-            log.card,
-            log.nama || 'Tidak Terdaftar',
-            log.departemen || '-',
-            log.periode || '-',
-            log.status,
-            log.created_at
-        ]);
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `Log_${dateKey}`);
-    XLSX.writeFile(wb, `Log_Absensi_WIT_${dateKey}.xlsx`);
-
-    showGlobalMessage(`Berhasil mengekspor ${logsToExport.length} log untuk tanggal ${dateKey} ke Excel.`, 'success');
-}
-
-        // --- FUNGSI LAMA (CRUD, FETCH DATA, DLL) - SAMA PERSIS DENGAN YANG LAMA ---
-        
-        function showGlobalMessage(message, type = 'success') {
-            const msgEl = document.getElementById('global-message');
-            msgEl.textContent = message;
-            msgEl.className = 'w-full mb-6 p-4 rounded-xl text-center font-medium';
-            
-            if (type === 'success') { msgEl.classList.add('bg-emerald-100', 'text-emerald-800', 'border', 'border-emerald-300'); } 
-            else if (type === 'error') { msgEl.classList.add('bg-red-100', 'text-red-800', 'border', 'border-red-300'); } 
-            else { msgEl.classList.add('bg-blue-100', 'text-blue-800', 'border', 'border-blue-300'); }
-            
-            msgEl.classList.remove('hidden');
-            setTimeout(() => { msgEl.classList.add('hidden'); }, 8000); 
-        }
-        
-        function formatTime(textValue) {
-            if (!textValue) return '-';
-            return String(textValue).trim() || '-';
-        }
-        
-        async function fetchData(cardFilter = '', nameFilter = '') {
-            let query = supabaseClient
+        // Load employee statistics
+        async function loadEmployeeStats() {
+            const { data, error } = await supabaseClient
                 .from(TABLE_NAME)
                 .select('*');
+
+            if (error || !data) return;
+
+            const totalEmployees = data.length;
+            const departments = [...new Set(data.map(emp => emp.departemen))];
+            const withKantin = data.filter(emp => 
+                emp.pagi === 'Kantin' || 
+                emp.siang === 'Kantin' || 
+                emp.sore === 'Kantin' || 
+                emp.malam === 'Kantin'
+            ).length;
+
+            const statsHtml = `
+                <div class="stat-card bg-gradient-to-r from-blue-500 to-blue-400 rounded-xl p-5 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">Total Karyawan</p>
+                            <p class="text-2xl font-bold mt-1">${formatNumber(totalEmployees)}</p>
+                        </div>
+                        <i class="fas fa-users text-2xl opacity-80"></i>
+                    </div>
+                </div>
+                <div class="stat-card bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-xl p-5 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">Departemen</p>
+                            <p class="text-2xl font-bold mt-1">${formatNumber(departments.length)}</p>
+                        </div>
+                        <i class="fas fa-building text-2xl opacity-80"></i>
+                    </div>
+                </div>
+                <div class="stat-card bg-gradient-to-r from-amber-500 to-amber-400 rounded-xl p-5 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">Makan di Kantin</p>
+                            <p class="text-2xl font-bold mt-1">${formatNumber(withKantin)}</p>
+                        </div>
+                        <i class="fas fa-utensils text-2xl opacity-80"></i>
+                    </div>
+                </div>
+                <div class="stat-card bg-gradient-to-r from-purple-500 to-purple-400 rounded-xl p-5 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">% Kantin</p>
+                            <p class="text-2xl font-bold mt-1">${totalEmployees > 0 ? Math.round((withKantin / totalEmployees) * 100) : 0}%</p>
+                        </div>
+                        <i class="fas fa-percentage text-2xl opacity-80"></i>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('employee-stats').innerHTML = statsHtml;
+        }
+
+        // Fetch employee data
+        async function fetchData(cardFilter = '', nameFilter = '') {
+            let query = supabaseClient.from(TABLE_NAME).select('*');
 
             if (cardFilter) {
                 query = query.ilike('card', `%${cardFilter}%`);
@@ -792,8 +979,7 @@
                 query = query.ilike('nama', `%${nameFilter}%`);
             }
             
-            const { data, error } = await query
-                .order('nama', { ascending: true });
+            const { data, error } = await query.order('nama', { ascending: true });
 
             const tbody = document.getElementById('data-table-body');
             const noDataMsg = document.getElementById('no-data-message');
@@ -802,53 +988,61 @@
             if (error) {
                 console.error("Error fetching data:", error);
                 showGlobalMessage(`Gagal memuat data: ${error.message}.`, 'error');
-                noDataMsg.textContent = 'Gagal memuat data.';
                 noDataMsg.classList.remove('hidden');
                 return;
             }
 
             if (data.length === 0) {
-                noDataMsg.textContent = (cardFilter || nameFilter) ? 'Tidak ada data yang cocok dengan kriteria pencarian.' : 'Belum ada data karyawan yang tersimpan.';
                 noDataMsg.classList.remove('hidden');
             } else {
                 noDataMsg.classList.add('hidden');
                 data.forEach(item => {
-                    const row = tbody.insertRow(); 
-                    row.className = 'hover:bg-indigo-50/50';
+                    const row = tbody.insertRow();
+                    row.className = 'table-row-hover';
 
-                    row.insertCell().textContent = item.card;
-                    row.insertCell().textContent = item.nik;
-                    row.insertCell().textContent = item.nama;
-                    row.insertCell().textContent = item.departemen;
-                    
-                    row.insertCell().textContent = formatTime(item.pagi);
-                    row.insertCell().textContent = formatTime(item.siang);
-                    row.insertCell().textContent = formatTime(item.sore);
-                    row.insertCell().textContent = formatTime(item.malam);
+                    const cells = [
+                        `<span class="font-mono font-semibold">${item.card}</span>`,
+                        item.nik,
+                        `<div class="font-medium">${item.nama}</div>`,
+                        `<span class="px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded text-sm">${item.departemen}</span>`,
+                        `<span class="px-2 py-1 ${item.pagi === 'Kantin' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-gray-100 dark:bg-slate-800'} rounded text-sm">${formatTime(item.pagi)}</span>`,
+                        `<span class="px-2 py-1 ${item.siang === 'Kantin' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-gray-100 dark:bg-slate-800'} rounded text-sm">${formatTime(item.siang)}</span>`,
+                        `<span class="px-2 py-1 ${item.sore === 'Kantin' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-gray-100 dark:bg-slate-800'} rounded text-sm">${formatTime(item.sore)}</span>`,
+                        `<span class="px-2 py-1 ${item.malam === 'Kantin' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-gray-100 dark:bg-slate-800'} rounded text-sm">${formatTime(item.malam)}</span>`,
+                        `<div class="flex space-x-2 justify-center">
+                            <button onclick="openFormModal('edit', '${item.card}')" class="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800/50 transition">
+                                <i class="fas fa-edit text-sm"></i>
+                            </button>
+                            <button onclick="openDeleteModal('${item.card}')" class="p-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-800/50 transition">
+                                <i class="fas fa-trash text-sm"></i>
+                            </button>
+                        </div>`
+                    ];
 
-                    const actionCell = row.insertCell();
-                    actionCell.innerHTML = `
-                        <div class="flex space-x-2">
-                            <button onclick="openFormModal('edit', '${item.card}')" class="text-blue-600 hover:text-blue-800 font-medium p-1 rounded-lg hover:bg-blue-100 transition duration-150">Edit</button>
-                            <button onclick="openDeleteModal('${item.card}')" class="text-red-600 hover:text-red-800 font-medium p-1 rounded-lg hover:bg-red-100 transition duration-150">Hapus</button>
-                        </div>
-                    `;
+                    cells.forEach(cell => {
+                        const td = row.insertCell();
+                        td.className = 'px-6 py-4';
+                        td.innerHTML = cell;
+                    });
                 });
             }
         }
-        
+
+        // Apply search filter
         function applySearchFilter() {
             const card = document.getElementById('search-card').value.trim();
             const nama = document.getElementById('search-nama').value.trim();
             fetchData(card, nama);
         }
 
+        // Clear search filter
         function clearSearchFilter() {
             document.getElementById('search-card').value = '';
             document.getElementById('search-nama').value = '';
-            fetchData(); 
+            fetchData();
         }
 
+        // CRUD Modal functions
         async function openFormModal(mode, cardId = null) {
             currentMode = mode;
             const modal = document.getElementById('form-modal');
@@ -864,22 +1058,20 @@
             const formMalam = document.getElementById('form-malam');
 
             document.getElementById('crud-form').reset();
-            formCard.readOnly = false;
-            formCard.classList.remove('disabled:bg-gray-100');
-
+            
             if (mode === 'create') {
                 document.getElementById('modal-title').textContent = 'Tambah Karyawan Baru';
-                document.getElementById('submit-button').textContent = 'Simpan Data';
+                document.getElementById('submit-button').innerHTML = '<i class="fas fa-save mr-2"></i>Simpan Data';
+                formCard.disabled = false;
             } else {
-                document.getElementById('modal-title').textContent = 'Edit Data Karyawan & Absensi';
-                document.getElementById('submit-button').textContent = 'Update Data';
+                document.getElementById('modal-title').textContent = 'Edit Data Karyawan';
+                document.getElementById('submit-button').innerHTML = '<i class="fas fa-save mr-2"></i>Update Data';
                 formCard.value = cardId;
-                formCard.readOnly = true;
-                formCard.classList.add('disabled:bg-gray-100');
+                formCard.disabled = true;
 
                 const { data, error } = await supabaseClient
                     .from(TABLE_NAME)
-                    .select('*') 
+                    .select('*')
                     .eq('card', cardId)
                     .single();
 
@@ -899,17 +1091,10 @@
             }
 
             modal.classList.remove('hidden');
-            setTimeout(() => {
-                content.classList.remove('scale-95', 'opacity-0');
-                content.classList.add('scale-100', 'opacity-100');
-            }, 50);
         }
 
         function closeFormModal() {
-            const modal = document.getElementById('form-modal');
-            const content = document.getElementById('form-content');
-            content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+            document.getElementById('form-modal').classList.add('hidden');
         }
 
         async function handleFormSubmit(event) {
@@ -934,13 +1119,7 @@
                 message = 'Data karyawan berhasil ditambahkan.';
             } else {
                 const updateData = { 
-                    nik: nik, 
-                    nama: nama, 
-                    departemen: departemen, 
-                    pagi: pagi, 
-                    siang: siang, 
-                    sore: sore, 
-                    malam: malam 
+                    nik, nama, departemen, pagi, siang, sore, malam 
                 };
                 
                 const result = await supabaseClient
@@ -954,72 +1133,1054 @@
 
             if (error) {
                 console.error("CRUD Error:", error);
-                const errorMessage = error.code === '23505' ? 'Gagal: Card ID sudah terdaftar.' : error.message;
-                showGlobalMessage(`Gagal ${currentMode === 'create' ? 'menambah' : 'mengupdate'} data: ${errorMessage}`, 'error');
+                const errorMessage = error.code === '23505' ? 'Card ID sudah terdaftar.' : error.message;
+                showGlobalMessage(`Gagal: ${errorMessage}`, 'error');
             } else {
                 showGlobalMessage(message, 'success');
                 closeFormModal();
-                fetchData(); 
+                fetchData();
+                loadEmployeeStats();
             }
         }
-        
+
+        // Delete modal functions
         function openDeleteModal(cardId) {
             cardIdToDelete = cardId;
             document.getElementById('delete-card-id').textContent = cardId;
-            const modal = document.getElementById('delete-modal');
-            const content = document.getElementById('delete-content');
-            modal.classList.remove('hidden');
-            setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 50);
+            document.getElementById('delete-modal').classList.remove('hidden');
         }
 
         function closeDeleteModal() {
-            const modal = document.getElementById('delete-modal');
-            const content = document.getElementById('delete-content');
-            content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); cardIdToDelete = null; }, 300);
+            document.getElementById('delete-modal').classList.add('hidden');
+            cardIdToDelete = null;
         }
 
         async function executeDelete() {
             if (!cardIdToDelete) return;
             const { error } = await supabaseClient.from(TABLE_NAME).delete().eq('card', cardIdToDelete);
 
-            if (error) { console.error("Delete Error:", error); showGlobalMessage('Gagal menghapus data karyawan.', 'error'); } 
-            else { showGlobalMessage('Data karyawan berhasil dihapus.', 'success'); fetchData(); }
+            if (error) {
+                console.error("Delete Error:", error);
+                showGlobalMessage('Gagal menghapus data karyawan.', 'error');
+            } else {
+                showGlobalMessage('Data karyawan berhasil dihapus.', 'success');
+                fetchData();
+                loadEmployeeStats();
+            }
             closeDeleteModal();
         }
 
+        // Auto delete old logs
+        async function autoDeleteOldLogs() {
+            const sevenDaysAgo = getDateNDaysAgo(7);
+            const deletionStatusEl = document.getElementById('deletion-status');
+            deletionStatusEl.textContent = 'Memeriksa log lama...';
+
+            const { count, error } = await supabaseClient
+                .from(LOG_TABLE_NAME)
+                .delete({ count: 'exact' })
+                .lt('created_at', sevenDaysAgo);
+            
+            if (error) {
+                console.error("Auto Delete Log Error:", error);
+                deletionStatusEl.textContent = '⚠️ Gagal menghapus log lama';
+            } else {
+                deletionStatusEl.textContent = count > 0 ? `✅ ${count} log lama dihapus` : '';
+            }
+        }
+
+        // Filter logs by period
+        function filterLogsByPeriod(period) {
+            currentPeriodFilter = period;
+            
+            // Update active tab
+            document.querySelectorAll('.period-tab').forEach(tab => {
+                tab.classList.remove('period-tab-active', 'bg-white', 'dark:bg-slate-700', 'text-indigo-600', 'dark:text-indigo-400');
+                tab.classList.add('text-gray-600', 'dark:text-gray-400');
+            });
+            
+            event.target.classList.add('period-tab-active', 'bg-white', 'dark:bg-slate-700', 'text-indigo-600', 'dark:text-indigo-400');
+            event.target.classList.remove('text-gray-600', 'dark:text-gray-400');
+            
+            // Re-render logs with filter
+            renderGroupedLogDetails(allAbsensiLogs);
+        }
+
+        // Load archived absensi log
+        async function loadArchivedAbsensiLog() {
+            const container = document.getElementById('log-per-tanggal-container');
+            const loadingMsg = document.getElementById('loading-log-message');
+            const noLogMsg = document.getElementById('no-log-message');
+
+            container.innerHTML = '';
+            loadingMsg.classList.remove('hidden');
+            noLogMsg.classList.add('hidden');
+
+            const sevenDaysAgo = getDateNDaysAgo(7);
+
+            // Get master data
+            const { data: masterData, error: masterError } = await supabaseClient
+                .from(TABLE_NAME)
+                .select('card, nama, departemen');
+
+            if (masterError) {
+                console.error("Error fetching master data:", masterError);
+                loadingMsg.classList.add('hidden');
+                return;
+            }
+            
+            const employeeMap = new Map();
+            masterData.forEach(emp => employeeMap.set(emp.card, emp));
+
+            // Get logs
+            const { data: logs, error: logError } = await supabaseClient
+                .from(LOG_TABLE_NAME)
+                .select('card, status, periode, created_at, nama, departemen')
+                .gte('created_at', sevenDaysAgo)
+                .order('created_at', { ascending: false });
+
+            loadingMsg.classList.add('hidden');
+            
+            if (logError) {
+                console.error("Error fetching logs:", logError);
+                container.innerHTML = '<p class="text-center py-4 text-red-500">Gagal memuat data log.</p>';
+                return;
+            }
+
+            // Enrich logs with master data
+            const enrichedLogs = logs.map(log => {
+                const isDataMissing = !log.nama || log.nama.trim() === '-' || !log.departemen || log.departemen.trim() === '-';
+                
+                if (log.status === 'Sukses' && isDataMissing) {
+                    const employee = employeeMap.get(log.card);
+                    if (employee) {
+                        return {
+                            ...log,
+                            nama: employee.nama || 'Tidak Terdaftar',
+                            departemen: employee.departemen || '-'
+                        };
+                    }
+                }
+                return log;
+            });
+
+            allAbsensiLogs = enrichedLogs;
+            
+            // Load attendance stats
+            loadAttendanceStats(enrichedLogs);
+            
+            // Render logs
+            renderGroupedLogDetails(enrichedLogs);
+
+            if (enrichedLogs.length === 0) {
+                noLogMsg.classList.remove('hidden');
+            }
+        }
+
+        // Load attendance statistics
+        function loadAttendanceStats(logs) {
+            const totalLogs = logs.length;
+            const successLogs = logs.filter(log => log.status === 'Sukses').length;
+            const failedLogs = totalLogs - successLogs;
+            
+            // Count by period
+            const periodCounts = { pagi: 0, siang: 0, sore: 0, malam: 0 };
+            logs.forEach(log => {
+                if (log.periode && periodCounts.hasOwnProperty(log.periode.toLowerCase())) {
+                    periodCounts[log.periode.toLowerCase()]++;
+                }
+            });
+            
+            // Count kantin taps
+            const kantinTaps = logs.filter(log => 
+                log.status === 'Sukses' && 
+                log.periode && 
+                ['pagi', 'siang', 'sore', 'malam'].includes(log.periode.toLowerCase())
+            ).length;
+
+            const statsHtml = `
+                <div class="stat-card bg-gradient-to-r from-blue-500 to-blue-400 rounded-xl p-5 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">Total Tapping</p>
+                            <p class="text-2xl font-bold mt-1">${formatNumber(totalLogs)}</p>
+                        </div>
+                        <i class="fas fa-fingerprint text-2xl opacity-80"></i>
+                    </div>
+                </div>
+                <div class="stat-card bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-xl p-5 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">Sukses</p>
+                            <p class="text-2xl font-bold mt-1">${formatNumber(successLogs)}</p>
+                        </div>
+                        <i class="fas fa-check-circle text-2xl opacity-80"></i>
+                    </div>
+                </div>
+                <div class="stat-card bg-gradient-to-r from-amber-500 to-amber-400 rounded-xl p-5 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">Gagal</p>
+                            <p class="text-2xl font-bold mt-1">${formatNumber(failedLogs)}</p>
+                        </div>
+                        <i class="fas fa-times-circle text-2xl opacity-80"></i>
+                    </div>
+                </div>
+                <div class="stat-card bg-gradient-to-r from-purple-500 to-purple-400 rounded-xl p-5 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">Makan di Kantin</p>
+                            <p class="text-2xl font-bold mt-1">${formatNumber(kantinTaps)}</p>
+                        </div>
+                        <i class="fas fa-utensils text-2xl opacity-80"></i>
+                    </div>
+                </div>
+                <div class="stat-card bg-gradient-to-r from-pink-500 to-pink-400 rounded-xl p-5 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">% Sukses</p>
+                            <p class="text-2xl font-bold mt-1">${totalLogs > 0 ? Math.round((successLogs / totalLogs) * 100) : 0}%</p>
+                        </div>
+                        <i class="fas fa-percentage text-2xl opacity-80"></i>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('attendance-stats').innerHTML = statsHtml;
+        }
+
+        // Render grouped log details
+        function renderGroupedLogDetails(logs) {
+            const container = document.getElementById('log-per-tanggal-container');
+            container.innerHTML = '';
+
+            // Filter by period if needed
+            let filteredLogs = logs;
+            if (currentPeriodFilter !== 'all') {
+                filteredLogs = logs.filter(log => 
+                    log.periode && 
+                    log.periode.toLowerCase() === currentPeriodFilter
+                );
+            }
+
+            // Group by date
+            const logsByDate = filteredLogs.reduce((acc, log) => {
+                const dateKey = getDateKey(log.created_at);
+                if (!acc[dateKey]) {
+                    acc[dateKey] = [];
+                }
+                acc[dateKey].push(log);
+                return acc;
+            }, {});
+
+            const sortedDates = Object.keys(logsByDate).sort((a, b) => b.localeCompare(a));
+
+            if (sortedDates.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-10">
+                        <i class="fas fa-inbox text-4xl text-gray-300 dark:text-slate-600 mb-4"></i>
+                        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Tidak ada data</h3>
+                        <p class="text-gray-500 dark:text-gray-400">Tidak ada log absensi untuk periode yang dipilih.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            sortedDates.forEach(dateKey => {
+                const logsForDate = logsByDate[dateKey];
+                const dateObj = new Date(dateKey + 'T00:00:00');
+                const dateDisplay = formatDateID(dateObj);
+                
+                // Calculate stats for this date
+                const totalLogs = logsForDate.length;
+                const successLogs = logsForDate.filter(log => log.status === 'Sukses').length;
+                const kantinTaps = logsForDate.filter(log => 
+                    log.status === 'Sukses' && 
+                    log.periode && 
+                    ['pagi', 'siang', 'sore', 'malam'].includes(log.periode.toLowerCase())
+                ).length;
+
+                const groupHtml = `
+                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-lg overflow-hidden border border-gray-200 dark:border-slate-700">
+                        <!-- Header -->
+                        <div class="bg-gradient-to-r from-indigo-500 to-indigo-600 p-5">
+                            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                                        <i class="fas fa-calendar text-white"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-lg font-bold text-white">${dateDisplay}</h3>
+                                        <div class="flex items-center space-x-4 mt-1">
+                                            <span class="text-sm text-white/80">
+                                                <i class="fas fa-fingerprint mr-1"></i>${totalLogs} tapping
+                                            </span>
+                                            <span class="text-sm text-white/80">
+                                                <i class="fas fa-check mr-1"></i>${successLogs} sukses
+                                            </span>
+                                            <span class="text-sm text-white/80">
+                                                <i class="fas fa-utensils mr-1"></i>${kantinTaps} kantin
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center space-x-3 mt-3 lg:mt-0">
+                                    <button onclick="exportSingleDayLogToExcel('${dateKey}')" class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg font-medium text-sm transition flex items-center">
+                                        <i class="fas fa-file-excel mr-2"></i>
+                                        Export
+                                    </button>
+                                    <button onclick="toggleLogDetails(this, 'log-table-${dateKey}')" class="text-white hover:bg-white/10 p-2 rounded-lg transition">
+                                        <i class="fas fa-chevron-down transition-transform"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Details Table -->
+                        <div id="log-table-${dateKey}" class="hidden">
+                            <div class="p-5">
+                                <div class="overflow-x-auto border border-gray-200 dark:border-slate-700 rounded-lg">
+                                    <table class="w-full text-sm">
+                                        <thead class="bg-gray-50 dark:bg-slate-800/50">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left font-semibold">Waktu</th>
+                                                <th class="px-4 py-3 text-left font-semibold">Card ID</th>
+                                                <th class="px-4 py-3 text-left font-semibold">Nama</th>
+                                                <th class="px-4 py-3 text-left font-semibold">Departemen</th>
+                                                <th class="px-4 py-3 text-left font-semibold">Periode</th>
+                                                <th class="px-4 py-3 text-left font-semibold">Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-200 dark:divide-slate-700">
+                                            ${logsForDate.map(log => {
+                                                const time = formatTimeID(log.created_at);
+                                                const statusClass = log.status === 'Sukses' 
+                                                    ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' 
+                                                    : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300';
+                                                const periodClass = 'px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded text-xs';
+                                                
+                                                return `
+                                                    <tr class="hover:bg-gray-50 dark:hover:bg-slate-800/50">
+                                                        <td class="px-4 py-3 font-mono">${time}</td>
+                                                        <td class="px-4 py-3 font-mono font-semibold">${log.card}</td>
+                                                        <td class="px-4 py-3">${log.nama || 'Tidak Terdaftar'}</td>
+                                                        <td class="px-4 py-3">
+                                                            <span class="px-2 py-1 bg-gray-100 dark:bg-slate-800 rounded text-xs">
+                                                                ${log.departemen || '-'}
+                                                            </span>
+                                                        </td>
+                                                        <td class="px-4 py-3">
+                                                            <span class="${periodClass}">${log.periode || '-'}</span>
+                                                        </td>
+                                                        <td class="px-4 py-3">
+                                                            <span class="px-2 py-1 ${statusClass} rounded text-xs font-medium">
+                                                                ${log.status}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                `;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', groupHtml);
+            });
+        }
+
+        // Toggle log details
+        function toggleLogDetails(button, tableId) {
+            const detailElement = document.getElementById(tableId);
+            const icon = button.querySelector('i');
+            
+            if (detailElement.classList.contains('hidden')) {
+                detailElement.classList.remove('hidden');
+                icon.classList.add('rotate-180');
+            } else {
+                detailElement.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            }
+        }
+
+        // Export single day log to Excel
+        function exportSingleDayLogToExcel(dateKey) {
+            const logsToExport = allAbsensiLogs.filter(log => {
+                return getDateKey(log.created_at) === dateKey;
+            });
+
+            if (logsToExport.length === 0) {
+                showGlobalMessage(`Tidak ada data log untuk tanggal ${dateKey}.`, 'error');
+                return;
+            }
+
+            // Create worksheet data with formatted headers
+            const wsData = [
+                ['LAPORAN ABSENSI KARYAWAN'],
+                [`Tanggal: ${formatDateID(dateKey + 'T00:00:00')}`],
+                [''],
+                ['No', 'Waktu', 'Card ID', 'Nama Karyawan', 'Departemen', 'Periode', 'Status', 'Keterangan']
+            ];
+
+            // Add data rows
+            logsToExport.forEach((log, index) => {
+                const waktu = formatTimeID(log.created_at);
+                const keterangan = log.status === 'Sukses' ? 'Tap Berhasil' : 'Card Tidak Terdaftar';
+                
+                wsData.push([
+                    index + 1,
+                    waktu,
+                    log.card,
+                    log.nama || 'Tidak Terdaftar',
+                    log.departemen || '-',
+                    log.periode || '-',
+                    log.status,
+                    keterangan
+                ]);
+            });
+
+            // Add summary
+            const successCount = logsToExport.filter(log => log.status === 'Sukses').length;
+            const kantinCount = logsToExport.filter(log => 
+                log.status === 'Sukses' && 
+                log.periode && 
+                ['pagi', 'siang', 'sore', 'malam'].includes(log.periode.toLowerCase())
+            ).length;
+            
+            wsData.push(['']);
+            wsData.push(['SUMMARY']);
+            wsData.push(['Total Tapping', logsToExport.length]);
+            wsData.push(['Sukses', successCount]);
+            wsData.push(['Gagal', logsToExport.length - successCount]);
+            wsData.push(['Makan di Kantin', kantinCount]);
+            wsData.push(['% Sukses', logsToExport.length > 0 ? `${Math.round((successCount / logsToExport.length) * 100)}%` : '0%']);
+
+            // Create worksheet
+            const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+            // Merge title cells
+            ws['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
+                { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } },
+                { s: { r: wsData.length - 6, c: 0 }, e: { r: wsData.length - 6, c: 1 } }
+            ];
+
+            // Add column widths
+            ws['!cols'] = [
+                { wch: 5 },  // No
+                { wch: 10 }, // Waktu
+                { wch: 15 }, // Card ID
+                { wch: 25 }, // Nama
+                { wch: 20 }, // Departemen
+                { wch: 10 }, // Periode
+                { wch: 10 }, // Status
+                { wch: 20 }  // Keterangan
+            ];
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, `Absensi_${dateKey}`);
+            XLSX.writeFile(wb, `Absensi_${dateKey}.xlsx`);
+
+            showGlobalMessage(`Berhasil export ${logsToExport.length} data untuk ${dateKey}`, 'success');
+        }
+
+        // Export all logs to Excel
+        function exportAllLogsToExcel() {
+            if (allAbsensiLogs.length === 0) {
+                showGlobalMessage('Tidak ada data log untuk diexport.', 'error');
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+            const groupedLogs = {};
+
+            // Group logs by date
+            allAbsensiLogs.forEach(log => {
+                const dateKey = getDateKey(log.created_at);
+                if (!groupedLogs[dateKey]) {
+                    groupedLogs[dateKey] = [];
+                }
+                groupedLogs[dateKey].push(log);
+            });
+
+            // Create a sheet for each date
+            Object.keys(groupedLogs).sort().reverse().forEach(dateKey => {
+                const logsForDate = groupedLogs[dateKey];
+                
+                const wsData = [
+                    ['LAPORAN ABSENSI KARYAWAN'],
+                    [`Tanggal: ${formatDateID(dateKey + 'T00:00:00')}`],
+                    [''],
+                    ['No', 'Waktu', 'Card ID', 'Nama Karyawan', 'Departemen', 'Periode', 'Status', 'Keterangan']
+                ];
+
+                logsForDate.forEach((log, index) => {
+                    const waktu = formatTimeID(log.created_at);
+                    const keterangan = log.status === 'Sukses' ? 'Tap Berhasil' : 'Card Tidak Terdaftar';
+                    
+                    wsData.push([
+                        index + 1,
+                        waktu,
+                        log.card,
+                        log.nama || 'Tidak Terdaftar',
+                        log.departemen || '-',
+                        log.periode || '-',
+                        log.status,
+                        keterangan
+                    ]);
+                });
+
+                // Add summary
+                const successCount = logsForDate.filter(log => log.status === 'Sukses').length;
+                const kantinCount = logsForDate.filter(log => 
+                    log.status === 'Sukses' && 
+                    log.periode && 
+                    ['pagi', 'siang', 'sore', 'malam'].includes(log.periode.toLowerCase())
+                ).length;
+                
+                wsData.push(['']);
+                wsData.push(['SUMMARY']);
+                wsData.push(['Total Tapping', logsForDate.length]);
+                wsData.push(['Sukses', successCount]);
+                wsData.push(['Gagal', logsForDate.length - successCount]);
+                wsData.push(['Makan di Kantin', kantinCount]);
+                wsData.push(['% Sukses', logsForDate.length > 0 ? `${Math.round((successCount / logsForDate.length) * 100)}%` : '0%']);
+
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                
+                // Merge title cells
+                ws['!merges'] = [
+                    { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
+                    { s: { r: 1, c: 0 }, e: { r: 1, c: 7 } },
+                    { s: { r: wsData.length - 6, c: 0 }, e: { r: wsData.length - 6, c: 1 } }
+                ];
+
+                // Add column widths
+                ws['!cols'] = [
+                    { wch: 5 }, { wch: 10 }, { wch: 15 }, { wch: 25 },
+                    { wch: 20 }, { wch: 10 }, { wch: 10 }, { wch: 20 }
+                ];
+
+                XLSX.utils.book_append_sheet(wb, ws, `Absensi_${dateKey}`);
+            });
+
+            // Create summary sheet
+            const summaryData = [
+                ['REKAPITULASI ABSENSI 7 HARI TERAKHIR'],
+                [''],
+                ['Tanggal', 'Total Tapping', 'Sukses', 'Gagal', 'Makan di Kantin', '% Sukses']
+            ];
+
+            let grandTotal = 0;
+            let grandSuccess = 0;
+            let grandKantin = 0;
+
+            Object.keys(groupedLogs).sort().reverse().forEach(dateKey => {
+                const logs = groupedLogs[dateKey];
+                const total = logs.length;
+                const success = logs.filter(log => log.status === 'Sukses').length;
+                const kantin = logs.filter(log => 
+                    log.status === 'Sukses' && 
+                    log.periode && 
+                    ['pagi', 'siang', 'sore', 'malam'].includes(log.periode.toLowerCase())
+                ).length;
+                
+                summaryData.push([
+                    formatDateID(dateKey + 'T00:00:00'),
+                    total,
+                    success,
+                    total - success,
+                    kantin,
+                    total > 0 ? `${Math.round((success / total) * 100)}%` : '0%'
+                ]);
+
+                grandTotal += total;
+                grandSuccess += success;
+                grandKantin += kantin;
+            });
+
+            // Add grand total
+            summaryData.push(['']);
+            summaryData.push(['TOTAL', grandTotal, grandSuccess, grandTotal - grandSuccess, grandKantin, 
+                            grandTotal > 0 ? `${Math.round((grandSuccess / grandTotal) * 100)}%` : '0%']);
+
+            const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+            
+            // Merge title cell
+            wsSummary['!merges'] = [
+                { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } }
+            ];
+
+            // Add column widths
+            wsSummary['!cols'] = [
+                { wch: 30 }, { wch: 15 }, { wch: 15 },
+                { wch: 15 }, { wch: 20 }, { wch: 15 }
+            ];
+
+            XLSX.utils.book_append_sheet(wb, wsSummary, 'Rekap');
+
+            XLSX.writeFile(wb, `Absensi_Rekap_${new Date().toISOString().split('T')[0]}.xlsx`);
+            showGlobalMessage(`Berhasil export ${allAbsensiLogs.length} data ke Excel`, 'success');
+        }
+
+        // Load statistics
+        async function loadStatistics() {
+            const period = document.getElementById('stat-period').value;
+            const daysAgo = getDateNDaysAgo(parseInt(period));
+            
+            // Fetch logs
+            const { data: logs, error } = await supabaseClient
+                .from(LOG_TABLE_NAME)
+                .select('*')
+                .gte('created_at', daysAgo)
+                .order('created_at', { ascending: true });
+
+            if (error) {
+                console.error("Error fetching statistics:", error);
+                return;
+            }
+
+            // Fetch employees
+            const { data: employees } = await supabaseClient
+                .from(TABLE_NAME)
+                .select('*');
+
+            // Calculate analytics stats
+            const totalLogs = logs.length;
+            const successLogs = logs.filter(log => log.status === 'Sukses').length;
+            const kantinLogs = logs.filter(log => 
+                log.status === 'Sukses' && 
+                log.periode && 
+                ['pagi', 'siang', 'sore', 'malam'].includes(log.periode.toLowerCase())
+            ).length;
+            const uniqueEmployees = [...new Set(logs.filter(log => log.status === 'Sukses').map(log => log.card))].length;
+
+            // Update analytics stats
+            const analyticsStatsHtml = `
+                <div class="stat-card bg-gradient-to-r from-blue-500 to-blue-400 rounded-xl p-5 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">Total Aktivitas</p>
+                            <p class="text-2xl font-bold mt-1">${formatNumber(totalLogs)}</p>
+                        </div>
+                        <i class="fas fa-chart-line text-2xl opacity-80"></i>
+                    </div>
+                </div>
+                <div class="stat-card bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-xl p-5 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">Karyawan Aktif</p>
+                            <p class="text-2xl font-bold mt-1">${formatNumber(uniqueEmployees)}</p>
+                        </div>
+                        <i class="fas fa-user-check text-2xl opacity-80"></i>
+                    </div>
+                </div>
+                <div class="stat-card bg-gradient-to-r from-amber-500 to-amber-400 rounded-xl p-5 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">Rata-rata/Hari</p>
+                            <p class="text-2xl font-bold mt-1">${formatNumber(Math.round(totalLogs / parseInt(period)))}</p>
+                        </div>
+                        <i class="fas fa-calendar-day text-2xl opacity-80"></i>
+                    </div>
+                </div>
+                <div class="stat-card bg-gradient-to-r from-purple-500 to-purple-400 rounded-xl p-5 text-white shadow-lg">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm opacity-90">Makan di Kantin</p>
+                            <p class="text-2xl font-bold mt-1">${formatNumber(kantinLogs)}</p>
+                        </div>
+                        <i class="fas fa-utensils text-2xl opacity-80"></i>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('analytics-stats').innerHTML = analyticsStatsHtml;
+
+            // Update department stats
+            updateDepartmentStats(employees, logs);
+
+            // Update charts
+            updateCharts(logs, period);
+
+            // Update top performers
+            updateTopPerformers(logs, employees);
+
+            // Update insights
+            updateInsights(logs, employees, period);
+        }
+
+        // Update department statistics
+        function updateDepartmentStats(employees, logs) {
+            if (!employees || !logs) return;
+
+            // Group employees by department
+            const deptEmployees = {};
+            employees.forEach(emp => {
+                if (!deptEmployees[emp.departemen]) {
+                    deptEmployees[emp.departemen] = [];
+                }
+                deptEmployees[emp.departemen].push(emp.card);
+            });
+
+            // Calculate stats per department
+            const deptStats = [];
+            Object.keys(deptEmployees).forEach(dept => {
+                const employeeCards = deptEmployees[dept];
+                const deptLogs = logs.filter(log => 
+                    log.status === 'Sukses' && 
+                    employeeCards.includes(log.card)
+                );
+                
+                const uniqueDays = [...new Set(deptLogs.map(log => getDateKey(log.created_at)))].length;
+                const avgPerDay = uniqueDays > 0 ? (deptLogs.length / uniqueDays).toFixed(1) : 0;
+                const attendanceRate = employeeCards.length > 0 ? 
+                    ((deptLogs.length / (employeeCards.length * uniqueDays)) * 100).toFixed(1) : 0;
+
+                deptStats.push({
+                    department: dept,
+                    totalEmployees: employeeCards.length,
+                    avgAttendance: avgPerDay,
+                    attendanceRate: attendanceRate
+                });
+            });
+
+            // Sort by attendance rate
+            deptStats.sort((a, b) => b.attendanceRate - a.attendanceRate);
+
+            // Update table
+            const tbody = document.getElementById('department-stats-body');
+            tbody.innerHTML = '';
+
+            deptStats.forEach(stat => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td class="px-4 py-3">
+                        <span class="font-medium">${stat.department}</span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded text-sm">
+                            ${stat.totalEmployees} orang
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-300 rounded text-sm">
+                            ${stat.avgAttendance}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center">
+                            <div class="w-24 bg-gray-200 dark:bg-slate-700 rounded-full h-2 mr-3">
+                                <div class="bg-indigo-500 h-2 rounded-full" style="width: ${Math.min(stat.attendanceRate, 100)}%"></div>
+                            </div>
+                            <span class="text-sm font-medium">${stat.attendanceRate}%</span>
+                        </div>
+                    </td>
+                `;
+            });
+        }
+
+        // Update charts
+        function updateCharts(logs, period) {
+            // Group logs by date
+            const logsByDate = {};
+            logs.forEach(log => {
+                const dateKey = getDateKey(log.created_at);
+                if (!logsByDate[dateKey]) {
+                    logsByDate[dateKey] = { total: 0, success: 0, kantin: 0 };
+                }
+                logsByDate[dateKey].total++;
+                if (log.status === 'Sukses') {
+                    logsByDate[dateKey].success++;
+                    if (log.periode && ['pagi', 'siang', 'sore', 'malam'].includes(log.periode.toLowerCase())) {
+                        logsByDate[dateKey].kantin++;
+                    }
+                }
+            });
+
+            // Sort dates
+            const sortedDates = Object.keys(logsByDate).sort();
+
+            // Prepare data for trend chart
+            const labels = sortedDates.map(date => {
+                const d = new Date(date + 'T00:00:00');
+                return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+            });
+
+            const totalData = sortedDates.map(date => logsByDate[date].total);
+            const successData = sortedDates.map(date => logsByDate[date].success);
+            const kantinData = sortedDates.map(date => logsByDate[date].kantin);
+
+            // Destroy existing charts if they exist
+            if (attendanceTrendChart) {
+                attendanceTrendChart.destroy();
+            }
+            if (periodDistributionChart) {
+                periodDistributionChart.destroy();
+            }
+
+            // Create trend chart
+            const trendCtx = document.getElementById('attendanceTrendChart').getContext('2d');
+            attendanceTrendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Total Tapping',
+                            data: totalData,
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Sukses',
+                            data: successData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Makan di Kantin',
+                            data: kantinData,
+                            borderColor: '#8b5cf6',
+                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: currentTheme === 'dark' ? '#f1f5f9' : '#1e293b'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                color: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                            },
+                            ticks: {
+                                color: currentTheme === 'dark' ? '#94a3b8' : '#64748b'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: currentTheme === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                            },
+                            ticks: {
+                                color: currentTheme === 'dark' ? '#94a3b8' : '#64748b'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Prepare data for period distribution
+            const periodCounts = { pagi: 0, siang: 0, sore: 0, malam: 0 };
+            logs.forEach(log => {
+                if (log.periode && periodCounts.hasOwnProperty(log.periode.toLowerCase())) {
+                    periodCounts[log.periode.toLowerCase()]++;
+                }
+            });
+
+            // Create distribution chart
+            const distCtx = document.getElementById('periodDistributionChart').getContext('2d');
+            periodDistributionChart = new Chart(distCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pagi', 'Siang', 'Sore', 'Malam'],
+                    datasets: [{
+                        data: [periodCounts.pagi, periodCounts.siang, periodCounts.sore, periodCounts.malam],
+                        backgroundColor: [
+                            '#3b82f6', // Blue
+                            '#10b981', // Emerald
+                            '#f59e0b', // Amber
+                            '#8b5cf6'  // Purple
+                        ],
+                        borderWidth: 2,
+                        borderColor: currentTheme === 'dark' ? '#1e293b' : '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: currentTheme === 'dark' ? '#f1f5f9' : '#1e293b',
+                                padding: 20
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update top performers
+        function updateTopPerformers(logs, employees) {
+            if (!logs || !employees) return;
+
+            // Count successful taps per employee
+            const employeeTaps = {};
+            logs.filter(log => log.status === 'Sukses').forEach(log => {
+                if (!employeeTaps[log.card]) {
+                    employeeTaps[log.card] = 0;
+                }
+                employeeTaps[log.card]++;
+            });
+
+            // Get top 5 performers
+            const topPerformers = Object.keys(employeeTaps)
+                .map(cardId => {
+                    const employee = employees.find(emp => emp.card === cardId);
+                    return {
+                        cardId,
+                        name: employee ? employee.nama : 'Tidak Dikenal',
+                        department: employee ? employee.departemen : '-',
+                        taps: employeeTaps[cardId]
+                    };
+                })
+                .sort((a, b) => b.taps - a.taps)
+                .slice(0, 5);
+
+            // Update UI
+            const container = document.getElementById('top-performers');
+            container.innerHTML = '';
+
+            topPerformers.forEach((performer, index) => {
+                const rankClass = index === 0 ? 'bg-gradient-to-r from-yellow-500 to-yellow-400 text-white' :
+                                 index === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-300 text-white' :
+                                 index === 2 ? 'bg-gradient-to-r from-amber-700 to-amber-600 text-white' :
+                                 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-gray-300';
+
+                const item = document.createElement('div');
+                item.className = 'flex items-center justify-between p-3 rounded-lg mb-2';
+                item.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 rounded-lg ${rankClass} flex items-center justify-center font-bold">
+                            ${index + 1}
+                        </div>
+                        <div>
+                            <p class="font-medium">${performer.name}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">${performer.department}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-indigo-600 dark:text-indigo-400">${performer.taps}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">tapping</p>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Update insights
+        function updateInsights(logs, employees, period) {
+            if (!logs || !employees) return;
+
+            const totalLogs = logs.length;
+            const successLogs = logs.filter(log => log.status === 'Sukses').length;
+            const kantinLogs = logs.filter(log => 
+                log.status === 'Sukses' && 
+                log.periode && 
+                ['pagi', 'siang', 'sore', 'malam'].includes(log.periode.toLowerCase())
+            ).length;
+            
+            const successRate = totalLogs > 0 ? (successLogs / totalLogs * 100).toFixed(1) : 0;
+            const kantinRate = successLogs > 0 ? (kantinLogs / successLogs * 100).toFixed(1) : 0;
+
+            // Get busiest period
+            const periodCounts = { pagi: 0, siang: 0, sore: 0, malam: 0 };
+            logs.forEach(log => {
+                if (log.periode && periodCounts.hasOwnProperty(log.periode.toLowerCase())) {
+                    periodCounts[log.periode.toLowerCase()]++;
+                }
+            });
+
+            const busiestPeriod = Object.keys(periodCounts).reduce((a, b) => 
+                periodCounts[a] > periodCounts[b] ? a : b
+            );
+
+            // Get average taps per day
+            const uniqueDays = [...new Set(logs.map(log => getDateKey(log.created_at)))].length;
+            const avgPerDay = uniqueDays > 0 ? (totalLogs / uniqueDays).toFixed(1) : 0;
+
+            const insights = document.getElementById('insights-container');
+            insights.innerHTML = `
+                <div class="space-y-4">
+                    <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <p class="text-sm font-medium text-blue-700 dark:text-blue-300">
+                            <i class="fas fa-chart-line mr-2"></i>
+                            Rata-rata <span class="font-bold">${avgPerDay}</span> tapping per hari
+                        </p>
+                    </div>
+                    <div class="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+                        <p class="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                            <i class="fas fa-percentage mr-2"></i>
+                            Tingkat kesuksesan tapping: <span class="font-bold">${successRate}%</span>
+                        </p>
+                    </div>
+                    <div class="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                        <p class="text-sm font-medium text-amber-700 dark:text-amber-300">
+                            <i class="fas fa-utensils mr-2"></i>
+                            ${kantinRate}% karyawan makan di kantin
+                        </p>
+                    </div>
+                    <div class="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                        <p class="text-sm font-medium text-purple-700 dark:text-purple-300">
+                            <i class="fas fa-clock mr-2"></i>
+                            Periode tersibuk: <span class="font-bold">${busiestPeriod}</span>
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Import modal functions
         function openImportModal() {
             document.getElementById('excel-file-input').value = '';
+            document.getElementById('file-name').classList.add('hidden');
             document.getElementById('step-upload').classList.remove('hidden');
             document.getElementById('step-review').classList.add('hidden');
             document.getElementById('review-button').classList.remove('hidden');
             document.getElementById('import-submit-button').classList.add('hidden');
-            document.getElementById('deletion-warning').classList.add('hidden'); 
             parsedImportData = [];
-            activeCardIds = []; 
+            activeCardIds = [];
             
-            const modal = document.getElementById('import-modal');
-            const content = document.getElementById('import-content');
-            modal.classList.remove('hidden');
-            setTimeout(() => { content.classList.remove('scale-95', 'opacity-0'); content.classList.add('scale-100', 'opacity-100'); }, 50);
+            document.getElementById('import-modal').classList.remove('hidden');
         }
 
         function closeImportModal() {
-            const modal = document.getElementById('import-modal');
-            const content = document.getElementById('import-content');
-            content.classList.remove('scale-100', 'opacity-100'); content.classList.add('scale-95', 'opacity-0');
-            setTimeout(() => { modal.classList.add('hidden'); }, 300);
+            document.getElementById('import-modal').classList.add('hidden');
         }
-        
+
         function parseExcelFile() {
             const fileInput = document.getElementById('excel-file-input');
             const file = fileInput.files[0];
 
-            if (!file) { showGlobalMessage('Pilih file Excel terlebih dahulu.', 'error'); return; }
-            
-            document.getElementById('review-button').disabled = true;
-            document.getElementById('review-button').innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Memproses...';
+            if (!file) {
+                showGlobalMessage('Pilih file Excel terlebih dahulu.', 'error');
+                return;
+            }
 
+            // Show file name
+            document.getElementById('file-name').textContent = `File: ${file.name}`;
+            document.getElementById('file-name').classList.remove('hidden');
+
+            document.getElementById('review-button').disabled = true;
+            document.getElementById('review-button').innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...';
 
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -1032,13 +2193,13 @@
                 processExcelData(excelData);
 
                 document.getElementById('review-button').disabled = false;
-                document.getElementById('review-button').innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg> Review Data';
+                document.getElementById('review-button').innerHTML = '<i class="fas fa-eye mr-2"></i>Review Data';
             };
 
             reader.onerror = function(ex) {
                 showGlobalMessage('Gagal membaca file Excel.', 'error');
                 document.getElementById('review-button').disabled = false;
-                document.getElementById('review-button').innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg> Review Data';
+                document.getElementById('review-button').innerHTML = '<i class="fas fa-eye mr-2"></i>Review Data';
             };
             reader.readAsArrayBuffer(file);
         }
@@ -1049,24 +2210,29 @@
             const reviewBody = document.getElementById('review-table-body');
             reviewBody.innerHTML = '';
             
-            if (data.length < 2) { showGlobalMessage('File Excel kosong atau hanya berisi header.', 'error'); return; }
+            if (data.length < 2) {
+                showGlobalMessage('File Excel kosong atau hanya berisi header.', 'error');
+                return;
+            }
 
             const rawHeaders = data[0].map(h => String(h).trim());
             const headerMap = {};
             REQUIRED_HEADERS.forEach(requiredHeader => {
                 const index = rawHeaders.findIndex(h => h.toLowerCase() === requiredHeader.toLowerCase());
-                if (index !== -1) { headerMap[requiredHeader.toLowerCase()] = index; }
+                if (index !== -1) {
+                    headerMap[requiredHeader.toLowerCase()] = index;
+                }
             });
 
             const requiredFields = ['card id', 'nik', 'nama', 'departemen', 'pagi', 'siang', 'sore', 'malam'];
             const missingFields = requiredFields.filter(field => typeof headerMap[field] === 'undefined');
             
             if (missingFields.length > 0) {
-                 showGlobalMessage(`Gagal: Kolom wajib tidak ditemukan di Excel: ${missingFields.map(f => f.toUpperCase()).join(', ')}.`, 'error');
-                 return;
+                showGlobalMessage(`Kolom wajib tidak ditemukan: ${missingFields.join(', ')}`, 'error');
+                return;
             }
 
-            const cardIndex = headerMap['card id']; 
+            const cardIndex = headerMap['card id'];
             let validCount = 0;
             let skippedCount = 0;
 
@@ -1076,7 +2242,10 @@
                 let cardId = String(row[cardIndex] || '').trim();
 
                 if (!cardId) {
-                    status = 'Dilewati (Card ID Kosong)';
+                    status = 'Card ID Kosong';
+                    skippedCount++;
+                } else if (activeCardIds.includes(cardId)) {
+                    status = 'Duplikat';
                     skippedCount++;
                 } else {
                     const payload = {
@@ -1091,26 +2260,47 @@
                     };
                     
                     parsedImportData.push(payload);
-                    activeCardIds.push(cardId);      
+                    activeCardIds.push(cardId);
                     validCount++;
                 }
 
                 const rowEl = reviewBody.insertRow();
+                rowEl.className = 'hover:bg-gray-50 dark:hover:bg-slate-800/50';
                 rowEl.innerHTML = `
-                    <td class="font-mono">${cardId || '-'}</td>
-                    <td>${formatTime(row[headerMap['nik']] || '')}</td>
-                    <td>${formatTime(row[headerMap['nama']] || '')}</td>
-                    <td>${formatTime(row[headerMap['departemen']] || '')}</td>
-                    <td>${formatTime(row[headerMap['pagi']] || '')}</td>
-                    <td>${formatTime(row[headerMap['siang']] || '')}</td>
-                    <td>${formatTime(row[headerMap['sore']] || '')}</td>
-                    <td>${formatTime(row[headerMap['malam']] || '')}</td>
-                    <td class="${status.startsWith('Dilewati') ? 'text-red-500 font-semibold' : 'text-green-600 font-semibold'}">${status}</td>
+                    <td class="px-4 py-3 font-mono">${cardId || '-'}</td>
+                    <td class="px-4 py-3">${formatTime(row[headerMap['nik']] || '')}</td>
+                    <td class="px-4 py-3">${formatTime(row[headerMap['nama']] || '')}</td>
+                    <td class="px-4 py-3">${formatTime(row[headerMap['departemen']] || '')}</td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="px-2 py-1 ${row[headerMap['pagi']] === 'Kantin' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-gray-100 dark:bg-slate-800'} rounded text-xs">
+                            ${formatTime(row[headerMap['pagi']] || '')}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="px-2 py-1 ${row[headerMap['siang']] === 'Kantin' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-gray-100 dark:bg-slate-800'} rounded text-xs">
+                            ${formatTime(row[headerMap['siang']] || '')}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="px-2 py-1 ${row[headerMap['sore']] === 'Kantin' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-gray-100 dark:bg-slate-800'} rounded text-xs">
+                            ${formatTime(row[headerMap['sore']] || '')}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="px-2 py-1 ${row[headerMap['malam']] === 'Kantin' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-gray-100 dark:bg-slate-800'} rounded text-xs">
+                            ${formatTime(row[headerMap['malam']] || '')}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 ${status === 'Valid' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'} rounded text-xs font-medium">
+                            ${status}
+                        </span>
+                    </td>
                 `;
             }
 
             document.getElementById('review-summary').textContent = 
-                `Total baris: ${data.length - 1}. Data siap disinkronisasi: ${validCount}. Baris dilewati: ${skippedCount}.`;
+                `Ditemukan ${data.length - 1} baris data. ${validCount} valid, ${skippedCount} dilewati.`;
 
             if (validCount > 0) {
                 document.getElementById('step-upload').classList.add('hidden');
@@ -1118,66 +2308,72 @@
                 document.getElementById('review-button').classList.add('hidden');
                 document.getElementById('import-submit-button').classList.remove('hidden');
                 document.getElementById('import-submit-button').disabled = false;
-                document.getElementById('deletion-warning').classList.remove('hidden');
             } else {
                 document.getElementById('import-submit-button').disabled = true;
-                showGlobalMessage('Tidak ada data valid yang ditemukan untuk disinkronisasi.', 'error');
+                showGlobalMessage('Tidak ada data valid yang ditemukan.', 'error');
             }
         }
 
-        /**
- * FUNGSI IMPORT (SAMA PERSIS DENGAN YANG LAMA)
- */
         async function handleImportSubmit(event) {
             event.preventDefault();
             
-            if (parsedImportData.length === 0) { 
-                showGlobalMessage('Tidak ada data valid untuk dikirim.', 'error'); 
-                return; 
+            if (parsedImportData.length === 0) {
+                showGlobalMessage('Tidak ada data valid untuk diimport.', 'error');
+                return;
             }
             
             const submitButton = document.getElementById('import-submit-button');
             submitButton.disabled = true;
-            submitButton.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Menjadwalkan Sinkronisasi...';
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...';
             
             try {
-                const jsonPayload = JSON.stringify({
-                    action: 'save_pending_import',
-                    data: parsedImportData
-                });
-        
-                const dataToSend = new URLSearchParams();
-                dataToSend.append('payload', jsonPayload);
-        
-                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    body: dataToSend
-                });
-        
-                if (!response.ok) {
-                    throw new Error(`Server Apps Script Error: ${response.status} ${response.statusText}`);
+                // First, delete all existing data
+                const { error: deleteError } = await supabaseClient
+                    .from(TABLE_NAME)
+                    .delete()
+                    .neq('card', '0'); // Delete all records
+
+                if (deleteError) {
+                    throw new Error(`Gagal menghapus data lama: ${deleteError.message}`);
                 }
-                
-                const result = await response.json();
-        
-                if (result.status === 'success') {
-                    showGlobalMessage(`Sinkronisasi Dijadwalkan! ${result.message}`, 'success');
-                } else {
-                    throw new Error(result.message || 'Gagal menyimpan data sementara ke Apps Script.');
+
+                // Then insert new data
+                const { error: insertError } = await supabaseClient
+                    .from(TABLE_NAME)
+                    .insert(parsedImportData);
+
+                if (insertError) {
+                    throw new Error(`Gagal menyimpan data baru: ${insertError.message}`);
                 }
-        
-            } catch (error) {
-                console.error("Import Scheduling Error:", error);
-                showGlobalMessage(`Gagal menjadwalkan import: ${error.message}. Cek log Apps Script Anda.`, 'error');
-            } finally {
+
+                showGlobalMessage(`Berhasil mengimport ${parsedImportData.length} data karyawan.`, 'success');
                 closeImportModal();
-                submitButton.innerHTML = '<svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg> Hapus Lama & Ganti Baru';
+                fetchData();
+                loadEmployeeStats();
+                
+            } catch (error) {
+                console.error("Import Error:", error);
+                showGlobalMessage(`Gagal mengimport data: ${error.message}`, 'error');
+            } finally {
                 submitButton.disabled = false;
-                fetchData(); 
+                submitButton.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>Proses Import';
             }
         }
-        
-    </script>
 
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAdminSession();
+            document.getElementById('crud-form').addEventListener('submit', handleFormSubmit);
+            document.getElementById('import-form').addEventListener('submit', handleImportSubmit);
+            
+            // File input change event
+            document.getElementById('excel-file-input').addEventListener('change', function() {
+                if (this.files[0]) {
+                    document.getElementById('file-name').textContent = `File: ${this.files[0].name}`;
+                    document.getElementById('file-name').classList.remove('hidden');
+                }
+            });
+        });
+    </script>
 </body>
 </html>
