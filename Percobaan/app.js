@@ -1,4 +1,4 @@
-// app.js (KODE LENGKAP - Deduplikasi Supabase, Tanggal Logis WIT, & Fix Log Absensi)
+// app.js (KODE LENGKAP - Deduplikasi Supabase, Tanggal Logis WIT, & Fix Audio Autoplay)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -17,561 +17,479 @@ const statusCard = document.getElementById('status-card');
 const statusIcon = document.getElementById('status-icon');
 const statusMessage = document.getElementById('status-message');
 const hasilContainer = document.getElementById('hasil-container');
+const namaDisplay = document.getElementById('nama-display');
+const periodeDisplay = document.getElementById('periode-display');
+const jamTapDisplay = document.getElementById('jam-tap-display');
+const messageBox = document.getElementById('message-box');
+const messageText = document.getElementById('message-text');
+const messageCloseButton = document.getElementById('message-close-button');
 const interactionOverlay = document.getElementById('interaction-overlay');
 const startButton = document.getElementById('start-button');
-const jamDigitalElement = document.getElementById('jam-digital');
-const tanggalDigitalElement = document.getElementById('tanggal-digital');
 
 // DOM Elements - TAMPILAN LOG ABSEN
 const logContainer = document.getElementById('log-container');
-const logTanggalElement = document.getElementById('log-tanggal');
-const logDetailBody = document.getElementById('log-detail-body');
+const logTanggalDisplay = document.getElementById('log-tanggal-display');
 const logDetailStatus = document.getElementById('log-detail-status');
-const totalLogSukses = document.getElementById('total-log-sukses');
-const totalLogGagal = document.getElementById('total-log-gagal');
+const logDetailBody = document.getElementById('log-detail-body');
+const summaryTotal = document.getElementById('summary-total');
+const summaryMasuk = document.getElementById('summary-masuk');
+const summaryPulang = document.getElementById('summary-pulang');
+const summaryGagal = document.getElementById('summary-gagal');
 
-// DOM Elements - NAVIGASI
+// Navigasi
 const navTapKartu = document.getElementById('nav-tap-kartu');
 const navLogAbsen = document.getElementById('nav-log-absen');
 
-// Audio Elements
+// Audio
 const audioSuccess = document.getElementById('audio-success');
 const audioFail = document.getElementById('audio-fail');
 
-// State
-let lastProcessedCardId = null;
-let lastLogDate = null; // State untuk melacak tanggal log terakhir dimuat (WIT)
+// ===================================
+// STATE DAN KONSTANTA LOGIKA HARIAN
+// ===================================
+
+/** @type {string | null} State untuk menyimpan tanggal log terakhir dimuat (YYYY-MM-DD WIT) */
+let lastLoadedDate = null;
+const DAY_CHECK_INTERVAL_MS = 5 * 60 * 1000; // Cek pergantian hari setiap 5 menit (300000 ms)
 
 // ===================================
-// UTILITY FUNCTIONS
+// FUNGSI UTILITY WAKTU WIT (UTC+8)
 // ===================================
 
 /**
- * Mengambil waktu dan tanggal saat ini dalam zona waktu WIT (Waktu Indonesia Timur).
- * Menggunakan Timezone offset (+8 jam).
- * @returns {Date} Objek Date yang disesuaikan dengan WIT.
+ * Mendapatkan tanggal WIT (Waktu Indonesia Timur, UTC+8) dari objek Date.
+ * @param {Date} date Objek Date yang akan dikonversi.
+ * @returns {string} Tanggal dalam format YYYY-MM-DD.
  */
-function getWaktuSaatIni() {
+const getWITEDate = (date) => {
+    // WIT = UTC+8 jam
+    const offset = 8 * 60; // 480 minutes
+    const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+    const wit = new Date(utc + (offset * 60000));
+    return wit.toISOString().split('T')[0]; // Format YYYY-MM-DD
+};
+
+/**
+ * Mendapatkan waktu WIT (HH:MM:SS) dari objek Date.
+ * @param {Date} date Objek Date yang akan dikonversi.
+ * @returns {string} Waktu dalam format HH:MM:SS.
+ */
+const getWITTime = (date) => {
+    const offset = 8 * 60;
+    const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+    const wit = new Date(utc + (offset * 60000));
+    return wit.toTimeString().split(' ')[0]; // Format HH:MM:SS
+};
+
+/**
+ * Mendapatkan rentang epoch (milidetik) untuk hari logis WIT saat ini (00:00:00 - 23:59:59).
+ * @returns {{startISO: string, endISO: string, dateString: string}}
+ */
+const getWITEpochRangeForToday = () => {
     const now = new Date();
-    // Offset WIT adalah +8 jam (480 menit)
-    const witOffset = 8 * 60; 
-    // Offset lokal perangkat dalam menit
-    const localOffset = now.getTimezoneOffset();
-    // Perbedaan total offset yang diperlukan
-    const diff = witOffset + localOffset;
-    // Terapkan perbedaan ke waktu saat ini
-    return new Date(now.getTime() + diff * 60 * 1000);
-}
+    const todayString = getWITEDate(now); // Format YYYY-MM-DD
+
+    // Buat objek Date untuk awal hari (00:00:00 WIT)
+    // Kita harus membuat tanggal UTC yang setara dengan 00:00:00 WIT
+    // YYYY-MM-DDT00:00:00+08:00
+    const startOfDayWIT = new Date(todayString + 'T00:00:00+08:00');
+    const startEpoch = startOfDayWIT.getTime(); // epoch ms
+
+    // Akhir hari adalah 24 jam setelah startEpoch
+    const endEpoch = startEpoch + (24 * 60 * 60 * 1000);
+
+    return {
+        // Konversi epoch ms ke ISO string untuk filtering Supabase
+        startISO: new Date(startEpoch).toISOString(),
+        // Gunakan < dari waktu ini
+        endISO: new Date(endEpoch).toISOString(),
+        dateString: todayString
+    };
+};
+
+
+// ===================================
+// FUNGSI TAMPILAN
+// ===================================
 
 /**
- * Memformat objek Date menjadi string tanggal (e.g., "Sabtu, 14 Desember 2025").
- * @param {Date} date - Objek Date (sudah WIT).
- * @returns {string} Tanggal yang diformat.
+ * Menampilkan pesan status di area Tap Kartu.
+ * @param {'success'|'fail'|'default'} type Jenis pesan.
+ * @param {string} message Pesan yang ditampilkan.
+ * @param {string} name Nama yang terdeteksi (opsional).
+ * @param {string} period Periode presensi (opsional).
+ * @param {string} time Waktu tap (opsional).
  */
-function formatTanggal(date) {
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    return date.toLocaleDateString('id-ID', options);
-}
+const showStatusMessage = (type, message, name = '', period = '', time = '') => {
+    // Reset tampilan
+    statusCard.className = 'p-6 rounded-xl shadow-lg transition-all duration-300 w-full md:w-96';
+    statusIcon.className = 'status-icon w-20 h-20 mx-auto mb-4';
+    hasilContainer.style.display = 'none';
+
+    if (type === 'success') {
+        statusCard.classList.add('bg-green-100', 'border-4', 'border-green-400');
+        statusIcon.innerHTML = `<svg class="text-green-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.303 7.297a.75.75 0 00-1.06 0L10.5 14.04l-2.743-2.743a.75.75 0 00-1.06 1.06l3.25 3.25a.75.75 0 001.06 0l5.25-5.25a.75.75 0 000-1.06z"/></svg>`;
+        statusMessage.textContent = message;
+        namaDisplay.textContent = name;
+        periodeDisplay.textContent = period;
+        jamTapDisplay.textContent = time + ' WIT';
+        hasilContainer.style.display = 'block';
+        playSound(audioSuccess);
+    } else if (type === 'fail') {
+        statusCard.classList.add('bg-red-100', 'border-4', 'border-red-400');
+        statusIcon.innerHTML = `<svg class="text-red-600" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm-1.75 5.5a1.25 1.25 0 110 2.5 1.25 1.25 0 010-2.5zm1.5 8h-3v-5h3v5z"/></svg>`;
+        statusMessage.textContent = message;
+        playSound(audioFail);
+    } else { // default (menunggu)
+        statusCard.classList.add('bg-blue-50', 'border-4', 'border-blue-400', 'status-icon-pulse-container');
+        statusIcon.innerHTML = `<svg class="text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M19 8H5a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2zm-1 8H6a.5.5 0 010-1h12a.5.5 0 010 1zm0-3H6a.5.5 0 010-1h12a.5.5 0 010 1z"/></svg>`;
+        statusMessage.textContent = 'Siap menerima tap kartu...';
+        statusIcon.classList.add('status-icon'); // Aktifkan animasi pulse
+    }
+
+    // Periksa dan muat ulang log ringkasan di container tap kartu
+    // Karena ini dipanggil setelah presensi, kita bisa memuat ulang ringkasan
+    const todayRange = getWITEpochRangeForToday();
+    loadLogSummary(todayRange);
+};
 
 /**
- * Memformat objek Date menjadi string waktu (e.g., "12:08:30").
- * @param {Date} date - Objek Date (sudah WIT).
- * @returns {string} Waktu yang diformat.
+ * Menampilkan pesan modal kustom (bukan alert()).
+ * @param {string} text
  */
-function formatWaktu(date) {
-    const options = { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
-    return date.toLocaleTimeString('id-ID', options);
-}
+const showMessageBox = (text) => {
+    messageText.textContent = text;
+    messageBox.classList.remove('opacity-0', 'pointer-events-none');
+    messageBox.classList.add('opacity-100', 'pointer-events-auto');
+};
+
+const hideMessageBox = () => {
+    messageBox.classList.remove('opacity-100', 'pointer-events-auto');
+    messageBox.classList.add('opacity-0', 'pointer-events-none');
+};
+
+
+// ===================================
+// FUNGSI UTAMA LOGIKA PRESENSI
+// ===================================
 
 /**
- * Memperbarui jam digital di UI setiap detik.
+ * Memuat dan menampilkan ringkasan log presensi harian (Total, Masuk, Pulang, Gagal).
+ * @param {{startISO: string, endISO: string, dateString: string}} todayRange Rentang waktu hari ini.
  */
-function updateJamDigital() {
-    const now = getWaktuSaatIni();
-    jamDigitalElement.textContent = formatWaktu(now);
-    tanggalDigitalElement.textContent = formatTanggal(now);
-}
-
-/**
- * Menentukan periode presensi (MASUK atau PULANG) berdasarkan waktu WIT.
- * @param {Date} waktuWIT - Objek Date yang sudah disesuaikan ke WIT.
- * @returns {'MASUK' | 'PULANG'} Periode presensi.
- */
-function determinePresensiPeriod(waktuWIT) {
-    const hours = waktuWIT.getHours();
-    // Asumsi: MASUK sebelum jam 12:00 WIT, PULANG setelah atau pada jam 12:00 WIT
-    return hours < 12 ? 'MASUK' : 'PULANG';
-}
-
-/**
- * Mencari data pengguna berdasarkan ID kartu.
- * @param {string} cardId - ID kartu RFID.
- * @returns {Promise<object | null>} Data pengguna atau null jika tidak ditemukan.
- */
-async function findUserByCardId(cardId) {
+const loadLogSummary = async (todayRange) => {
     try {
+        // Query untuk menghitung semua presensi hari ini
         const { data, error } = await db
-            .from('users')
-            .select('*')
-            .eq('card_id', cardId)
-            .single();
-
-        if (error && error.code !== 'PGRST116') { // PGRST116: No rows found
-            throw error;
-        }
-
-        return data;
-    } catch (error) {
-        console.error("Error finding user:", error.message);
-        return null;
-    }
-}
-
-/**
- * Mencatat log presensi ke database.
- * @param {object} logData - Data log presensi.
- * @returns {Promise<boolean>} Status keberhasilan pencatatan.
- */
-async function recordLog(logData) {
-    try {
-        const { error } = await db
-            .from('logs')
-            .insert([logData]);
-
-        if (error) {
-            throw error;
-        }
-        return true;
-    } catch (error) {
-        console.error("Error recording log:", error.message);
-        return false;
-    }
-}
-
-/**
- * Menghindari duplikasi presensi. Memeriksa apakah pengguna sudah presensi
- * untuk periode (MASUK/PULANG) yang sama hari ini.
- * @param {string} userId - ID pengguna.
- * @param {'MASUK' | 'PULANG'} period - Periode presensi.
- * @returns {Promise<boolean>} True jika duplikasi (sudah ada log), False jika belum.
- */
-async function isDuplicateLog(userId, period) {
-    try {
-        const todayWIT = getWaktuSaatIni();
-        
-        // Dapatkan batas awal hari ini (00:00:00 WIT)
-        const startOfTodayWIT = new Date(todayWIT);
-        startOfTodayWIT.setHours(0, 0, 0, 0);
-
-        // Dapatkan batas akhir hari ini (23:59:59 WIT)
-        const endOfTodayWIT = new Date(todayWIT);
-        endOfTodayWIT.setHours(23, 59, 59, 999);
-        
-        // Gunakan format ISO string untuk Supabase
-        const startISO = startOfTodayWIT.toISOString();
-        const endISO = endOfTodayWIT.toISOString();
-
-        const { data, error } = await db
-            .from('logs')
-            .select('id')
-            .eq('user_id', userId)
-            .eq('period', period)
-            .gte('timestamp', startISO) // Mulai hari ini 00:00:00 WIT
-            .lte('timestamp', endISO)   // Sampai hari ini 23:59:59 WIT
-            .maybeSingle(); // Menggunakan maybeSingle untuk mengatasi error no rows found
-        
-        // Jika error adalah 'no rows found', itu dianggap false/tidak duplikasi
-        if (error && error.code !== 'PGRST116') {
-             throw error;
-        }
-
-        return data !== null; // Jika ada data, berarti duplikasi
-    } catch (error) {
-        console.error("Error checking duplicate log:", error.message);
-        // Jika terjadi error, kita asumsikan tidak duplikasi untuk menghindari false positive yang memblokir presensi
-        return false; 
-    }
-}
-
-
-// ===================================
-// HANDLER PRESENSI
-// ===================================
-
-/**
- * Memproses input ID kartu dari keyboard HID.
- * @param {string} cardId - ID kartu yang di-scan.
- */
-async function processCardScan(cardId) {
-    // Abaikan scan yang beruntun dalam waktu singkat (debounce)
-    if (cardId === lastProcessedCardId) {
-        return;
-    }
-    lastProcessedCardId = cardId;
-    
-    // Reset status UI
-    setStatus('Memproses...', 'loading');
-    
-    const nowWIT = getWaktuSaatIni();
-    const period = determinePresensiPeriod(nowWIT);
-    
-    const user = await findUserByCardId(cardId);
-    
-    if (!user) {
-        // GAGAL: Kartu tidak terdaftar
-        playAudio(audioFail);
-        setStatus(`Kartu ID ${cardId} tidak terdaftar.`, 'fail', 'Pengguna Tidak Ditemukan');
-        setTimeout(() => setStatus('Siap untuk Tap Kartu', 'ready'), 3000);
-        return;
-    }
-    
-    const isDuplicated = await isDuplicateLog(user.id, period);
-
-    if (isDuplicated) {
-        // GAGAL: Sudah presensi di periode ini
-        playAudio(audioFail);
-        setStatus(`Gagal! ${user.name} sudah absen ${period} hari ini.`, 'fail', `Duplikasi ${period}`);
-    } else {
-        // SUKSES: Catat presensi
-        const logData = {
-            user_id: user.id,
-            user_name: user.name,
-            // Simpan waktu WIT dalam format ISO, yang akan dikonversi Supabase menjadi TIMESTAMPZ
-            // Ini menyimpan waktu yang terjadi (WIT) dan timezone-nya.
-            timestamp: nowWIT.toISOString(), 
-            period: period,
-            status: 'SUKSES'
-        };
-        
-        const success = await recordLog(logData);
-        
-        if (success) {
-            playAudio(audioSuccess);
-            setStatus(`SUKSES! Selamat ${user.name}, Anda presensi ${period}.`, 'success', `Presensi ${period} Sukses`);
-            
-            // PENTING: Muat ulang log harian setelah presensi sukses
-            await loadLogDetail(nowWIT);
-        } else {
-            // GAGAL: Kesalahan server
-            playAudio(audioFail);
-            setStatus(`Gagal mencatat presensi untuk ${user.name}. Cek koneksi server.`, 'fail', 'Kesalahan Server');
-        }
-    }
-    
-    // Set timeout untuk reset debounce
-    setTimeout(() => {
-        lastProcessedCardId = null;
-        if (statusCard.classList.contains('bg-green-500') || statusCard.classList.contains('bg-red-500')) {
-            // Jika status masih sukses/gagal, reset ke ready setelah 3 detik
-            setTimeout(() => setStatus('Siap untuk Tap Kartu', 'ready'), 3000);
-        }
-    }, 100); // Debounce 100ms
-}
-
-
-// ===================================
-// UI/VIEW FUNCTIONS
-// ===================================
-
-/**
- * Mengatur tampilan UI status presensi.
- * @param {string} message - Pesan status.
- * @param {'ready' | 'loading' | 'success' | 'fail'} type - Jenis status.
- * @param {string | null} resultMessage - Pesan hasil di hasilContainer.
- */
-function setStatus(message, type, resultMessage = null) {
-    statusCard.className = 'w-full p-6 text-center rounded-2xl shadow-xl transition-all duration-300 transform';
-    statusIcon.className = 'w-16 h-16 mx-auto mb-4 transition-transform duration-300';
-    hasilContainer.innerHTML = '';
-    
-    switch (type) {
-        case 'ready':
-            statusCard.classList.add('bg-white', 'border-4', 'border-blue-400');
-            statusIcon.classList.add('text-blue-500', 'status-icon');
-            statusIcon.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-full h-full">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9.75h19.5M2.25 12h19.5m-6.75 3h6.75m-6.75 3h6.75M2.25 15h19.5M2.25 18h19.5" />
-                </svg>
-            `;
-            hasilContainer.classList.add('hidden');
-            break;
-        case 'loading':
-            statusCard.classList.add('bg-blue-100', 'border-4', 'border-blue-500');
-            statusIcon.classList.add('text-blue-600', 'animate-spin');
-            statusIcon.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-full h-full">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.84-2.828c-1.392-.924-2.735-1.745-3.36-1.12A3.99 3.99 0 0112 12h8.25" />
-                </svg>
-            `;
-            hasilContainer.classList.add('hidden');
-            break;
-        case 'success':
-            statusCard.classList.add('bg-green-500', 'text-white');
-            statusIcon.classList.add('text-white', 'animate-bounce');
-            statusIcon.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-full h-full">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-            `;
-            hasilContainer.classList.remove('hidden');
-            hasilContainer.innerHTML = `<p class="text-2xl font-bold text-white">${resultMessage}</p>`;
-            break;
-        case 'fail':
-            statusCard.classList.add('bg-red-500', 'text-white');
-            statusIcon.classList.add('text-white', 'animate-shake');
-            statusIcon.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-full h-full">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m0 3.75h.008M21.75 12a9.75 9.75 0 11-19.5 0 9.75 9.75 0 0119.5 0z" />
-                </svg>
-            `;
-            hasilContainer.classList.remove('hidden');
-            hasilContainer.innerHTML = `<p class="text-2xl font-bold text-white">${resultMessage}</p>`;
-            break;
-    }
-    
-    statusMessage.textContent = message;
-    
-    // Hapus class animasi setelah selesai (kecuali 'ready')
-    if (type !== 'ready' && type !== 'loading') {
-        setTimeout(() => {
-            statusIcon.classList.remove('animate-bounce', 'animate-shake');
-        }, 1000);
-    }
-}
-
-/**
- * Memutar audio yang diberikan.
- * @param {HTMLAudioElement} audioElement - Elemen audio yang akan diputar.
- */
-function playAudio(audioElement) {
-    audioElement.currentTime = 0; // Reset ke awal
-    audioElement.play().catch(e => {
-        console.error("Gagal memutar audio:", e);
-    });
-}
-
-/**
- * Memuat detail log presensi untuk hari ini (berdasarkan waktu WIT).
- * @param {Date} date - Objek Date (sudah WIT) untuk tanggal yang akan dimuat.
- */
-async function loadLogDetail(date) {
-    logDetailBody.innerHTML = ''; // Pastikan body log dikosongkan
-    logDetailStatus.textContent = 'Memuat data log...';
-    
-    // 1. Hitung batas waktu awal (00:00:00 WIT hari ini)
-    const startOfTodayWIT = new Date(date);
-    startOfTodayWIT.setHours(0, 0, 0, 0); // Atur jam, menit, detik, milidetik ke 0 (menggunakan waktu WIT)
-    
-    // 2. Hitung batas waktu akhir (23:59:59 WIT hari ini)
-    const endOfTodayWIT = new Date(date);
-    endOfTodayWIT.setHours(23, 59, 59, 999); // Atur jam, menit, detik, milidetik ke akhir hari (menggunakan waktu WIT)
-
-    // Gunakan format ISO string untuk Supabase Query
-    const startISO = startOfTodayWIT.toISOString();
-    const endISO = endOfTodayWIT.toISOString();
-
-    // Update tanggal yang ditampilkan di UI Log Absen
-    logTanggalElement.textContent = formatTanggal(date);
-    
-    try {
-        console.log(`Querying logs from ${startISO} to ${endISO}`);
-        
-        // Query log untuk hari ini (batas waktu ISO)
-        const { data: logs, error } = await db
-            .from('logs')
-            .select('*')
-            // Gunakan startISO (00:00:00 WIT hari ini) dan endISO (23:59:59 WIT hari ini)
-            .gte('timestamp', startISO)
-            .lte('timestamp', endISO)
-            .order('timestamp', { ascending: false });
+            .from('presensi')
+            .select('periode, status')
+            .gte('created_at', todayRange.startISO) // Greater than or equal to start of day
+            .lt('created_at', todayRange.endISO);   // Less than end of day (23:59:59.999)
 
         if (error) throw error;
-        
-        let successCount = 0;
-        let failCount = 0;
 
-        if (logs.length === 0) {
-            logDetailStatus.textContent = `Tidak ada catatan presensi untuk hari ini (${formatTanggal(date)}).`;
-        } else {
-            logDetailStatus.textContent = `Menampilkan ${logs.length} catatan presensi untuk hari ini.`;
-            
-            logs.forEach(log => {
-                // Konversi timestamp dari database (TIMESTAMPZ) ke objek Date
-                const logTime = new Date(log.timestamp);
-                
-                if (log.status === 'SUKSES') {
-                    successCount++;
-                } else {
-                    failCount++;
+        let total = 0;
+        let masuk = 0;
+        let pulang = 0;
+        let gagal = 0;
+
+        data.forEach(log => {
+            total++;
+            if (log.status === 'SUKSES') {
+                if (log.periode === 'MASUK') {
+                    masuk++;
+                } else if (log.periode === 'PULANG') {
+                    pulang++;
                 }
+            } else {
+                gagal++;
+            }
+        });
 
-                const row = logDetailBody.insertRow();
-                row.classList.add(log.status === 'SUKSES' ? 'bg-white hover:bg-green-50' : 'bg-red-50 hover:bg-red-100');
+        // Update DOM elements untuk Summary
+        summaryTotal.textContent = total;
+        summaryMasuk.textContent = masuk;
+        summaryPulang.textContent = pulang;
+        summaryGagal.textContent = gagal;
 
-                // Kolom Waktu: Perlu disesuaikan agar menampilkan waktu WIT di UI
-                // Karena logTime sudah berisi data waktu dan timezone dari database,
-                // kita bisa konversi secara lokal (atau menggunakan formatWaktu yang sudah menyesuaikan)
-                let cell = row.insertCell();
-                // Menggunakan formatWaktu, yang seharusnya menunjukkan waktu lokal perangkat
-                // atau Anda bisa menggunakan: logTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
-                cell.textContent = formatWaktu(logTime); 
-                cell.classList.add('px-6', 'py-3', 'whitespace-nowrap', 'text-sm', 'font-medium', 'text-gray-900');
-
-                // Kolom Nama
-                cell = row.insertCell();
-                cell.textContent = log.user_name || 'N/A';
-                cell.classList.add('px-6', 'py-3', 'whitespace-nowrap', 'text-sm', 'text-gray-500');
-
-                // Kolom Periode
-                cell = row.insertCell();
-                cell.textContent = log.period;
-                cell.classList.add('px-6', 'py-3', 'whitespace-nowrap', 'text-sm', 'font-semibold', log.period === 'MASUK' ? 'text-blue-600' : 'text-orange-600');
-
-                // Kolom Status
-                cell = row.insertCell();
-                cell.textContent = log.status;
-                cell.classList.add('px-6', 'py-3', 'whitespace-nowrap', 'text-sm', 'font-bold', log.status === 'SUKSES' ? 'text-green-600' : 'text-red-600');
-            });
-        }
-        
-        // Update summary counts
-        totalLogSukses.textContent = successCount;
-        totalLogGagal.textContent = failCount;
-        
-    } catch (error) {
-        console.error("Error loading log detail:", error.message);
-        logDetailStatus.textContent = 'Gagal memuat log presensi. Cek koneksi atau konfigurasi database.';
+    } catch (e) {
+        console.error("Gagal memuat ringkasan log:", e.message);
+        // Tampilkan pesan error jika perlu
     }
-    
-    // Update state tanggal log terakhir dimuat
-    lastLogDate = date.toISOString().split('T')[0];
-}
-
-
-// ===================================
-// SISTEM DETEKSI PERGANTIAN HARI (FIXED)
-// ===================================
+};
 
 /**
- * Membandingkan tanggal log terakhir yang dimuat dengan tanggal hari ini (WIT).
- * Jika berbeda, log akan dimuat ulang.
+ * Memuat dan menampilkan detail log presensi harian.
+ * @param {{startISO: string, endISO: string, dateString: string}} todayRange Rentang waktu hari ini.
  */
-async function checkDayChangeAndReloadLog() {
-    const nowWIT = getWaktuSaatIni();
-    const todayDateISO = nowWIT.toISOString().split('T')[0];
+const loadLogData = async (todayRange) => {
+    logDetailBody.innerHTML = '';
+    logDetailStatus.textContent = 'Memuat data log...';
+    logTanggalDisplay.textContent = `Tanggal Log: ${todayRange.dateString}`;
+    
+    await loadLogSummary(todayRange); // Pastikan summary juga terupdate
 
-    // Jika belum ada log yang dimuat atau hari sudah berganti
-    if (lastLogDate === null || lastLogDate !== todayDateISO) {
-        console.log(`[Auto-Reload] Deteksi pergantian hari atau inisialisasi. Memuat ulang log untuk ${todayDateISO}.`);
-        // Hanya panggil loadLogDetail jika user sedang berada di tampilan log.
-        // Jika sedang di tampilan tap kartu, log akan dimuat saat pindah.
-        if (logContainer && !logContainer.classList.contains('hidden')) {
-            await loadLogDetail(nowWIT);
-        } else if (lastLogDate === null) {
-            // Muat log awal (saat inisialisasi) meskipun di tap-container
-             await loadLogDetail(nowWIT);
+    try {
+        const { data, error } = await db
+            .from('presensi')
+            .select(`
+                *,
+                karyawan:rfid_id (
+                    nama
+                )
+            `)
+            .gte('created_at', todayRange.startISO) // Filter by start of logical day
+            .lt('created_at', todayRange.endISO)   // Filter by end of logical day (exclusive)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (data.length === 0) {
+            logDetailStatus.textContent = 'Tidak ada log presensi untuk hari ini.';
+            return;
         }
-    } else {
-        // console.log(`[Auto-Reload] Hari belum berganti (${todayDateISO}). Log tetap.`)
+
+        logDetailStatus.style.display = 'none';
+
+        data.forEach(log => {
+            const row = logDetailBody.insertRow();
+            const timestamp = new Date(log.created_at);
+            const timeWIT = getWITTime(timestamp);
+            const namaKaryawan = log.karyawan ? log.karyawan.nama : 'N/A';
+            const statusClass = log.status === 'SUKSES' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+
+            row.innerHTML = `
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${timeWIT}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${log.rfid_id} - ${namaKaryawan}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${log.periode || '-'}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                        ${log.status}
+                    </span>
+                </td>
+            `;
+        });
+
+    } catch (e) {
+        console.error("Gagal memuat detail log:", e.message);
+        logDetailStatus.textContent = 'Gagal memuat data log. Silakan cek konsol untuk detail.';
+        logDetailStatus.style.display = 'block';
     }
-}
+};
+
+/**
+ * Logika utama saat kartu RFID di-tap (input dari keyboard HID).
+ * @param {string} rfidId ID RFID yang dibaca.
+ */
+const handleRfidTap = async (rfidId) => {
+    // 1. Tampilkan status 'Processing'
+    showStatusMessage('default', 'Memproses kartu...');
+
+    const timestamp = new Date();
+    const timeWIT = getWITTime(timestamp);
+
+    try {
+        // 2. Cek apakah RFID terdaftar di tabel karyawan
+        const { data: userData, error: userError } = await db
+            .from('karyawan')
+            .select('nama')
+            .eq('rfid_id', rfidId)
+            .single();
+
+        if (userError || !userData) {
+            // Log Gagal - RFID tidak terdaftar
+            await db.from('presensi').insert([{
+                rfid_id: rfidId,
+                status: 'GAGAL',
+                keterangan: 'RFID ID tidak terdaftar.',
+                created_at: timestamp.toISOString()
+            }]);
+            showStatusMessage('fail', 'RFID GAGAL! Kartu tidak terdaftar.');
+            return;
+        }
+
+        const namaKaryawan = userData.nama;
+
+        // 3. Tentukan periode (Masuk/Pulang)
+        // Cek log terakhir karyawan hari ini
+        const todayRange = getWITEpochRangeForToday();
+
+        const { data: lastLog, error: logError } = await db
+            .from('presensi')
+            .select('periode')
+            .eq('rfid_id', rfidId)
+            .gte('created_at', todayRange.startISO)
+            .lt('created_at', todayRange.endISO)
+            .eq('status', 'SUKSES')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        let periode = 'MASUK'; // Default ke MASUK
+        if (lastLog && lastLog.periode === 'MASUK') {
+            periode = 'PULANG'; // Jika log terakhir adalah MASUK, periode berikutnya adalah PULANG
+        }
+
+        // 4. Log Sukses
+        await db.from('presensi').insert([{
+            rfid_id: rfidId,
+            status: 'SUKSES',
+            periode: periode,
+            keterangan: `Presensi ${periode} berhasil.`,
+            created_at: timestamp.toISOString()
+        }]);
+
+        // 5. Tampilkan status Sukses
+        showStatusMessage('success',
+            `Presensi ${periode} Berhasil!`,
+            namaKaryawan,
+            periode,
+            timeWIT
+        );
+
+    } catch (e) {
+        console.error("Kesalahan Presensi:", e);
+        // Log Gagal - Error Sistem
+        await db.from('presensi').insert([{
+            rfid_id: rfidId,
+            status: 'GAGAL',
+            keterangan: `Kesalahan sistem: ${e.message}`,
+            created_at: timestamp.toISOString()
+        }]);
+        showStatusMessage('fail', 'Kesalahan Sistem. Cek konsol.');
+    } finally {
+        // Logika ini akan secara otomatis memuat ulang log ringkasan di showStatusMessage
+    }
+};
 
 
 // ===================================
 // LISTENER & INISIALISASI
 // ===================================
 
+let rfidBuffer = '';
+let lastKeyPressTime = 0;
+const KEY_PRESS_TIMEOUT = 50; // Waktu maksimum antar tombol (ms)
+
 /**
- * Menyiapkan listener keyboard untuk scan kartu HID.
+ * Menyiapkan listener keyboard untuk emulasi Keyboard HID RFID.
  */
-function setupHIDListener() {
-    let cardIdBuffer = '';
-    let lastKeyTime = Date.now();
-    
+const setupHIDListener = () => {
     document.addEventListener('keydown', (e) => {
-        const now = Date.now();
-        
-        // Jika jeda antar karakter lebih dari 50ms, reset buffer (asumsi ini adalah scan baru)
-        if (now - lastKeyTime > 50) {
-            cardIdBuffer = '';
-        }
-        
-        // Hanya proses jika di container Tap Kartu
-        if (tapContainer.classList.contains('hidden')) {
-             return;
+        const currentTime = Date.now();
+        // Cek apakah jeda terlalu lama (mengindikasikan input baru)
+        if (currentTime - lastKeyPressTime > KEY_PRESS_TIMEOUT) {
+            rfidBuffer = '';
         }
 
-        // Karakter yang diizinkan (angka, biasanya dari scanner)
-        if (e.key >= '0' && e.key <= '9') {
-            cardIdBuffer += e.key;
-            e.preventDefault(); // Mencegah input muncul di field lain jika ada
-        } else if (e.key === 'Enter' && cardIdBuffer.length > 0) {
-            // Enter menandakan akhir dari scan
-            e.preventDefault();
-            const finalCardId = cardIdBuffer;
-            cardIdBuffer = '';
-            
-            console.log("Card ID Scanned:", finalCardId);
-            processCardScan(finalCardId);
+        // Hanya proses jika Tap Kartu sedang ditampilkan
+        if (tapContainer.style.display !== 'none' || tapContainer.style.display === '') {
+            if (e.key >= '0' && e.key <= '9' || e.key >= 'a' && e.key <= 'z' || e.key >= 'A' && e.key <= 'Z') {
+                rfidBuffer += e.key;
+                lastKeyPressTime = currentTime;
+                e.preventDefault(); // Mencegah pengetikan di tempat lain
+            } else if (e.key === 'Enter' && rfidBuffer.length > 0) {
+                // Proses tap kartu
+                handleRfidTap(rfidBuffer.trim());
+                rfidBuffer = ''; // Reset buffer
+                lastKeyPressTime = 0;
+                e.preventDefault();
+            }
         }
-        
-        lastKeyTime = now;
     });
-}
+    console.log("HID Listener aktif.");
+};
 
 /**
- * Menyiapkan navigasi antar container.
+ * Memutar suara, memastikan audio dimulai dari awal.
+ * @param {HTMLAudioElement} audio
  */
-function setupNavigation() {
-    const showTapContainer = () => {
-        tapContainer.classList.remove('hidden');
-        logContainer.classList.add('hidden');
-        navTapKartu.classList.add('bg-blue-600', 'text-white');
-        navLogAbsen.classList.remove('bg-blue-600', 'text-white');
-        
-        // Pastikan tampilan tap kartu bersih setelah kembali
-        setStatus('Siap untuk Tap Kartu', 'ready');
-    };
+const playSound = (audio) => {
+    try {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.play().catch(e => console.warn("Gagal memutar audio:", e));
+    } catch (e) {
+        console.warn("Kesalahan saat memutar audio:", e);
+    }
+};
+
+/**
+ * Fungsi untuk menampilkan container Tap Kartu dan menyembunyikan Log.
+ */
+const showTapContainer = () => {
+    tapContainer.style.display = 'flex';
+    logContainer.style.display = 'none';
+    navTapKartu.classList.add('border-b-2', 'border-blue-600', 'text-blue-600');
+    navLogAbsen.classList.remove('border-b-2', 'border-blue-600', 'text-blue-600');
+    showStatusMessage('default', 'Siap menerima tap kartu...');
+};
+
+/**
+ * Fungsi untuk menampilkan container Log Absen dan menyembunyikan Tap Kartu.
+ */
+const showLogContainer = () => {
+    tapContainer.style.display = 'none';
+    logContainer.style.display = 'block';
+    navTapKartu.classList.remove('border-b-2', 'border-blue-600', 'text-blue-600');
+    navLogAbsen.classList.add('border-b-2', 'border-blue-600', 'text-blue-600');
     
-    const showLogContainer = async () => {
-        logContainer.classList.remove('hidden');
-        tapContainer.classList.add('hidden');
-        navLogAbsen.classList.add('bg-blue-600', 'text-white');
-        navTapKartu.classList.remove('bg-blue-600', 'text-white');
+    // Pastikan log detail dimuat saat tab diklik
+    const todayRange = getWITEpochRangeForToday();
+    loadLogData(todayRange);
+};
 
-        // Muat ulang data log saat pindah ke tampilan Log
-        // Ini memastikan log harian yang terbaru (hari ini) dimuat.
-        await loadLogDetail(getWaktuSaatIni()); 
-    };
-
+/**
+ * Menyiapkan event listener untuk navigasi.
+ */
+const setupNavigation = () => {
+    messageCloseButton.addEventListener('click', hideMessageBox);
     navTapKartu.addEventListener('click', showTapContainer);
     navLogAbsen.addEventListener('click', showLogContainer);
-}
+};
 
 /**
- * Menyiapkan state awal aplikasi.
+ * Mengecek apakah tanggal logis WIT telah berganti. Jika ya, memuat ulang log.
+ * FUNGSI UTAMA UNTUK AUTO-UPDATE LOG HARIAN.
  */
-async function setupInitialState() {
-    // 1. Mulai update jam digital
-    updateJamDigital();
-    setInterval(updateJamDigital, 1000);
-    
-    // 2. Set status awal
-    setStatus('Siap untuk Tap Kartu', 'ready');
-    
-    // 3. Muat log untuk hari ini (pertama kali)
-    // Walaupun di tap-container, log awal tetap dimuat untuk inisialisasi lastLogDate.
-    await loadLogDetail(getWaktuSaatIni()); 
-    
-    // 4. JALANKAN SISTEM DETEKSI PERGANTIAN HARI
-    // Cek setiap 5 menit (300000 ms)
-    setInterval(checkDayChangeAndReloadLog, 300000); 
-    
-    // 5. Tampilkan container Tap Kartu secara default
-    tapContainer.classList.remove('hidden');
-    logContainer.classList.add('hidden');
-    navTapKartu.classList.add('bg-blue-600', 'text-white');
-}
+const checkDayChangeAndReload = () => {
+    const today = new Date();
+    const todayDateString = getWITEDate(today);
+
+    if (lastLoadedDate && todayDateString !== lastLoadedDate) {
+        console.log(`Pergantian hari terdeteksi: ${lastLoadedDate} -> ${todayDateString}. Memuat ulang log...`);
+        // Muat ulang log harian
+        setupInitialState();
+        // Cek apakah user sedang berada di tab Log Absen, jika ya, muat ulang juga detailnya.
+        if (logContainer.style.display !== 'none') {
+             const todayRange = getWITEpochRangeForToday();
+             loadLogData(todayRange);
+        }
+    } else {
+        console.log(`Log data up-to-date untuk tanggal: ${todayDateString}`);
+    }
+};
+
+/**
+ * Memulai pengecekan pergantian hari secara berkala.
+ */
+const startDayChangeChecker = () => {
+    // Panggil sekali untuk memastikan state awal terisi
+    checkDayChangeAndReload(); 
+    // Set interval untuk cek harian
+    setInterval(checkDayChangeAndReload, DAY_CHECK_INTERVAL_MS);
+    console.log(`Pengawasan pergantian hari dimulai, interval: ${DAY_CHECK_INTERVAL_MS / 60000} menit.`);
+};
+
+/**
+ * Mempersiapkan state awal aplikasi (memuat data log harian).
+ */
+const setupInitialState = async () => {
+    const todayRange = getWITEpochRangeForToday();
+    lastLoadedDate = todayRange.dateString; // Set state tanggal terakhir dimuat
+    await loadLogSummary(todayRange); // Muat ringkasan untuk tampilan awal
+    showTapContainer(); // Default view
+};
 
 
 // ===================================
@@ -585,7 +503,10 @@ window.onload = () => {
     // 2. Setup state awal (memuat log dari Supabase & tampilkan Tap Kartu)
     setupInitialState(); 
     
-    // 3. Setup listener HANYA SETELAH TOMBOL DIKLIK
+    // 3. Setup pengawasan pergantian hari
+    startDayChangeChecker();
+
+    // 4. Setup listener HANYA SETELAH TOMBOL DIKLIK
     if (startButton) {
         startButton.addEventListener('click', () => {
             if (interactionOverlay) {
