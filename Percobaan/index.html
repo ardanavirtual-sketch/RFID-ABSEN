@@ -97,6 +97,25 @@
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
     }
+    
+    /* Animasi untuk waktu */
+    .time-update {
+        animation: timePulse 1s ease;
+    }
+    
+    @keyframes timePulse {
+        0% { opacity: 0.7; }
+        50% { opacity: 1; }
+        100% { opacity: 0.7; }
+    }
+    
+    /* Style untuk indikator periode */
+    .period-badge {
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
   </style>
   <script>
     // Konfigurasi warna khusus Tailwind
@@ -108,6 +127,10 @@
             'success-green': '#10b981',
             'error-red': '#ef4444',
             'warning-yellow': '#f59e0b', // Digunakan untuk status 'Processing'
+            'pagi-blue': '#3b82f6',
+            'siang-yellow': '#f59e0b',
+            'sore-orange': '#f97316',
+            'malam-purple': '#8b5cf6'
           }
         }
       }
@@ -155,7 +178,7 @@
               <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
               </svg>
-              <span id="current-date-display">Memuat tanggal...</span>
+              <span id="current-date-display" class="time-update">Memuat tanggal...</span>
             </div>
         </div>
         
@@ -201,7 +224,7 @@
                         </div>
                         <div class="flex-1 p-1 ml-1">
                             <p class="text-error-red font-bold text-base" id="log-gagal-sore">0</p>
-                            <p class="text-gray500 text-xs">Gagal</p>
+                            <p class="text-gray-500 text-xs">Gagal</p>
                         </div>
                     </div>
                 </div>
@@ -231,8 +254,12 @@
             </div>
             <p id="status-message" class="text-lg font-semibold text-primary-blue">Reader Siap. Tap Kartu.</p>
             <p class="text-xs text-gray-400 mt-1" id="reader-status-hint">Listener Keyboard (HID) aktif. Tempelkan kartu.</p>
-            <p class="text-xs text-gray-500 mt-2" id="current-period-indicator">
-              <span class="font-medium">Periode saat ini:</span> <span id="period-display">Memuat...</span>
+            <p class="text-xs text-gray-500 mt-2 flex items-center justify-center">
+              <span class="font-medium mr-2">Periode saat ini:</span> 
+              <span id="period-display" class="period-badge bg-blue-100 text-blue-800">Memuat...</span>
+            </p>
+            <p class="text-xs text-gray-400 mt-2">
+              Waktu: <span id="current-wit-time">00.00.00</span> WIT
             </p>
         </div>
 
@@ -279,13 +306,11 @@
           <div class="flex items-center justify-between">
             <div>
               <div id="log-tanggal-hari-ini-log" class="text-sm font-medium text-gray-700">Tanggal: Memuat...</div>
-              <div class="text-xs text-gray-500 mt-1">
-                <span class="flex items-center">
-                  <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                  Reset harian: 01:00 WIT
-                </span>
+              <div class="text-xs text-gray-500 mt-1 flex items-center">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>Reset harian: 01:00 WIT | Waktu sekarang: <span id="log-current-time" class="font-medium">00.00.00</span> WIT</span>
               </div>
             </div>
             <button id="refresh-log-btn" class="text-primary-blue hover:text-blue-900 transition duration-200 flex items-center text-sm">
@@ -415,10 +440,13 @@
     <div class="mt-8 pt-4 border-t border-gray-100 text-center">
       <div class="flex flex-col sm:flex-row justify-between items-center text-xs text-gray-500">
         <div class="mb-2 sm:mb-0">
-          <span class="font-medium">Waktu Server:</span> <span id="server-time">Memuat...</span>
+          <span class="font-medium">Waktu Server (WIT):</span> <span id="server-time" class="time-update font-medium">Memuat...</span>
         </div>
-        <div>
-          <span class="font-medium">Zona Waktu:</span> WIT (UTC+9)
+        <div class="flex items-center">
+          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>Zona Waktu: Indonesia Timur (UTC+9)</span>
         </div>
       </div>
       <div class="mt-2 text-xs text-gray-400">
@@ -435,31 +463,39 @@
   <script type="module" src="app.js"></script>
   
   <script>
-    // Script untuk menampilkan waktu server secara real-time
-    function updateServerTime() {
+    // Script untuk menampilkan waktu Indonesia Timur (WIT) secara real-time
+    function updateWITTime() {
       const now = new Date();
-      const witTime = new Date(now.getTime() + (9 * 60 * 60 * 1000)); // UTC+9 untuk WIT
       
-      const options = {
-        timeZone: 'Asia/Jayapura',
-        hour12: false,
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      };
+      // Indonesia Timur (WIT) = UTC+9
+      const witOffset = 9 * 60 * 60 * 1000; // 9 jam dalam milidetik
+      const witTime = new Date(now.getTime() + witOffset);
       
-      const timeString = witTime.toLocaleTimeString('id-ID', options);
-      const dateString = witTime.toLocaleDateString('id-ID', {
-        timeZone: 'Asia/Jayapura',
-        weekday: 'short',
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      });
+      // Format waktu: HH.MM.SS
+      const hours = witTime.getUTCHours().toString().padStart(2, '0');
+      const minutes = witTime.getUTCMinutes().toString().padStart(2, '0');
+      const seconds = witTime.getUTCSeconds().toString().padStart(2, '0');
       
+      // Format tanggal Indonesia
+      const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+      
+      const dayName = days[witTime.getUTCDay()];
+      const date = witTime.getUTCDate();
+      const monthName = months[witTime.getUTCMonth()];
+      const year = witTime.getUTCFullYear();
+      
+      const dateString = `${dayName}, ${date} ${monthName} ${year}`;
+      const timeString = `${hours}.${minutes}.${seconds}`;
+      const fullDateTime = `${dateString} ${timeString}`;
+      
+      // Update waktu server
       const serverTimeElement = document.getElementById('server-time');
       if (serverTimeElement) {
-        serverTimeElement.textContent = `${dateString} ${timeString}`;
+        serverTimeElement.textContent = fullDateTime;
+        serverTimeElement.classList.add('time-update');
+        setTimeout(() => serverTimeElement.classList.remove('time-update'), 1000);
       }
       
       // Update current date display
@@ -467,13 +503,81 @@
       if (currentDateDisplay) {
         currentDateDisplay.textContent = dateString;
       }
+      
+      // Update current WIT time in status card
+      const currentWITTimeElement = document.getElementById('current-wit-time');
+      if (currentWITTimeElement) {
+        currentWITTimeElement.textContent = timeString;
+      }
+      
+      // Update current time in log container
+      const logCurrentTimeElement = document.getElementById('log-current-time');
+      if (logCurrentTimeElement) {
+        logCurrentTimeElement.textContent = timeString;
+      }
+      
+      // Update periode saat ini
+      const periodDisplay = document.getElementById('period-display');
+      if (periodDisplay) {
+        const hour = witTime.getUTCHours();
+        let period = 'Memuat...';
+        let periodClass = 'bg-gray-100 text-gray-800';
+        
+        if (hour >= 4 && hour < 10) {
+          period = 'PAGI';
+          periodClass = 'bg-blue-100 text-blue-800';
+        } else if (hour >= 10 && hour < 16) {
+          period = 'SIANG';
+          periodClass = 'bg-yellow-100 text-yellow-800';
+        } else if (hour >= 16 && hour < 21) {
+          period = 'SORE';
+          periodClass = 'bg-orange-100 text-orange-800';
+        } else if (hour >= 21 && hour < 23) {
+          period = 'MALAM';
+          periodClass = 'bg-purple-100 text-purple-800';
+        } else {
+          period = 'PAGI';
+          periodClass = 'bg-blue-100 text-blue-800';
+        }
+        
+        periodDisplay.textContent = period;
+        periodDisplay.className = `period-badge ${periodClass}`;
+      }
     }
     
     // Update waktu setiap detik
-    setInterval(updateServerTime, 1000);
+    setInterval(updateWITTime, 1000);
     
     // Inisialisasi waktu saat halaman dimuat
-    document.addEventListener('DOMContentLoaded', updateServerTime);
+    document.addEventListener('DOMContentLoaded', function() {
+      updateWITTime();
+      
+      // Setup tombol refresh log
+      const refreshLogBtn = document.getElementById('refresh-log-btn');
+      if (refreshLogBtn) {
+        refreshLogBtn.addEventListener('click', function() {
+          // Trigger refresh dari app.js jika window.fetchAndDisplayLogs tersedia
+          if (typeof window.fetchAndDisplayLogs === 'function') {
+            window.fetchAndDisplayLogs();
+            refreshLogBtn.innerHTML = `
+              <svg class="animate-spin w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              Memuat...
+            `;
+            
+            setTimeout(() => {
+              refreshLogBtn.innerHTML = `
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Refresh
+              `;
+            }, 1000);
+          }
+        });
+      }
+    });
   </script>
 </body>
 </html>
