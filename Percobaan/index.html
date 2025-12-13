@@ -32,6 +32,12 @@
         padding: 0.5rem; 
         box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         height: 100%; 
+        transition: all 0.3s ease;
+    }
+    
+    .period-box:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
     
     /* Responsive adjustment for status card on small screens */
@@ -116,6 +122,23 @@
         font-size: 0.75rem;
         font-weight: bold;
     }
+    
+    /* Style untuk tombol refresh */
+    .refresh-btn {
+        transition: all 0.3s ease;
+    }
+    
+    .refresh-btn:hover {
+        transform: rotate(45deg);
+    }
+    
+    /* Style untuk total counter */
+    .total-counter {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid #e2e8f0;
+    }
   </style>
   <script>
     // Konfigurasi warna khusus Tailwind
@@ -158,10 +181,10 @@
     
     <!-- NAVIGATION/MENU -->
     <div class="flex justify-center space-x-4 mb-6 border-b pb-4">
-        <button id="nav-tap-kartu" class="px-4 py-2 text-sm font-semibold rounded-full bg-primary-blue text-white shadow-md transition duration-200">
+        <button id="nav-tap-kartu" class="px-4 py-2 text-sm font-semibold rounded-full bg-primary-blue text-white shadow-md transition duration-200 hover:scale-105">
             Tap Kartu
         </button>
-        <button id="nav-log-absen" class="px-4 py-2 text-sm font-semibold rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 transition duration-200">
+        <button id="nav-log-absen" class="px-4 py-2 text-sm font-semibold rounded-full bg-gray-200 text-gray-700 hover:bg-gray-300 transition duration-200 hover:scale-105">
             Log Absen
         </button>
     </div>
@@ -182,70 +205,6 @@
             </div>
         </div>
         
-        <!-- LOG HARIAN (DIHILANGKAN DARI TAMPILAN INI) -->
-        <div id="log-harian-tap-kartu" class="hidden">
-            <h2 class="text-xl font-bold mb-3 text-gray-800">Log Presensi Harian</h2>
-            <div id="log-tanggal-hari-ini" class="text-sm font-medium text-gray-500 mb-4">Tanggal: -</div>
-            <div class="grid grid-cols-2 gap-2">
-                <div class="period-box bg-blue-50/50">
-                    <h3 class="text-xs font-semibold text-primary-blue mb-1">Pagi</h3>
-                    <div class="flex justify-between items-center text-xs">
-                        <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                            <p class="text-success-green font-bold text-base" id="log-sukses-pagi">0</p>
-                            <p class="text-gray-500 text-xs">Sukses</p>
-                        </div>
-                        <div class="flex-1 p-1 ml-1">
-                            <p class="text-error-red font-bold text-base" id="log-gagal-pagi">0</p>
-                            <p class="text-gray-500 text-xs">Gagal</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="period-box bg-yellow-50/50">
-                    <h3 class="text-xs font-semibold text-yellow-600 mb-1">Siang</h3>
-                    <div class="flex justify-between items-center text-xs">
-                        <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                            <p class="text-success-green font-bold text-base" id="log-sukses-siang">0</p>
-                            <p class="text-gray-500 text-xs">Sukses</p>
-                        </div>
-                        <div class="flex-1 p-1 ml-1">
-                            <p class="text-error-red font-bold text-base" id="log-gagal-siang">0</p>
-                            <p class="text-gray-500 text-xs">Gagal</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="period-box bg-orange-50/50">
-                    <h3 class="text-xs font-semibold text-orange-600 mb-1">Sore</h3>
-                    <div class="flex justify-between items-center text-xs">
-                        <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                            <p class="text-success-green font-bold text-base" id="log-sukses-sore">0</p>
-                            <p class="text-gray-500 text-xs">Sukses</p>
-                        </div>
-                        <div class="flex-1 p-1 ml-1">
-                            <p class="text-error-red font-bold text-base" id="log-gagal-sore">0</p>
-                            <p class="text-gray-500 text-xs">Gagal</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="period-box bg-purple-50/50">
-                    <h3 class="text-xs font-semibold text-purple-600 mb-1">Malam</h3>
-                    <div class="flex justify-between items-center text-xs">
-                        <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                            <p class="text-success-green font-bold text-base" id="log-sukses-malam">0</p>
-                            <p class="text-gray-500 text-xs">Sukses</p>
-                        </div>
-                        <div class="flex-1 p-1 ml-1">
-                            <p class="text-error-red font-bold text-base" id="log-gagal-malam">0</p>
-                            <p class="text-gray-500 text-xs">Gagal</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!-- END LOG HARIAN -->
-        
         <div id="status-card" class="p-4 rounded-2xl transition-all duration-300 bg-blue-50">
             <div id="status-icon" class="status-icon w-14 h-14 mx-auto mb-3 flex items-center justify-center rounded-full bg-primary-blue/80 shadow-lg text-white">
                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -259,7 +218,7 @@
               <span id="period-display" class="period-badge bg-blue-100 text-blue-800">Memuat...</span>
             </p>
             <p class="text-xs text-gray-400 mt-2">
-              Waktu: <span id="current-wit-time">00.00.00</span> WIT
+              Waktu: <span id="current-wit-time" class="font-medium">00.00.00</span> WIT
             </p>
         </div>
 
@@ -310,74 +269,74 @@
                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
-                <span>Reset harian: 01:00 WIT | Waktu sekarang: <span id="log-current-time" class="font-medium">00.00.00</span> WIT</span>
+                <span>Reset harian: 01:00 WIT | Waktu: <span id="log-current-time" class="font-medium">00.00.00</span> WIT</span>
               </div>
             </div>
-            <button id="refresh-log-btn" class="text-primary-blue hover:text-blue-900 transition duration-200 flex items-center text-sm">
-              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <button id="refresh-log-btn" class="refresh-btn bg-white text-primary-blue hover:bg-primary-blue hover:text-white border border-primary-blue px-3 py-1.5 rounded-lg transition duration-200 flex items-center text-sm font-medium">
+              <svg id="refresh-icon" class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
               </svg>
-              Refresh
+              <span id="refresh-text">Refresh</span>
             </button>
           </div>
         </div>
         
         <!-- Log Harian Summary -->
-        <div class="mb-5 border-b pb-3">
+        <div class="mb-5">
             <h3 class="text-lg font-bold mb-3 text-gray-800">Ringkasan Hari Ini</h3>
             
-            <div class="grid grid-cols-2 gap-2">
-                <div class="period-box bg-blue-50/50">
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="period-box bg-blue-50/50 border border-blue-100">
                     <h4 class="text-xs font-semibold text-primary-blue mb-1">Pagi</h4>
                     <div class="flex justify-between items-center text-xs">
-                        <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                            <p class="text-success-green font-bold text-base" id="log-sukses-pagi-log">0</p>
+                        <div class="flex-1 p-1 mr-1 text-center">
+                            <p class="text-success-green font-bold text-xl" id="log-sukses-pagi-log">0</p>
                             <p class="text-gray-500 text-xs">Sukses</p>
                         </div>
-                        <div class="flex-1 p-1 ml-1">
-                            <p class="text-error-red font-bold text-base" id="log-gagal-pagi-log">0</p>
+                        <div class="flex-1 p-1 ml-1 text-center">
+                            <p class="text-error-red font-bold text-xl" id="log-gagal-pagi-log">0</p>
                             <p class="text-gray-500 text-xs">Gagal</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="period-box bg-yellow-50/50">
+                <div class="period-box bg-yellow-50/50 border border-yellow-100">
                     <h4 class="text-xs font-semibold text-yellow-600 mb-1">Siang</h4>
                     <div class="flex justify-between items-center text-xs">
-                        <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                            <p class="text-success-green font-bold text-base" id="log-sukses-siang-log">0</p>
+                        <div class="flex-1 p-1 mr-1 text-center">
+                            <p class="text-success-green font-bold text-xl" id="log-sukses-siang-log">0</p>
                             <p class="text-gray-500 text-xs">Sukses</p>
                         </div>
-                        <div class="flex-1 p-1 ml-1">
-                            <p class="text-error-red font-bold text-base" id="log-gagal-siang-log">0</p>
+                        <div class="flex-1 p-1 ml-1 text-center">
+                            <p class="text-error-red font-bold text-xl" id="log-gagal-siang-log">0</p>
                             <p class="text-gray-500 text-xs">Gagal</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="period-box bg-orange-50/50">
+                <div class="period-box bg-orange-50/50 border border-orange-100">
                     <h4 class="text-xs font-semibold text-orange-600 mb-1">Sore</h4>
                     <div class="flex justify-between items-center text-xs">
-                        <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                            <p class="text-success-green font-bold text-base" id="log-sukses-sore-log">0</p>
+                        <div class="flex-1 p-1 mr-1 text-center">
+                            <p class="text-success-green font-bold text-xl" id="log-sukses-sore-log">0</p>
                             <p class="text-gray-500 text-xs">Sukses</p>
                         </div>
-                        <div class="flex-1 p-1 ml-1">
-                            <p class="text-error-red font-bold text-base" id="log-gagal-sore-log">0</p>
+                        <div class="flex-1 p-1 ml-1 text-center">
+                            <p class="text-error-red font-bold text-xl" id="log-gagal-sore-log">0</p>
                             <p class="text-gray-500 text-xs">Gagal</p>
                         </div>
                     </div>
                 </div>
 
-                <div class="period-box bg-purple-50/50">
+                <div class="period-box bg-purple-50/50 border border-purple-100">
                     <h4 class="text-xs font-semibold text-purple-600 mb-1">Malam</h4>
                     <div class="flex justify-between items-center text-xs">
-                        <div class="flex-1 p-1 mr-1 border-r border-gray-200">
-                            <p class="text-success-green font-bold text-base" id="log-sukses-malam-log">0</p>
+                        <div class="flex-1 p-1 mr-1 text-center">
+                            <p class="text-success-green font-bold text-xl" id="log-sukses-malam-log">0</p>
                             <p class="text-gray-500 text-xs">Sukses</p>
                         </div>
-                        <div class="flex-1 p-1 ml-1">
-                            <p class="text-error-red font-bold text-base" id="log-gagal-malam-log">0</p>
+                        <div class="flex-1 p-1 ml-1 text-center">
+                            <p class="text-error-red font-bold text-xl" id="log-gagal-malam-log">0</p>
                             <p class="text-gray-500 text-xs">Gagal</p>
                         </div>
                     </div>
@@ -385,16 +344,16 @@
             </div>
             
             <!-- Total Summary -->
-            <div class="mt-4 pt-3 border-t border-gray-200">
-              <div class="flex justify-between items-center text-sm">
-                <div class="text-gray-700 font-medium">Total Hari Ini:</div>
-                <div class="flex space-x-4">
+            <div class="total-counter mb-4">
+              <div class="flex justify-between items-center">
+                <div class="text-gray-700 font-medium text-sm">Total Hari Ini:</div>
+                <div class="flex space-x-6">
                   <div class="text-center">
-                    <p class="text-success-green font-bold text-lg" id="total-sukses-hari-ini">0</p>
+                    <p class="text-success-green font-bold text-2xl" id="total-sukses-hari-ini">0</p>
                     <p class="text-gray-500 text-xs">Total Sukses</p>
                   </div>
                   <div class="text-center">
-                    <p class="text-error-red font-bold text-lg" id="total-gagal-hari-ini">0</p>
+                    <p class="text-error-red font-bold text-2xl" id="total-gagal-hari-ini">0</p>
                     <p class="text-gray-500 text-xs">Total Gagal</p>
                   </div>
                 </div>
@@ -405,16 +364,21 @@
 
         <h3 class="text-xl font-bold mb-3 text-gray-800">Detail Log Presensi</h3>
         <div id="log-detail-status" class="text-center p-4 bg-gray-100 rounded-lg text-gray-500 text-sm mb-4">
-            Memuat data log...
+            <div class="flex items-center justify-center">
+              <svg class="animate-spin w-4 h-4 mr-2 text-primary-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              Memuat data log...
+            </div>
         </div>
-        <div class="overflow-x-auto rounded-lg shadow-md max-h-96">
+        <div class="overflow-x-auto rounded-lg shadow-md border border-gray-200 max-h-96">
             <table class="min-w-full divide-y divide-gray-200 log-table">
-                <thead class="sticky top-0">
+                <thead class="sticky top-0 bg-gray-50">
                     <tr>
-                        <th>Waktu (WIT)</th>
-                        <th>Nama</th>
-                        <th>Periode</th>
-                        <th>Status</th>
+                        <th class="px-4 py-3">Waktu (WIT)</th>
+                        <th class="px-4 py-3">Nama</th>
+                        <th class="px-4 py-3">Periode</th>
+                        <th class="px-4 py-3">Status</th>
                     </tr>
                 </thead>
                 <tbody id="log-detail-body" class="divide-y divide-gray-200">
@@ -554,30 +518,70 @@
       
       // Setup tombol refresh log
       const refreshLogBtn = document.getElementById('refresh-log-btn');
+      const refreshIcon = document.getElementById('refresh-icon');
+      const refreshText = document.getElementById('refresh-text');
+      
       if (refreshLogBtn) {
         refreshLogBtn.addEventListener('click', function() {
-          // Trigger refresh dari app.js jika window.fetchAndDisplayLogs tersedia
+          // Animate refresh button
+          refreshIcon.classList.add('animate-spin');
+          refreshText.textContent = 'Menyegarkan...';
+          refreshLogBtn.disabled = true;
+          
+          // Trigger refresh dari app.js
           if (typeof window.fetchAndDisplayLogs === 'function') {
-            window.fetchAndDisplayLogs();
-            refreshLogBtn.innerHTML = `
-              <svg class="animate-spin w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-              </svg>
-              Memuat...
-            `;
-            
+            window.fetchAndDisplayLogs().finally(() => {
+              // Reset button setelah 1.5 detik
+              setTimeout(() => {
+                refreshIcon.classList.remove('animate-spin');
+                refreshText.textContent = 'Refresh';
+                refreshLogBtn.disabled = false;
+                
+                // Tampilkan notifikasi sukses
+                showRefreshSuccess();
+              }, 1500);
+            });
+          } else {
+            // Fallback jika fungsi tidak tersedia
             setTimeout(() => {
-              refreshLogBtn.innerHTML = `
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-                Refresh
-              `;
-            }, 1000);
+              refreshIcon.classList.remove('animate-spin');
+              refreshText.textContent = 'Refresh';
+              refreshLogBtn.disabled = false;
+              location.reload(); // Reload halaman sebagai fallback
+            }, 1500);
           }
         });
       }
     });
+    
+    // Fungsi untuk menampilkan notifikasi refresh sukses
+    function showRefreshSuccess() {
+      const existingNotification = document.querySelector('.refresh-notification');
+      if (existingNotification) {
+        existingNotification.remove();
+      }
+      
+      const notification = document.createElement('div');
+      notification.className = 'refresh-notification fixed bottom-4 right-4 bg-success-green text-white px-4 py-2 rounded-lg shadow-lg z-50';
+      notification.innerHTML = `
+        <div class="flex items-center">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          <span>Data log berhasil diperbarui!</span>
+        </div>
+      `;
+      
+      document.body.appendChild(notification);
+      
+      // Hapus notifikasi setelah 3 detik
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.classList.add('opacity-0', 'transition-opacity', 'duration-300');
+          setTimeout(() => notification.remove(), 300);
+        }
+      }, 3000);
+    }
   </script>
 </body>
 </html>
