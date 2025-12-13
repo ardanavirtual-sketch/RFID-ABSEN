@@ -1,4 +1,4 @@
-// app.js (KODE LENGKAP - Deduplikasi Supabase, Tanggal Logis WIT, & Fix Audio Autoplay)
+// app.js (KODE LENGKAP - Deduplikasi Supabase, Tanggal Logis WIT, & Fix Log Absensi)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -48,18 +48,18 @@ let lastLogDate = null; // State untuk melacak tanggal log terakhir dimuat (WIT)
 
 /**
  * Mengambil waktu dan tanggal saat ini dalam zona waktu WIT (Waktu Indonesia Timur).
+ * Menggunakan Timezone offset (+8 jam).
  * @returns {Date} Objek Date yang disesuaikan dengan WIT.
  */
 function getWaktuSaatIni() {
-    // 1. Dapatkan waktu UTC
     const now = new Date();
-    // 2. Tentukan offset WIT (+8 jam)
-    const witOffset = 8 * 60; // 480 menit
-    // 3. Hitung offset lokal perangkat dalam menit
+    // Offset WIT adalah +8 jam (480 menit)
+    const witOffset = 8 * 60; 
+    // Offset lokal perangkat dalam menit
     const localOffset = now.getTimezoneOffset();
-    // 4. Hitung perbedaan total offset yang diperlukan
+    // Perbedaan total offset yang diperlukan
     const diff = witOffset + localOffset;
-    // 5. Tambahkan perbedaan ke waktu saat ini
+    // Terapkan perbedaan ke waktu saat ini
     return new Date(now.getTime() + diff * 60 * 1000);
 }
 
@@ -158,28 +158,38 @@ async function recordLog(logData) {
 async function isDuplicateLog(userId, period) {
     try {
         const todayWIT = getWaktuSaatIni();
-        // Ambil tanggal WIT dalam format ISO-8601 (hanya tanggal)
-        const todayDateISO = todayWIT.toISOString().split('T')[0];
+        
+        // Dapatkan batas awal hari ini (00:00:00 WIT)
+        const startOfTodayWIT = new Date(todayWIT);
+        startOfTodayWIT.setHours(0, 0, 0, 0);
+
+        // Dapatkan batas akhir hari ini (23:59:59 WIT)
+        const endOfTodayWIT = new Date(todayWIT);
+        endOfTodayWIT.setHours(23, 59, 59, 999);
+        
+        // Gunakan format ISO string untuk Supabase
+        const startISO = startOfTodayWIT.toISOString();
+        const endISO = endOfTodayWIT.toISOString();
 
         const { data, error } = await db
             .from('logs')
             .select('id')
             .eq('user_id', userId)
             .eq('period', period)
-            .gte('timestamp', `${todayDateISO}T00:00:00+08:00`) // Mulai hari ini 00:00 WIT
-            .lt('timestamp', `${todayDateISO}T23:59:59+08:00`)   // Akhir hari ini 23:59 WIT
-            .single();
-
-        if (error && error.code === 'PGRST116') {
-            return false; // Tidak ada log ditemukan, bukan duplikasi
-        } else if (error) {
-            throw error;
+            .gte('timestamp', startISO) // Mulai hari ini 00:00:00 WIT
+            .lte('timestamp', endISO)   // Sampai hari ini 23:59:59 WIT
+            .maybeSingle(); // Menggunakan maybeSingle untuk mengatasi error no rows found
+        
+        // Jika error adalah 'no rows found', itu dianggap false/tidak duplikasi
+        if (error && error.code !== 'PGRST116') {
+             throw error;
         }
 
         return data !== null; // Jika ada data, berarti duplikasi
     } catch (error) {
         console.error("Error checking duplicate log:", error.message);
-        return false;
+        // Jika terjadi error, kita asumsikan tidak duplikasi untuk menghindari false positive yang memblokir presensi
+        return false; 
     }
 }
 
@@ -226,7 +236,9 @@ async function processCardScan(cardId) {
         const logData = {
             user_id: user.id,
             user_name: user.name,
-            timestamp: nowWIT.toISOString(), // Simpan waktu WIT dalam format ISO di database
+            // Simpan waktu WIT dalam format ISO, yang akan dikonversi Supabase menjadi TIMESTAMPZ
+            // Ini menyimpan waktu yang terjadi (WIT) dan timezone-nya.
+            timestamp: nowWIT.toISOString(), 
             period: period,
             status: 'SUKSES'
         };
@@ -343,21 +355,34 @@ function playAudio(audioElement) {
  * @param {Date} date - Objek Date (sudah WIT) untuk tanggal yang akan dimuat.
  */
 async function loadLogDetail(date) {
-    logDetailBody.innerHTML = '';
+    logDetailBody.innerHTML = ''; // Pastikan body log dikosongkan
     logDetailStatus.textContent = 'Memuat data log...';
     
-    const dateISO = date.toISOString().split('T')[0]; // Format 'YYYY-MM-DD'
+    // 1. Hitung batas waktu awal (00:00:00 WIT hari ini)
+    const startOfTodayWIT = new Date(date);
+    startOfTodayWIT.setHours(0, 0, 0, 0); // Atur jam, menit, detik, milidetik ke 0 (menggunakan waktu WIT)
+    
+    // 2. Hitung batas waktu akhir (23:59:59 WIT hari ini)
+    const endOfTodayWIT = new Date(date);
+    endOfTodayWIT.setHours(23, 59, 59, 999); // Atur jam, menit, detik, milidetik ke akhir hari (menggunakan waktu WIT)
+
+    // Gunakan format ISO string untuk Supabase Query
+    const startISO = startOfTodayWIT.toISOString();
+    const endISO = endOfTodayWIT.toISOString();
 
     // Update tanggal yang ditampilkan di UI Log Absen
     logTanggalElement.textContent = formatTanggal(date);
     
     try {
-        // Query log untuk hari ini (00:00:00 WIT hingga 23:59:59 WIT)
+        console.log(`Querying logs from ${startISO} to ${endISO}`);
+        
+        // Query log untuk hari ini (batas waktu ISO)
         const { data: logs, error } = await db
             .from('logs')
             .select('*')
-            .gte('timestamp', `${dateISO}T00:00:00+08:00`)
-            .lte('timestamp', `${dateISO}T23:59:59+08:00`)
+            // Gunakan startISO (00:00:00 WIT hari ini) dan endISO (23:59:59 WIT hari ini)
+            .gte('timestamp', startISO)
+            .lte('timestamp', endISO)
             .order('timestamp', { ascending: false });
 
         if (error) throw error;
@@ -371,7 +396,7 @@ async function loadLogDetail(date) {
             logDetailStatus.textContent = `Menampilkan ${logs.length} catatan presensi untuk hari ini.`;
             
             logs.forEach(log => {
-                // Konversi timestamp (yang sudah WIT) ke objek Date
+                // Konversi timestamp dari database (TIMESTAMPZ) ke objek Date
                 const logTime = new Date(log.timestamp);
                 
                 if (log.status === 'SUKSES') {
@@ -383,9 +408,13 @@ async function loadLogDetail(date) {
                 const row = logDetailBody.insertRow();
                 row.classList.add(log.status === 'SUKSES' ? 'bg-white hover:bg-green-50' : 'bg-red-50 hover:bg-red-100');
 
-                // Kolom Waktu
+                // Kolom Waktu: Perlu disesuaikan agar menampilkan waktu WIT di UI
+                // Karena logTime sudah berisi data waktu dan timezone dari database,
+                // kita bisa konversi secara lokal (atau menggunakan formatWaktu yang sudah menyesuaikan)
                 let cell = row.insertCell();
-                cell.textContent = formatWaktu(logTime);
+                // Menggunakan formatWaktu, yang seharusnya menunjukkan waktu lokal perangkat
+                // atau Anda bisa menggunakan: logTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+                cell.textContent = formatWaktu(logTime); 
                 cell.classList.add('px-6', 'py-3', 'whitespace-nowrap', 'text-sm', 'font-medium', 'text-gray-900');
 
                 // Kolom Nama
@@ -415,12 +444,12 @@ async function loadLogDetail(date) {
     }
     
     // Update state tanggal log terakhir dimuat
-    lastLogDate = dateISO;
+    lastLogDate = date.toISOString().split('T')[0];
 }
 
 
 // ===================================
-// SISTEM DETEKSI PERGANTIAN HARI (FITUR UTAMA BARU)
+// SISTEM DETEKSI PERGANTIAN HARI (FIXED)
 // ===================================
 
 /**
@@ -434,7 +463,14 @@ async function checkDayChangeAndReloadLog() {
     // Jika belum ada log yang dimuat atau hari sudah berganti
     if (lastLogDate === null || lastLogDate !== todayDateISO) {
         console.log(`[Auto-Reload] Deteksi pergantian hari atau inisialisasi. Memuat ulang log untuk ${todayDateISO}.`);
-        await loadLogDetail(nowWIT);
+        // Hanya panggil loadLogDetail jika user sedang berada di tampilan log.
+        // Jika sedang di tampilan tap kartu, log akan dimuat saat pindah.
+        if (logContainer && !logContainer.classList.contains('hidden')) {
+            await loadLogDetail(nowWIT);
+        } else if (lastLogDate === null) {
+            // Muat log awal (saat inisialisasi) meskipun di tap-container
+             await loadLogDetail(nowWIT);
+        }
     } else {
         // console.log(`[Auto-Reload] Hari belum berganti (${todayDateISO}). Log tetap.`)
     }
@@ -492,6 +528,9 @@ function setupNavigation() {
         logContainer.classList.add('hidden');
         navTapKartu.classList.add('bg-blue-600', 'text-white');
         navLogAbsen.classList.remove('bg-blue-600', 'text-white');
+        
+        // Pastikan tampilan tap kartu bersih setelah kembali
+        setStatus('Siap untuk Tap Kartu', 'ready');
     };
     
     const showLogContainer = async () => {
@@ -501,7 +540,8 @@ function setupNavigation() {
         navTapKartu.classList.remove('bg-blue-600', 'text-white');
 
         // Muat ulang data log saat pindah ke tampilan Log
-        await checkDayChangeAndReloadLog(); 
+        // Ini memastikan log harian yang terbaru (hari ini) dimuat.
+        await loadLogDetail(getWaktuSaatIni()); 
     };
 
     navTapKartu.addEventListener('click', showTapContainer);
@@ -520,7 +560,8 @@ async function setupInitialState() {
     setStatus('Siap untuk Tap Kartu', 'ready');
     
     // 3. Muat log untuk hari ini (pertama kali)
-    await loadLogDetail(getWaktuSaatIni());
+    // Walaupun di tap-container, log awal tetap dimuat untuk inisialisasi lastLogDate.
+    await loadLogDetail(getWaktuSaatIni()); 
     
     // 4. JALANKAN SISTEM DETEKSI PERGANTIAN HARI
     // Cek setiap 5 menit (300000 ms)
