@@ -1,4 +1,4 @@
-// app.js (KODE LENGKAP - Reset Logis 00:00:00 WIT & Polling Data)
+// app.js (KODE LENGKAP - Deduplikasi Supabase, Tanggal Logis WIT, & Fix Audio Autoplay)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -10,7 +10,9 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const { createClient } = supabase;
 const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// DOM Elements
+// DOM Elements - TAMPILAN TAP KARTU
+const tapContainer = document.getElementById('tap-container');
+const logHarianTapKartu = document.getElementById('log-harian-tap-kartu'); // Kontainer Log Harian (disembunyikan di Tap Kartu)
 const statusCard = document.getElementById('status-card');
 const statusIcon = document.getElementById('status-icon');
 const statusMessage = document.getElementById('status-message');
@@ -21,18 +23,25 @@ const hasilID = document.getElementById('hasil-id');
 const appContainer = document.getElementById('app-container');
 const readerStatusHint = document.getElementById('reader-status-hint');
 
-// Elemen counter per periode
-const logSuksesPagiElement = document.getElementById('log-sukses-pagi');
-const logGagalPagiElement = document.getElementById('log-gagal-pagi');
-const logSuksesSiangElement = document.getElementById('log-sukses-siang');
-const logGagalSiangElement = document.getElementById('log-gagal-siang');
-const logSuksesSoreElement = document.getElementById('log-sukses-sore');
-const logGagalSoreElement = document.getElementById('log-gagal-sore');
-const logSuksesMalamElement = document.getElementById('log-sukses-malam');
-const logGagalMalamElement = document.getElementById('log-gagal-malam');
+// DOM Elements - TAMPILAN LOG ABSEN
+const logContainer = document.getElementById('log-container');
+const navTapKartu = document.getElementById('nav-tap-kartu');
+const navLogAbsen = document.getElementById('nav-log-absen');
+
+// Elemen counter per periode (Dipindahkan ke Log Container)
+const logSuksesPagiElement = document.getElementById('log-sukses-pagi-log');
+const logGagalPagiElement = document.getElementById('log-gagal-pagi-log');
+const logSuksesSiangElement = document.getElementById('log-sukses-siang-log');
+const logGagalSiangElement = document.getElementById('log-gagal-siang-log');
+const logSuksesSoreElement = document.getElementById('log-sukses-sore-log');
+const logGagalSoreElement = document.getElementById('log-gagal-sore-log');
+const logSuksesMalamElement = document.getElementById('log-sukses-malam-log');
+const logGagalMalamElement = document.getElementById('log-gagal-malam-log');
 
 // Elemen untuk menampilkan tanggal
-const logTanggalHariIniElement = document.getElementById('log-tanggal-hari-ini');
+const logTanggalHariIniLogElement = document.getElementById('log-tanggal-hari-ini-log');
+const logDetailBody = document.getElementById('log-detail-body');
+const logDetailStatus = document.getElementById('log-detail-status');
 
 
 // Tambahkan elemen audio
@@ -40,7 +49,7 @@ const audioSuccess = document.getElementById('audio-success');
 const audioFail = document.getElementById('audio-fail');
 const audioDuplicate = document.getElementById('audio-duplicate'); 
 
-// Elemen untuk Solusi Autoplay Browser
+// Elemen untuk Solusi Autoplay Browser (Jika ada di index.html lama)
 const interactionOverlay = document.getElementById('interaction-overlay');
 const startButton = document.getElementById('start-button');
 
@@ -56,7 +65,7 @@ let logCounters = {
     malam: { success: 0, fail: 0 }
 };
 
-// **PERBAIKAN:** Hapus RESET_HOUR. Atur offset WIT saja.
+const RESET_HOUR = 1; // Waktu reset harian pada pukul 01:00 WIT
 const WIT_OFFSET_HOURS = 9; // WIT = UTC+9
 
 
@@ -81,44 +90,46 @@ function getCurrentMealPeriod() {
 }
 
 /**
- * **PERBAIKAN FUNGSI KRITIS**
- * Mendapatkan rentang tanggal logis (24 jam) untuk query Supabase (UTC).
- * Hari baru (reset log) ditetapkan tepat pada pukul 00:00:00 WIT.
+ * Mendapatkan string tanggal hari ini (YYYY-MM-DD), 
+ * disesuaikan agar hari baru (untuk tujuan presensi) dimulai pada pukul 01:00 WIT.
+ * Fungsi ini mengembalikan tanggal dan waktu start/end untuk query Supabase (UTC).
  */
 function getLogDateRangeWIT() {
     const now = new Date();
     
-    // Hitung waktu saat ini dalam WIT
-    // Offset Waktu Lokal (menit) ke ms, lalu tambahkan offset WIT (jam) ke ms
     const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000); 
     const witTime = new Date(utcTime + (3600000 * WIT_OFFSET_HOURS)); 
 
-    // Ambil komponen tanggal berdasarkan waktu WIT saat ini (Ini adalah tanggal kalender logis)
-    const yyyy = witTime.getUTCFullYear();
-    const mm = witTime.getUTCMonth();
-    const dd = witTime.getUTCDate();
+    const witHour = witTime.getUTCHours();
     
-    // 1. Start Time (Awal Hari Logis): YYYY-MM-DD 00:00:00 WIT
-    // Buat tanggal UTC yang merepresentasikan 00:00:00 WIT dari tanggal WIT hari ini
-    const startLogisDateWIT = new Date(Date.UTC(yyyy, mm, dd, 0, 0, 0));
-
-    // Konversi WIT Start Time ke UTC (Kurangi 9 jam)
-    const startLogisDateUTC = new Date(startLogisDateWIT.getTime());
-    startLogisDateUTC.setUTCHours(startLogisDateUTC.getUTCHours() - WIT_OFFSET_HOURS);
+    let logisDate = new Date(witTime);
     
-    // 2. End Time (Batas Eksklusif): Tepat 24 jam setelah Start Time
-    // Ini adalah 00:00:00 WIT hari berikutnya.
-    const endLogisDateUTC = new Date(startLogisDateUTC);
-    endLogisDateUTC.setUTCDate(endLogisDateUTC.getUTCDate() + 1); // Tambah 24 jam penuh
+    // Geser hari jika jam WIT kurang dari jam reset
+    if (witHour < RESET_HOUR) {
+        logisDate.setUTCDate(logisDate.getUTCDate() - 1);
+    }
+    
+    const yyyy = logisDate.getUTCFullYear();
+    const mm = logisDate.getUTCMonth();
+    const dd = logisDate.getUTCDate();
+    
+    // Start: YYYY-MM-DD 00:00:00 WIT, dikonversi ke UTC (Kurangi 9 jam dari 00:00 UTC hari logis)
+    const startLogisDate = new Date(Date.UTC(yyyy, mm, dd, 0, 0, 0));
+    startLogisDate.setUTCHours(startLogisDate.getUTCHours() - WIT_OFFSET_HOURS); 
+    
+    // End: YYYY-MM-DD 23:59:59 WIT, dikonversi ke UTC
+    const endLogisDate = new Date(Date.UTC(yyyy, mm, dd, 23, 59, 59));
+    endLogisDate.setUTCHours(endLogisDate.getUTCHours() - WIT_OFFSET_HOURS);
 
     return {
-        todayStart: startLogisDateUTC.toISOString(), // Start of today (00:00:00 WIT, converted to UTC)
-        todayEnd: endLogisDateUTC.toISOString()     // Start of tomorrow (00:00:00 WIT, converted to UTC, eksklusif)
+        todayStart: startLogisDate.toISOString(), // Waktu Awal Query (UTC)
+        todayEnd: endLogisDate.toISOString() // Waktu Akhir Query (UTC)
     };
 }
 
 
 function updateUILogCounters() {
+    // Update elemen counter di tampilan Log Absen
     if(logSuksesPagiElement) logSuksesPagiElement.textContent = logCounters.pagi.success;
     if(logGagalPagiElement) logGagalPagiElement.textContent = logCounters.pagi.fail;
     if(logSuksesSiangElement) logSuksesSiangElement.textContent = logCounters.siang.success;
@@ -129,39 +140,99 @@ function updateUILogCounters() {
     if(logGagalMalamElement) logGagalMalamElement.textContent = logCounters.malam.fail;
 }
 
+/**
+ * Fungsi untuk mengubah timestamp UTC menjadi string waktu WIT
+ * @param {string} utcTimestamp 
+ * @returns {string} Waktu WIT (HH:mm:ss)
+ */
+function convertUTCToWITTime(utcTimestamp) {
+    const date = new Date(utcTimestamp);
+    // Format tanggal dan waktu ke WIT
+    const formatter = new Intl.DateTimeFormat('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZone: 'Asia/Jayapura' // WIT
+    });
+    return formatter.format(date);
+}
+
+/**
+ * Merender daftar log presensi ke dalam tabel log.
+ * @param {Array<Object>} logEntries Daftar log presensi mentah dari Supabase
+ */
+function renderLogDetails(logEntries) {
+    if (!logDetailBody) return;
+
+    logDetailBody.innerHTML = ''; // Kosongkan tabel
+    
+    if (logEntries.length === 0) {
+        logDetailStatus.textContent = 'Tidak ada log presensi hari ini.';
+        return;
+    }
+    
+    logDetailStatus.textContent = 'Data log berhasil dimuat.';
+
+    // Sortir log berdasarkan waktu terbaru (created_at)
+    const sortedLogs = logEntries.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    sortedLogs.forEach(log => {
+        const timeWIT = convertUTCToWITTime(log.created_at);
+        
+        let statusClass = 'text-gray-900';
+        if (log.status.startsWith('Sukses')) {
+            statusClass = 'text-success-green font-bold';
+        } else if (log.status.startsWith('Gagal')) {
+            statusClass = 'text-error-red font-bold';
+        }
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${timeWIT}</td>
+            <td>${log.nama || 'Tidak Terdaftar'}</td>
+            <td>${log.periode || '-'}</td>
+            <td class="${statusClass}">${log.status}</td>
+        `;
+        logDetailBody.appendChild(row);
+    });
+}
+
 
 // FUNGSI UTAMA: Mengambil dan Menghitung Log dari Supabase
 async function fetchAndDisplayLogs() {
     const { todayStart, todayEnd } = getLogDateRangeWIT(); 
     
     // Menampilkan Tanggal Hari Ini (Logis WIT)
-    if (logTanggalHariIniElement) {
-        // Gunakan todayStart untuk mendapatkan tanggal WIT yang benar (karena 00:00:00 WIT)
-        const logicalDateUTC = new Date(todayStart); 
-        
-        const dateFormatter = new Intl.DateTimeFormat('id-ID', {
-            weekday: 'long', 
-            day: 'numeric', 
-            month: 'long', 
-            year: 'numeric',
-            timeZone: 'Asia/Jayapura' // TimeZone untuk WIT (Waktu Indonesia Timur)
-        });
+    const logicalDateUTC = new Date(todayStart); 
+    const dateFormatter = new Intl.DateTimeFormat('id-ID', {
+        weekday: 'long', 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric',
+        timeZone: 'Asia/Jayapura' 
+    });
+    const dateString = `Tanggal: ${dateFormatter.format(logicalDateUTC)}`;
 
-        // Tanggal yang ditampilkan adalah tanggal kalender saat ini di WIT
-        logTanggalHariIniElement.textContent = `Tanggal: ${dateFormatter.format(logicalDateUTC)}`;
+    if (logTanggalHariIniLogElement) {
+        logTanggalHariIniLogElement.textContent = dateString;
     }
 
     try {
-        // Ambil semua log dalam rentang 24 jam hari ini (00:00:00 WIT sampai sebelum 00:00:00 WIT hari berikutnya)
+        logDetailStatus.textContent = 'Memuat data log...';
+        
+        // Ambil semua log dalam rentang tanggal logis hari ini (WIT)
         const { data: logData, error } = await db
             .from("log_absen")
-            .select("card, periode, status")
-            .gte("created_at", todayStart) // Termasuk dari 00:00:00 WIT hari ini
-            .lt("created_at", todayEnd); // Hingga sebelum 00:00:00 WIT hari berikutnya (eksklusif)
+            .select("card, nama, periode, status, created_at")
+            .gte("created_at", todayStart)
+            .lt("created_at", todayEnd);
 
         if (error) throw error;
         
-        // Reset counter
+        // 1. Render Log Rinci (Menggunakan data mentah)
+        renderLogDetails(logData);
+
+        // 2. Hitung Log Summary (Logika Deduplikasi)
         logCounters = {
             pagi: { success: 0, fail: 0 },
             siang: { success: 0, fail: 0 },
@@ -171,13 +242,13 @@ async function fetchAndDisplayLogs() {
         
         const uniqueTaps = new Map(); 
 
-        // Proses Deduplikasi Log
+        // Proses Deduplikasi Log: Hitung hanya 1 Sukses per Kartu per Periode.
         for (const log of logData) {
             const key = `${log.periode}-${log.card}`;
             
             if (!uniqueTaps.has(key)) {
                  uniqueTaps.set(key, log.status);
-            } else if (uniqueTaps.get(key) !== 'Sukses' && log.status === 'Sukses') {
+            } else if (uniqueTaps.get(key) !== 'Sukses' && log.status.startsWith('Sukses')) {
                  // Jika sebelumnya Gagal, dan ada log Sukses, timpa menjadi Sukses
                  uniqueTaps.set(key, log.status);
             }
@@ -188,7 +259,7 @@ async function fetchAndDisplayLogs() {
             const [periode] = key.split('-');
             
             if (logCounters[periode]) {
-                if (status === 'Sukses') {
+                if (status.startsWith('Sukses')) {
                     logCounters[periode].success++;
                 } else if (status.startsWith('Gagal')) { 
                     logCounters[periode].fail++;
@@ -200,21 +271,59 @@ async function fetchAndDisplayLogs() {
 
     } catch (e) {
         console.error("Gagal memuat log dari Supabase:", e);
-        if (logTanggalHariIniElement) {
-            logTanggalHariIniElement.textContent = `Tanggal: Gagal Memuat Data`; 
+        if (logTanggalHariIniLogElement) {
+            logTanggalHariIniLogElement.textContent = `${dateString} | Gagal Memuat Data`; 
         }
+        logDetailStatus.textContent = 'Gagal memuat data log dari server.';
+        logDetailBody.innerHTML = '';
     }
 }
 
 
 function setupInitialState() {
-    // 1. Panggil fetchAndDisplayLogs untuk memuat data dari Supabase saat start
+    // Panggil fetchAndDisplayLogs untuk memuat data dari Supabase saat start
     fetchAndDisplayLogs();
+    // Default: Tampilkan halaman Tap Kartu
+    showTapContainer();
+}
+
+/**
+ * Menampilkan Tampilan Tap Kartu
+ */
+function showTapContainer() {
+    // Update navigasi
+    navTapKartu.classList.replace('bg-gray-200', 'bg-primary-blue');
+    navTapKartu.classList.replace('text-gray-700', 'text-white');
+    navLogAbsen.classList.replace('bg-primary-blue', 'bg-gray-200');
+    navLogAbsen.classList.replace('text-white', 'text-gray-700');
     
-    // **PERBAIKAN:** Tambahkan Polling untuk refresh otomatis setiap 1 menit
-    // Ini memastikan data log dan tanggal otomatis kereset setelah 00:00 WIT.
-    setInterval(fetchAndDisplayLogs, 60 * 1000); // Setiap 60.000 ms (1 menit)
-    console.log("Auto-refresh log aktif setiap 1 menit.");
+    // Tampilkan/Sembunyikan Kontainer
+    tapContainer.classList.remove('hidden');
+    logContainer.classList.add('hidden');
+    
+    // Pastikan log harian tidak terlihat di sini
+    logHarianTapKartu.classList.add('hidden');
+    
+    // Reset status reader ke kondisi siap
+    resetStatus();
+}
+
+/**
+ * Menampilkan Tampilan Log Absen
+ */
+function showLogContainer() {
+    // Update navigasi
+    navLogAbsen.classList.replace('bg-gray-200', 'bg-primary-blue');
+    navLogAbsen.classList.replace('text-gray-700', 'text-white');
+    navTapKartu.classList.replace('bg-primary-blue', 'bg-gray-200');
+    navTapKartu.classList.replace('text-white', 'text-gray-700');
+    
+    // Tampilkan/Sembunyikan Kontainer
+    logContainer.classList.remove('hidden');
+    tapContainer.classList.add('hidden');
+    
+    // Refresh dan tampilkan log terbaru
+    fetchAndDisplayLogs();
 }
 
 function showAlreadyTappedStatus(rfidId, nama) {
@@ -269,8 +378,10 @@ function resetStatus() {
     statusMessage.textContent = 'Reader Siap. Tap Kartu.';
     readerStatusHint.textContent = 'Listener Keyboard (HID) aktif. Tempelkan kartu.';
     
-    // PENTING: Refresh log dari Supabase setiap kali reset
-    fetchAndDisplayLogs();
+    // PENTING: Refresh log HANYA JIKA sedang di tampilan Log Absen
+    if (logContainer && !logContainer.classList.contains('hidden')) {
+        fetchAndDisplayLogs();
+    }
 }
 
 function showProcessingStatus() {
@@ -283,7 +394,7 @@ function showProcessingStatus() {
     hasilContainer.classList.add('hidden');
 }
 
-function updateUI({ success, message, rfidId, nama, currentPeriod }) {
+function updateUI({ success, message, rfidId, nama }) {
     
     appContainer.classList.remove('bg-blue-200/50');
     statusCard.classList.remove('bg-blue-100');
@@ -431,6 +542,11 @@ async function checkCardSupabase(rfidId) {
 
 function setupHIDListener() {
     document.addEventListener('keydown', (e) => {
+        // Abaikan input jika sedang tidak di tampilan Tap Kartu
+        if (tapContainer.classList.contains('hidden')) {
+            return;
+        }
+
         if (isProcessing || e.repeat) {
             e.preventDefault(); 
             return;
@@ -466,14 +582,27 @@ function setupHIDListener() {
 }
 
 // ===================================
+// NAVIGATION SETUP
+// ===================================
+
+function setupNavigation() {
+    navTapKartu.addEventListener('click', showTapContainer);
+    navLogAbsen.addEventListener('click', showLogContainer);
+}
+
+
+// ===================================
 // INISIALISASI (Perbaikan Autoplay)
 // ===================================
 
 window.onload = () => {
-    // 1. Setup state awal (memuat log dari Supabase)
+    // 1. Setup navigasi
+    setupNavigation();
+    
+    // 2. Setup state awal (memuat log dari Supabase & tampilkan Tap Kartu)
     setupInitialState(); 
     
-    // 2. Setup listener HANYA SETELAH TOMBOL DIKLIK
+    // 3. Setup listener HANYA SETELAH TOMBOL DIKLIK
     if (startButton) {
         startButton.addEventListener('click', () => {
             if (interactionOverlay) {
