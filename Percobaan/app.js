@@ -1,4 +1,4 @@
-// app.js (KODE LENGKAP dengan Auto Reset pada Pergantian Tanggal)
+// app.js (KODE LENGKAP - Waktu Indonesia Timur / WIT)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -20,6 +20,8 @@ const hasilContainer = document.getElementById('hasil-container');
 const hasilTitle = document.getElementById('hasil-title');
 const hasilNama = document.getElementById('hasil-nama');
 const hasilID = document.getElementById('hasil-id');
+const hasilPeriode = document.getElementById('hasil-periode');
+const hasilWaktu = document.getElementById('hasil-waktu');
 const appContainer = document.getElementById('app-container');
 const readerStatusHint = document.getElementById('reader-status-hint');
 
@@ -37,6 +39,10 @@ const logSuksesSoreElement = document.getElementById('log-sukses-sore-log');
 const logGagalSoreElement = document.getElementById('log-gagal-sore-log');
 const logSuksesMalamElement = document.getElementById('log-sukses-malam-log');
 const logGagalMalamElement = document.getElementById('log-gagal-malam-log');
+
+// Total counters
+const totalSuksesElement = document.getElementById('total-sukses-hari-ini');
+const totalGagalElement = document.getElementById('total-gagal-hari-ini');
 
 // Elemen untuk menampilkan tanggal
 const logTanggalHariIniLogElement = document.getElementById('log-tanggal-hari-ini-log');
@@ -60,20 +66,55 @@ let logCounters = {
     malam: { success: 0, fail: 0 }
 };
 
-const RESET_HOUR = 1; // Waktu reset harian pada pukul 01:00 WIT
 const WIT_OFFSET_HOURS = 9; // WIT = UTC+9
+const RESET_HOUR = 1; // Waktu reset harian pada pukul 01:00 WIT
 
 // Variabel untuk menyimpan tanggal hari ini (dalam WIT)
 let currentLogDate = null;
-let refreshTimer = null;
 let dateCheckTimer = null;
 
 // ===================================
-// UTILITY/UI FUNCTIONS
+// UTILITY FUNCTIONS - WIT (Waktu Indonesia Timur)
 // ===================================
 
+/**
+ * Mendapatkan waktu saat ini dalam WIT
+ */
+function getCurrentWITTime() {
+    const now = new Date();
+    const witOffset = 9 * 60 * 60 * 1000; // 9 jam dalam milidetik
+    return new Date(now.getTime() + witOffset);
+}
+
+/**
+ * Format waktu WIT untuk display
+ */
+function formatWITTimeForDisplay(date) {
+    const hours = date.getUTCHours().toString().padStart(2, '0');
+    const minutes = date.getUTCMinutes().toString().padStart(2, '0');
+    const seconds = date.getUTCSeconds().toString().padStart(2, '0');
+    return `${hours}.${minutes}.${seconds}`;
+}
+
+/**
+ * Format tanggal WIT untuk display
+ */
+function formatWITDateForDisplay(date) {
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 
+                   'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    
+    const dayName = days[date.getUTCDay()];
+    const day = date.getUTCDate();
+    const monthName = months[date.getUTCMonth()];
+    const year = date.getUTCFullYear();
+    
+    return `${dayName}, ${day} ${monthName} ${year}`;
+}
+
 function getCurrentMealPeriod() {
-    const hour = new Date().getHours();
+    const witTime = getCurrentWITTime();
+    const hour = witTime.getUTCHours();
     
     if (hour >= 4 && hour < 10) { 
         return 'pagi';
@@ -92,11 +133,7 @@ function getCurrentMealPeriod() {
  * Mendapatkan tanggal logis hari ini dalam WIT (dengan reset jam 01:00)
  */
 function getCurrentLogicalDateWIT() {
-    const now = new Date();
-    
-    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000); 
-    const witTime = new Date(utcTime + (3600000 * WIT_OFFSET_HOURS)); 
-
+    const witTime = getCurrentWITTime();
     const witHour = witTime.getUTCHours();
     
     let logicalDate = new Date(witTime);
@@ -110,20 +147,6 @@ function getCurrentLogicalDateWIT() {
 }
 
 /**
- * Format tanggal untuk display
- */
-function formatDateForDisplay(date) {
-    const formatter = new Intl.DateTimeFormat('id-ID', {
-        weekday: 'long', 
-        day: 'numeric', 
-        month: 'long', 
-        year: 'numeric',
-        timeZone: 'Asia/Jayapura'
-    });
-    return formatter.format(date);
-}
-
-/**
  * Mendapatkan string tanggal hari ini (YYYY-MM-DD), 
  * disesuaikan agar hari baru (untuk tujuan presensi) dimulai pada pukul 01:00 WIT.
  */
@@ -134,31 +157,44 @@ function getLogDateRangeWIT() {
     const mm = logicalDate.getUTCMonth();
     const dd = logicalDate.getUTCDate();
     
-    // Start: YYYY-MM-DD 00:00:00 WIT, dikonversi ke UTC
-    const startLogisDate = new Date(Date.UTC(yyyy, mm, dd, 0, 0, 0));
-    startLogisDate.setUTCHours(startLogisDate.getUTCHours() - WIT_OFFSET_HOURS); 
+    // Start: YYYY-MM-DD 01:00:00 WIT (waktu reset), dikonversi ke UTC
+    const startLogisDate = new Date(Date.UTC(yyyy, mm, dd, RESET_HOUR, 0, 0));
+    // Konversi ke UTC (kurangi 9 jam)
+    const startUTC = new Date(startLogisDate.getTime() - (WIT_OFFSET_HOURS * 3600000));
     
-    // End: YYYY-MM-DD 23:59:59 WIT, dikonversi ke UTC
-    const endLogisDate = new Date(Date.UTC(yyyy, mm, dd, 23, 59, 59));
-    endLogisDate.setUTCHours(endLogisDate.getUTCHours() - WIT_OFFSET_HOURS);
+    // End: YYYY-MM-DD 00:59:59 WIT hari berikutnya, dikonversi ke UTC
+    const endLogisDate = new Date(Date.UTC(yyyy, mm, dd + 1, RESET_HOUR - 1, 59, 59));
+    // Konversi ke UTC (kurangi 9 jam)
+    const endUTC = new Date(endLogisDate.getTime() - (WIT_OFFSET_HOURS * 3600000));
 
     return {
-        todayStart: startLogisDate.toISOString(),
-        todayEnd: endLogisDate.toISOString(),
+        todayStart: startUTC.toISOString(),
+        todayEnd: endUTC.toISOString(),
         logicalDate: logicalDate
     };
 }
 
 function updateUILogCounters() {
     // Update elemen counter di tampilan Log Absen
-    if(logSuksesPagiElement) logSuksesPagiElement.textContent = logCounters.pagi.success;
-    if(logGagalPagiElement) logGagalPagiElement.textContent = logCounters.pagi.fail;
-    if(logSuksesSiangElement) logSuksesSiangElement.textContent = logCounters.siang.success;
-    if(logGagalSiangElement) logGagalSiangElement.textContent = logCounters.siang.fail;
-    if(logSuksesSoreElement) logSuksesSoreElement.textContent = logCounters.sore.success;
-    if(logGagalSoreElement) logGagalSoreElement.textContent = logCounters.sore.fail;
-    if(logSuksesMalamElement) logSuksesMalamElement.textContent = logCounters.malam.success;
-    if(logGagalMalamElement) logGagalMalamElement.textContent = logCounters.malam.fail;
+    if (logSuksesPagiElement) logSuksesPagiElement.textContent = logCounters.pagi.success;
+    if (logGagalPagiElement) logGagalPagiElement.textContent = logCounters.pagi.fail;
+    if (logSuksesSiangElement) logSuksesSiangElement.textContent = logCounters.siang.success;
+    if (logGagalSiangElement) logGagalSiangElement.textContent = logCounters.siang.fail;
+    if (logSuksesSoreElement) logSuksesSoreElement.textContent = logCounters.sore.success;
+    if (logGagalSoreElement) logGagalSoreElement.textContent = logCounters.sore.fail;
+    if (logSuksesMalamElement) logSuksesMalamElement.textContent = logCounters.malam.success;
+    if (logGagalMalamElement) logGagalMalamElement.textContent = logCounters.malam.fail;
+    
+    // Update total counters
+    if (totalSuksesElement && totalGagalElement) {
+        const totalSukses = logCounters.pagi.success + logCounters.siang.success + 
+                           logCounters.sore.success + logCounters.malam.success;
+        const totalGagal = logCounters.pagi.fail + logCounters.siang.fail + 
+                          logCounters.sore.fail + logCounters.malam.fail;
+        
+        totalSuksesElement.textContent = totalSukses;
+        totalGagalElement.textContent = totalGagal;
+    }
 }
 
 /**
@@ -166,13 +202,14 @@ function updateUILogCounters() {
  */
 function convertUTCToWITTime(utcTimestamp) {
     const date = new Date(utcTimestamp);
-    const formatter = new Intl.DateTimeFormat('id-ID', {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        timeZone: 'Asia/Jayapura'
-    });
-    return formatter.format(date);
+    // Tambah 9 jam untuk konversi ke WIT
+    const witTime = new Date(date.getTime() + (WIT_OFFSET_HOURS * 3600000));
+    
+    const hours = witTime.getUTCHours().toString().padStart(2, '0');
+    const minutes = witTime.getUTCMinutes().toString().padStart(2, '0');
+    const seconds = witTime.getUTCSeconds().toString().padStart(2, '0');
+    
+    return `${hours}:${minutes}:${seconds}`;
 }
 
 /**
@@ -184,11 +221,17 @@ function renderLogDetails(logEntries) {
     logDetailBody.innerHTML = ''; // Kosongkan tabel
     
     if (logEntries.length === 0) {
-        logDetailStatus.textContent = 'Tidak ada log presensi hari ini.';
+        logDetailBody.innerHTML = `
+            <tr>
+                <td colspan="4" class="text-center py-8 text-gray-500">
+                    Tidak ada log presensi hari ini.
+                </td>
+            </tr>
+        `;
         return;
     }
     
-    logDetailStatus.textContent = 'Data log berhasil dimuat.';
+    logDetailStatus.textContent = `Data log berhasil dimuat (${logEntries.length} entri).`;
 
     // Sortir log berdasarkan waktu terbaru (created_at)
     const sortedLogs = logEntries.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -197,18 +240,35 @@ function renderLogDetails(logEntries) {
         const timeWIT = convertUTCToWITTime(log.created_at);
         
         let statusClass = 'text-gray-900';
+        let statusText = log.status;
+        
         if (log.status.startsWith('Sukses')) {
             statusClass = 'text-success-green font-bold';
+            statusText = '✓ ' + log.status;
         } else if (log.status.startsWith('Gagal')) {
             statusClass = 'text-error-red font-bold';
+            statusText = '✗ ' + log.status;
+        }
+        
+        // Tambahkan warna berdasarkan periode
+        let periodeClass = 'text-gray-700';
+        if (log.periode === 'pagi') {
+            periodeClass = 'text-blue-600 font-medium';
+        } else if (log.periode === 'siang') {
+            periodeClass = 'text-yellow-600 font-medium';
+        } else if (log.periode === 'sore') {
+            periodeClass = 'text-orange-600 font-medium';
+        } else if (log.periode === 'malam') {
+            periodeClass = 'text-purple-600 font-medium';
         }
 
         const row = document.createElement('tr');
+        row.className = 'hover:bg-gray-50 transition-colors';
         row.innerHTML = `
-            <td>${timeWIT}</td>
+            <td class="font-mono text-sm">${timeWIT}</td>
             <td>${log.nama || 'Tidak Terdaftar'}</td>
-            <td>${log.periode || '-'}</td>
-            <td class="${statusClass}">${log.status}</td>
+            <td class="${periodeClass}">${log.periode ? log.periode.toUpperCase() : '-'}</td>
+            <td class="${statusClass}">${statusText}</td>
         `;
         logDetailBody.appendChild(row);
     });
@@ -227,7 +287,7 @@ function checkDateChange() {
     const newDateStr = `${newLogicalDate.getUTCFullYear()}-${newLogicalDate.getUTCMonth()}-${newLogicalDate.getUTCDate()}`;
     
     if (currentDateStr !== newDateStr) {
-        console.log(`Pergantian tanggal terdeteksi! Tanggal baru: ${formatDateForDisplay(newLogicalDate)}`);
+        console.log(`Pergantian tanggal terdeteksi! Tanggal baru: ${formatWITDateForDisplay(newLogicalDate)}`);
         currentLogDate = newLogicalDate;
         
         // Reset log counters
@@ -246,24 +306,33 @@ function checkDateChange() {
             fetchAndDisplayLogs();
         }
         
-        // Tampilkan notifikasi (opsional)
+        // Tampilkan notifikasi
         showDateChangeNotification();
     }
 }
 
 /**
- * Menampilkan notifikasi pergantian tanggal (opsional)
+ * Menampilkan notifikasi pergantian tanggal
  */
 function showDateChangeNotification() {
-    // Buat elemen notifikasi sementara
+    // Hapus notifikasi sebelumnya jika ada
+    const existingNotification = document.querySelector('.date-change-notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    // Buat elemen notifikasi
     const notification = document.createElement('div');
-    notification.className = 'fixed top-4 right-4 bg-primary-blue text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-pulse';
+    notification.className = 'date-change-notification fixed top-4 right-4 bg-primary-blue text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-pulse';
     notification.innerHTML = `
         <div class="flex items-center">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <span>Tanggal telah berganti! Log absen telah direset.</span>
+            <div>
+                <p class="font-semibold">Hari Baru Dimulai!</p>
+                <p class="text-sm opacity-90">Log absen telah direset untuk tanggal ${formatWITDateForDisplay(currentLogDate)}</p>
+            </div>
         </div>
     `;
     
@@ -271,43 +340,11 @@ function showDateChangeNotification() {
     
     // Hapus notifikasi setelah 5 detik
     setTimeout(() => {
-        notification.remove();
+        if (notification.parentNode) {
+            notification.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+            setTimeout(() => notification.remove(), 500);
+        }
     }, 5000);
-}
-
-/**
- * Fungsi untuk menghitung waktu hingga pergantian tanggal berikutnya (dalam ms)
- */
-function getTimeUntilNextDateChange() {
-    const now = new Date();
-    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60000);
-    const witTime = new Date(utcTime + (3600000 * WIT_OFFSET_HOURS));
-    
-    // Waktu saat ini dalam WIT
-    const currentWITHour = witTime.getUTCHours();
-    const currentWITMinute = witTime.getUTCMinutes();
-    const currentWITSecond = witTime.getUTCSeconds();
-    const currentWITMillisecond = witTime.getUTCMilliseconds();
-    
-    // Hitung waktu hingga pukul 01:00 WIT berikutnya
-    let hoursUntilReset = 0;
-    
-    if (currentWITHour < RESET_HOUR) {
-        // Masih sebelum jam reset hari ini
-        hoursUntilReset = RESET_HOUR - currentWITHour;
-    } else {
-        // Sudah lewat jam reset, tunggu hingga reset besok
-        hoursUntilReset = (24 - currentWITHour) + RESET_HOUR;
-    }
-    
-    // Konversi ke milidetik
-    const millisecondsUntilReset = 
-        (hoursUntilReset * 3600000) - 
-        (currentWITMinute * 60000) - 
-        (currentWITSecond * 1000) - 
-        currentWITMillisecond;
-    
-    return millisecondsUntilReset;
 }
 
 /**
@@ -320,16 +357,17 @@ function setupDateChangeChecker() {
     // Cek perubahan tanggal setiap 30 detik
     dateCheckTimer = setInterval(checkDateChange, 30000);
     
-    // Juga setup timer untuk reset tepat pada pukul 01:00 WIT
-    const timeUntilReset = getTimeUntilNextDateChange();
-    
-    console.log(`Next reset in ${Math.round(timeUntilReset / 60000)} minutes`);
-    
-    setTimeout(() => {
-        checkDateChange();
-        // Set interval untuk pengecekan berikutnya
-        setupDateChangeChecker();
-    }, timeUntilReset + 1000); // Tambah 1 detik untuk memastikan
+    // Juga cek setiap menit apakah sudah jam 01:00 WIT untuk reset
+    setInterval(() => {
+        const witTime = getCurrentWITTime();
+        const witHour = witTime.getUTCHours();
+        const witMinute = witTime.getUTCMinutes();
+        
+        // Jika pukul 01:00 - 01:01 WIT, cek perubahan tanggal
+        if (witHour === 1 && witMinute >= 0 && witMinute <= 1) {
+            checkDateChange();
+        }
+    }, 60000); // Cek setiap menit
 }
 
 // FUNGSI UTAMA: Mengambil dan Menghitung Log dari Supabase
@@ -340,7 +378,7 @@ async function fetchAndDisplayLogs() {
     currentLogDate = logicalDate;
     
     // Menampilkan Tanggal Hari Ini (Logis WIT)
-    const dateString = `Tanggal: ${formatDateForDisplay(logicalDate)}`;
+    const dateString = `Tanggal: ${formatWITDateForDisplay(logicalDate)}`;
 
     if (logTanggalHariIniLogElement) {
         logTanggalHariIniLogElement.textContent = dateString;
@@ -354,7 +392,8 @@ async function fetchAndDisplayLogs() {
             .from("log_absen")
             .select("card, nama, periode, status, created_at")
             .gte("created_at", todayStart)
-            .lt("created_at", todayEnd);
+            .lt("created_at", todayEnd)
+            .order("created_at", { ascending: false });
 
         if (error) throw error;
         
@@ -404,10 +443,18 @@ async function fetchAndDisplayLogs() {
             logTanggalHariIniLogElement.textContent = `${dateString} | Gagal Memuat Data`; 
         }
         logDetailStatus.textContent = 'Gagal memuat data log dari server.';
-        logDetailBody.innerHTML = '';
+        logDetailBody.innerHTML = `
+            <tr>
+                <td colspan="4" class="text-center py-8 text-red-500">
+                    Error: Gagal memuat data dari server
+                </td>
+            </tr>
+        `;
     }
 }
 
+// Export fungsi untuk akses dari HTML
+window.fetchAndDisplayLogs = fetchAndDisplayLogs;
 
 function setupInitialState() {
     // Inisialisasi tanggal saat ini
@@ -481,6 +528,8 @@ function showAlreadyTappedStatus(rfidId, nama) {
     hasilTitle.textContent = 'Informasi Absensi';
     hasilNama.textContent = nama || 'Terdaftar';
     hasilID.textContent = rfidId;
+    hasilPeriode.textContent = getCurrentMealPeriod().toUpperCase();
+    hasilWaktu.textContent = formatWITTimeForDisplay(getCurrentWITTime()) + ' WIT';
     
     // PEMUTARAN AUDIO DUPLIKASI
     if (audioDuplicate) {
@@ -512,6 +561,8 @@ function resetStatus() {
     hasilContainer.classList.add('hidden');
     hasilNama.textContent = '-';
     hasilID.textContent = '-';
+    hasilPeriode.textContent = '-';
+    hasilWaktu.textContent = '-';
     
     statusMessage.textContent = 'Reader Siap. Tap Kartu.';
     readerStatusHint.textContent = 'Listener Keyboard (HID) aktif. Tempelkan kartu.';
@@ -536,6 +587,9 @@ function updateUI({ success, message, rfidId, nama }) {
     
     appContainer.classList.remove('bg-blue-200/50');
     statusCard.classList.remove('bg-blue-100');
+
+    const currentPeriod = getCurrentMealPeriod();
+    const currentTime = formatWITTimeForDisplay(getCurrentWITTime());
 
     if (success) {
         appContainer.classList.add('scale-105', 'bg-success-green/20');
@@ -570,6 +624,8 @@ function updateUI({ success, message, rfidId, nama }) {
 
     hasilNama.textContent = nama;
     hasilID.textContent = rfidId;
+    hasilPeriode.textContent = currentPeriod.toUpperCase();
+    hasilWaktu.textContent = currentTime + ' WIT';
     hasilContainer.classList.remove('hidden');
 
     // Setelah update UI, refresh log counters
@@ -733,7 +789,7 @@ function setupNavigation() {
 
 
 // ===================================
-// INISIALISASI (Perbaikan Autoplay)
+// INISIALISASI
 // ===================================
 
 window.onload = () => {
@@ -744,7 +800,6 @@ window.onload = () => {
     setupInitialState(); 
     
     // 3. Setup listener HANYA SETELAH TOMBOL DIKLIK
-    // Cari tombol start jika ada di HTML
     const startButton = document.getElementById('start-button');
     const interactionOverlay = document.getElementById('interaction-overlay');
     
