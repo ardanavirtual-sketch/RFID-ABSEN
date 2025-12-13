@@ -1,4 +1,4 @@
-// app.js (KODE LENGKAP - Waktu Indonesia Timur / WIT)
+// app.js (KODE LENGKAP - Fix Tombol Refresh & Total Hari Ini)
 
 // ===================================
 // KONFIGURASI SUPABASE & DOM ELEMENTS
@@ -29,6 +29,7 @@ const readerStatusHint = document.getElementById('reader-status-hint');
 const logContainer = document.getElementById('log-container');
 const navTapKartu = document.getElementById('nav-tap-kartu');
 const navLogAbsen = document.getElementById('nav-log-absen');
+const refreshLogBtn = document.getElementById('refresh-log-btn');
 
 // Elemen counter per periode
 const logSuksesPagiElement = document.getElementById('log-sukses-pagi-log');
@@ -174,6 +175,9 @@ function getLogDateRangeWIT() {
     };
 }
 
+/**
+ * Memperbarui UI dengan data log counters
+ */
 function updateUILogCounters() {
     // Update elemen counter di tampilan Log Absen
     if (logSuksesPagiElement) logSuksesPagiElement.textContent = logCounters.pagi.success;
@@ -185,7 +189,7 @@ function updateUILogCounters() {
     if (logSuksesMalamElement) logSuksesMalamElement.textContent = logCounters.malam.success;
     if (logGagalMalamElement) logGagalMalamElement.textContent = logCounters.malam.fail;
     
-    // Update total counters
+    // Hitung dan update total counters
     if (totalSuksesElement && totalGagalElement) {
         const totalSukses = logCounters.pagi.success + logCounters.siang.success + 
                            logCounters.sore.success + logCounters.malam.success;
@@ -194,6 +198,9 @@ function updateUILogCounters() {
         
         totalSuksesElement.textContent = totalSukses;
         totalGagalElement.textContent = totalGagal;
+        
+        console.log(`Total Sukses: ${totalSukses}, Total Gagal: ${totalGagal}`);
+        console.log(`Detail: Pagi: ${logCounters.pagi.success}/${logCounters.pagi.fail}, Siang: ${logCounters.siang.success}/${logCounters.siang.fail}, Sore: ${logCounters.sore.success}/${logCounters.sore.fail}, Malam: ${logCounters.malam.success}/${logCounters.malam.fail}`);
     }
 }
 
@@ -220,7 +227,7 @@ function renderLogDetails(logEntries) {
 
     logDetailBody.innerHTML = ''; // Kosongkan tabel
     
-    if (logEntries.length === 0) {
+    if (!logEntries || logEntries.length === 0) {
         logDetailBody.innerHTML = `
             <tr>
                 <td colspan="4" class="text-center py-8 text-gray-500">
@@ -228,10 +235,11 @@ function renderLogDetails(logEntries) {
                 </td>
             </tr>
         `;
+        logDetailStatus.textContent = 'Tidak ada data log untuk hari ini.';
         return;
     }
     
-    logDetailStatus.textContent = `Data log berhasil dimuat (${logEntries.length} entri).`;
+    logDetailStatus.textContent = `Data log berhasil dimuat (${logEntries.length} entri)`;
 
     // Sortir log berdasarkan waktu terbaru (created_at)
     const sortedLogs = logEntries.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -242,16 +250,18 @@ function renderLogDetails(logEntries) {
         let statusClass = 'text-gray-900';
         let statusText = log.status;
         
-        if (log.status.startsWith('Sukses')) {
+        if (log.status && log.status.startsWith('Sukses')) {
             statusClass = 'text-success-green font-bold';
             statusText = '✓ ' + log.status;
-        } else if (log.status.startsWith('Gagal')) {
+        } else if (log.status && log.status.startsWith('Gagal')) {
             statusClass = 'text-error-red font-bold';
             statusText = '✗ ' + log.status;
         }
         
         // Tambahkan warna berdasarkan periode
         let periodeClass = 'text-gray-700';
+        let periodeText = log.periode ? log.periode.toUpperCase() : '-';
+        
         if (log.periode === 'pagi') {
             periodeClass = 'text-blue-600 font-medium';
         } else if (log.periode === 'siang') {
@@ -265,10 +275,10 @@ function renderLogDetails(logEntries) {
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50 transition-colors';
         row.innerHTML = `
-            <td class="font-mono text-sm">${timeWIT}</td>
-            <td>${log.nama || 'Tidak Terdaftar'}</td>
-            <td class="${periodeClass}">${log.periode ? log.periode.toUpperCase() : '-'}</td>
-            <td class="${statusClass}">${statusText}</td>
+            <td class="px-4 py-2 font-mono text-sm">${timeWIT}</td>
+            <td class="px-4 py-2">${log.nama || 'Tidak Terdaftar'}</td>
+            <td class="px-4 py-2 ${periodeClass}">${periodeText}</td>
+            <td class="px-4 py-2 ${statusClass}">${statusText}</td>
         `;
         logDetailBody.appendChild(row);
     });
@@ -370,23 +380,39 @@ function setupDateChangeChecker() {
     }, 60000); // Cek setiap menit
 }
 
+// ===================================
 // FUNGSI UTAMA: Mengambil dan Menghitung Log dari Supabase
+// ===================================
+
+/**
+ * Fungsi utama untuk mengambil dan menampilkan log dari Supabase
+ */
 async function fetchAndDisplayLogs() {
-    const { todayStart, todayEnd, logicalDate } = getLogDateRangeWIT(); 
-    
-    // Simpan tanggal saat ini
-    currentLogDate = logicalDate;
-    
-    // Menampilkan Tanggal Hari Ini (Logis WIT)
-    const dateString = `Tanggal: ${formatWITDateForDisplay(logicalDate)}`;
-
-    if (logTanggalHariIniLogElement) {
-        logTanggalHariIniLogElement.textContent = dateString;
-    }
-
     try {
-        logDetailStatus.textContent = 'Memuat data log...';
+        const { todayStart, todayEnd, logicalDate } = getLogDateRangeWIT(); 
         
+        // Simpan tanggal saat ini
+        currentLogDate = logicalDate;
+        
+        // Menampilkan Tanggal Hari Ini (Logis WIT)
+        const dateString = `Tanggal: ${formatWITDateForDisplay(logicalDate)}`;
+
+        if (logTanggalHariIniLogElement) {
+            logTanggalHariIniLogElement.textContent = dateString;
+        }
+
+        // Tampilkan status loading
+        if (logDetailStatus) {
+            logDetailStatus.innerHTML = `
+                <div class="flex items-center justify-center">
+                    <svg class="animate-spin w-4 h-4 mr-2 text-primary-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Memuat data log dari server...
+                </div>
+            `;
+        }
+
         // Ambil semua log dalam rentang tanggal logis hari ini (WIT)
         const { data: logData, error } = await db
             .from("log_absen")
@@ -395,10 +421,15 @@ async function fetchAndDisplayLogs() {
             .lt("created_at", todayEnd)
             .order("created_at", { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+            console.error("Error dari Supabase:", error);
+            throw error;
+        }
+        
+        console.log(`Data log diterima: ${logData ? logData.length : 0} entri`);
         
         // 1. Render Log Rinci (Menggunakan data mentah)
-        renderLogDetails(logData);
+        renderLogDetails(logData || []);
 
         // 2. Hitung Log Summary (Logika Deduplikasi)
         logCounters = {
@@ -411,50 +442,79 @@ async function fetchAndDisplayLogs() {
         const uniqueTaps = new Map(); 
 
         // Proses Deduplikasi Log: Hitung hanya 1 Sukses per Kartu per Periode.
-        for (const log of logData) {
-            const key = `${log.periode}-${log.card}`;
-            
-            if (!uniqueTaps.has(key)) {
-                 uniqueTaps.set(key, log.status);
-            } else if (uniqueTaps.get(key) !== 'Sukses' && log.status.startsWith('Sukses')) {
-                 // Jika sebelumnya Gagal, dan ada log Sukses, timpa menjadi Sukses
-                 uniqueTaps.set(key, log.status);
+        if (logData && logData.length > 0) {
+            for (const log of logData) {
+                const key = `${log.periode}-${log.card}`;
+                
+                if (!uniqueTaps.has(key)) {
+                    uniqueTaps.set(key, log.status);
+                } else if (uniqueTaps.get(key) !== 'Sukses' && log.status && log.status.startsWith('Sukses')) {
+                    // Jika sebelumnya Gagal, dan ada log Sukses, timpa menjadi Sukses
+                    uniqueTaps.set(key, log.status);
+                }
             }
-        }
-        
-        // Isi Log Counters
-        for (const [key, status] of uniqueTaps) {
-            const [periode] = key.split('-');
             
-            if (logCounters[periode]) {
-                if (status.startsWith('Sukses')) {
-                    logCounters[periode].success++;
-                } else if (status.startsWith('Gagal')) { 
-                    logCounters[periode].fail++;
+            // Isi Log Counters
+            for (const [key, status] of uniqueTaps) {
+                const [periode] = key.split('-');
+                
+                if (logCounters[periode]) {
+                    if (status && status.startsWith('Sukses')) {
+                        logCounters[periode].success++;
+                    } else if (status && status.startsWith('Gagal')) { 
+                        logCounters[periode].fail++;
+                    }
                 }
             }
         }
 
+        // Update UI dengan counters baru
         updateUILogCounters();
+
+        // Tampilkan status sukses
+        if (logDetailStatus && logData) {
+            logDetailStatus.textContent = `Data log berhasil dimuat (${logData.length} entri)`;
+        }
 
     } catch (e) {
         console.error("Gagal memuat log dari Supabase:", e);
+        
         if (logTanggalHariIniLogElement) {
-            logTanggalHariIniLogElement.textContent = `${dateString} | Gagal Memuat Data`; 
+            const logicalDate = getCurrentLogicalDateWIT();
+            logTanggalHariIniLogElement.textContent = `Tanggal: ${formatWITDateForDisplay(logicalDate)} | Error memuat data`; 
         }
-        logDetailStatus.textContent = 'Gagal memuat data log dari server.';
-        logDetailBody.innerHTML = `
-            <tr>
-                <td colspan="4" class="text-center py-8 text-red-500">
-                    Error: Gagal memuat data dari server
-                </td>
-            </tr>
-        `;
+        
+        if (logDetailStatus) {
+            logDetailStatus.textContent = 'Gagal memuat data log dari server.';
+        }
+        
+        if (logDetailBody) {
+            logDetailBody.innerHTML = `
+                <tr>
+                    <td colspan="4" class="text-center py-8 text-red-500">
+                        Error: Gagal memuat data dari server. Silakan coba refresh.
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // Reset counters ke 0 jika error
+        logCounters = {
+            pagi: { success: 0, fail: 0 },
+            siang: { success: 0, fail: 0 },
+            sore: { success: 0, fail: 0 },
+            malam: { success: 0, fail: 0 }
+        };
+        updateUILogCounters();
     }
 }
 
 // Export fungsi untuk akses dari HTML
 window.fetchAndDisplayLogs = fetchAndDisplayLogs;
+
+// ===================================
+// UI FUNCTIONS
+// ===================================
 
 function setupInitialState() {
     // Inisialisasi tanggal saat ini
@@ -787,6 +847,38 @@ function setupNavigation() {
     navLogAbsen.addEventListener('click', showLogContainer);
 }
 
+// ===================================
+// SETUP REFRESH BUTTON
+// ===================================
+
+function setupRefreshButton() {
+    if (refreshLogBtn) {
+        refreshLogBtn.addEventListener('click', async function() {
+            // Tampilkan animasi loading
+            refreshLogBtn.disabled = true;
+            refreshLogBtn.innerHTML = `
+                <svg class="animate-spin w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                Memuat...
+            `;
+            
+            // Panggil fungsi refresh
+            await fetchAndDisplayLogs();
+            
+            // Reset tombol setelah 1 detik
+            setTimeout(() => {
+                refreshLogBtn.disabled = false;
+                refreshLogBtn.innerHTML = `
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Refresh
+                `;
+            }, 1000);
+        });
+    }
+}
 
 // ===================================
 // INISIALISASI
@@ -796,10 +888,13 @@ window.onload = () => {
     // 1. Setup navigasi
     setupNavigation();
     
-    // 2. Setup state awal (memuat log dari Supabase & tampilkan Tap Kartu)
+    // 2. Setup refresh button
+    setupRefreshButton();
+    
+    // 3. Setup state awal (memuat log dari Supabase & tampilkan Tap Kartu)
     setupInitialState(); 
     
-    // 3. Setup listener HANYA SETELAH TOMBOL DIKLIK
+    // 4. Setup listener HANYA SETELAH TOMBOL DIKLIK
     const startButton = document.getElementById('start-button');
     const interactionOverlay = document.getElementById('interaction-overlay');
     
