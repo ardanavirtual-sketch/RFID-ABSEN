@@ -1201,7 +1201,7 @@
         <!-- Footer -->
         <footer class="p-6 border-t border-gray-200 dark:border-gray-700">
             <div class="text-center text-gray-600 dark:text-gray-400 text-sm">
-                <p>© 2025 AdminGAS Sistem Portal Vendor. Versi 2.0.0</p>
+                <p>© 2024 AdminGAS Sistem Portal Vendor. Versi 2.0.0</p>
                 <p class="mt-1">Dikembangkan dengan <i class="fas fa-heart text-red-500 mx-1"></i>By AmantaArdana</p>
             </div>
         </footer>
@@ -1252,6 +1252,68 @@
 
                     <div id="step-review" class="hidden space-y-6">
                         <!-- Review content will be loaded here -->
+                    </div>
+
+                    <div id="step-options" class="hidden space-y-6">
+                        <div class="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                            <h4 class="text-lg font-semibold text-gray-800 dark:text-white mb-4">
+                                <i class="fas fa-cogs mr-2 text-blue-500"></i>
+                                Pilihan Import
+                            </h4>
+                            
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800/50 rounded-lg border">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                            <i class="fas fa-database text-blue-600 dark:text-blue-400"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-gray-800 dark:text-white">Simpan ke Database</p>
+                                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                                Data akan disimpan langsung ke Supabase database
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <input type="checkbox" id="option-supabase" checked class="w-5 h-5 text-[#0073aa]">
+                                </div>
+                                
+                                <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800/50 rounded-lg border">
+                                    <div class="flex items-center space-x-3">
+                                        <div class="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                            <i class="fas fa-table text-green-600 dark:text-green-400"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-gray-800 dark:text-white">Kirim ke Spreadsheet</p>
+                                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                                Data akan dikirim ke Google Spreadsheet untuk sinkronisasi
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <input type="checkbox" id="option-spreadsheet" checked class="w-5 h-5 text-[#0073aa]">
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                                <div class="flex items-start">
+                                    <i class="fas fa-info-circle text-amber-500 mt-1 mr-3"></i>
+                                    <div>
+                                        <p class="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                                            Spreadsheet: "Sinkronisasi Data Supabase" (Sheet: PendingImport)
+                                        </p>
+                                        <p class="text-xs text-amber-600 dark:text-amber-300 mt-1">
+                                            Data akan dikirim ke spreadsheet untuk proses sinkronisasi sebelum masuk ke database utama
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end">
+                            <button type="button" onclick="backToReview()" class="text-sm text-[#0073aa] hover:text-[#005a87] font-medium flex items-center">
+                                <i class="fas fa-arrow-left mr-2"></i>
+                                Kembali ke Review
+                            </button>
+                        </div>
                     </div>
 
                     <div class="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
@@ -3404,6 +3466,45 @@
             closeDeleteModal();
         }
 
+        // Fungsi untuk mengirim data ke Google Spreadsheet melalui Apps Script
+        async function sendToGoogleSpreadsheet(data) {
+            try {
+                // Siapkan data untuk dikirim
+                const payload = {
+                    action: 'importData',
+                    data: data,
+                    timestamp: new Date().toISOString(),
+                    source: 'Admin Panel Import Excel',
+                    spreadsheetName: 'Sinkronisasi Data Supabase',
+                    sheetName: 'PendingImport'
+                };
+
+                // Kirim data ke Google Apps Script
+                const response = await fetch(GOOGLE_APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    return { success: true, message: result.message || 'Data berhasil dikirim ke spreadsheet' };
+                } else {
+                    return { success: false, message: result.message || 'Gagal mengirim data ke spreadsheet' };
+                }
+            } catch (error) {
+                console.error("Error sending to Google Spreadsheet:", error);
+                return { 
+                    success: false, 
+                    message: `Error: ${error.message || 'Gagal terhubung ke Google Spreadsheet'}` 
+                };
+            }
+        }
+
         // Import modal functions
         function openImportModal() {
             document.getElementById('excel-file-input').value = '';
@@ -3412,8 +3513,14 @@
             
             document.getElementById('step-upload').classList.remove('hidden');
             document.getElementById('step-review').classList.add('hidden');
+            document.getElementById('step-options').classList.add('hidden');
             document.getElementById('review-button').classList.remove('hidden');
             document.getElementById('import-submit-button').classList.add('hidden');
+            
+            // Reset pilihan
+            document.getElementById('option-supabase').checked = true;
+            document.getElementById('option-spreadsheet').checked = true;
+            
             parsedImportData = [];
             activeCardIds = [];
             
@@ -3579,15 +3686,23 @@
             reviewBody.innerHTML = tableHtml;
 
             if (validCount > 0) {
-                document.getElementById('step-upload').classList.add('hidden');
-                document.getElementById('step-review').classList.remove('hidden');
-                document.getElementById('review-button').classList.add('hidden');
-                document.getElementById('import-submit-button').classList.remove('hidden');
-                document.getElementById('import-submit-button').disabled = false;
+                // Setelah menampilkan review, tampilkan pilihan
+                setTimeout(() => {
+                    document.getElementById('step-review').classList.add('hidden');
+                    document.getElementById('step-options').classList.remove('hidden');
+                    document.getElementById('review-button').classList.add('hidden');
+                    document.getElementById('import-submit-button').classList.remove('hidden');
+                }, 100);
             } else {
                 document.getElementById('import-submit-button').disabled = true;
                 showGlobalMessage('Tidak ada data valid yang ditemukan.', 'error');
             }
+        }
+
+        // Fungsi untuk kembali ke review
+        function backToReview() {
+            document.getElementById('step-options').classList.add('hidden');
+            document.getElementById('step-review').classList.remove('hidden');
         }
 
         async function handleImportSubmit(event) {
@@ -3602,48 +3717,104 @@
             submitButton.disabled = true;
             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...';
             
+            const saveToSupabase = document.getElementById('option-supabase').checked;
+            const sendToSpreadsheet = document.getElementById('option-spreadsheet').checked;
+            
             try {
-                // First, delete all existing data
-                const { error: deleteError } = await supabaseClient
-                    .from(TABLE_NAME)
-                    .delete()
-                    .neq('card', '0');
+                let supabaseSuccess = false;
+                let spreadsheetSuccess = false;
+                let messages = [];
+                
+                // 1. Simpan ke Supabase jika dipilih
+                if (saveToSupabase) {
+                    try {
+                        // First, delete all existing data
+                        const { error: deleteError } = await supabaseClient
+                            .from(TABLE_NAME)
+                            .delete()
+                            .neq('card', '0');
 
-                if (deleteError) {
-                    throw new Error(`Gagal menghapus data lama: ${deleteError.message}`);
+                        if (deleteError) {
+                            throw new Error(`Gagal menghapus data lama: ${deleteError.message}`);
+                        }
+
+                        // Then insert new data
+                        const { error: insertError } = await supabaseClient
+                            .from(TABLE_NAME)
+                            .insert(parsedImportData);
+
+                        if (insertError) {
+                            throw new Error(`Gagal menyimpan data baru: ${insertError.message}`);
+                        }
+                        
+                        supabaseSuccess = true;
+                        messages.push(`${parsedImportData.length} data disimpan ke database`);
+                    } catch (error) {
+                        console.error("Supabase Save Error:", error);
+                        messages.push(`Gagal di database: ${error.message}`);
+                    }
                 }
-
-                // Then insert new data
-                const { error: insertError } = await supabaseClient
-                    .from(TABLE_NAME)
-                    .insert(parsedImportData);
-
-                if (insertError) {
-                    throw new Error(`Gagal menyimpan data baru: ${insertError.message}`);
+                
+                // 2. Kirim ke Google Spreadsheet jika dipilih
+                if (sendToSpreadsheet) {
+                    try {
+                        showGlobalMessage('Mengirim data ke Google Spreadsheet...', 'info');
+                        
+                        const spreadsheetResult = await sendToGoogleSpreadsheet(parsedImportData);
+                        
+                        if (spreadsheetResult.success) {
+                            spreadsheetSuccess = true;
+                            messages.push(spreadsheetResult.message);
+                        } else {
+                            messages.push(`Spreadsheet: ${spreadsheetResult.message}`);
+                        }
+                    } catch (error) {
+                        console.error("Spreadsheet Send Error:", error);
+                        messages.push(`Error spreadsheet: ${error.message}`);
+                    }
                 }
-
-                showGlobalMessage(`Berhasil mengimport ${parsedImportData.length} data karyawan.`, 'success');
+                
+                // 3. Tampilkan hasil
+                if (saveToSupabase && !supabaseSuccess && sendToSpreadsheet && !spreadsheetSuccess) {
+                    showGlobalMessage('Gagal menyimpan di semua tempat. Coba lagi.', 'error');
+                } else if (!saveToSupabase && !sendToSpreadsheet) {
+                    showGlobalMessage('Tidak ada opsi yang dipilih.', 'warning');
+                } else {
+                    const successCount = (supabaseSuccess ? 1 : 0) + (spreadsheetSuccess ? 1 : 0);
+                    const totalTargets = (saveToSupabase ? 1 : 0) + (sendToSpreadsheet ? 1 : 0);
+                    
+                    if (successCount === totalTargets) {
+                        showGlobalMessage(`Berhasil! ${messages.join('; ')}`, 'success');
+                    } else if (successCount > 0) {
+                        showGlobalMessage(`Sebagian berhasil: ${messages.join('; ')}`, 'warning');
+                    } else {
+                        showGlobalMessage(`Gagal: ${messages.join('; ')}`, 'error');
+                    }
+                }
+                
                 closeImportModal();
                 
-                // Refresh current view
-                switch(currentView) {
-                    case 'dashboard':
-                        loadDashboard();
-                        break;
-                    case 'karyawan':
-                        loadKaryawan();
-                        break;
-                    case 'absensi':
-                        loadAbsensi();
-                        break;
-                    case 'laporan':
-                        loadLaporan();
-                        break;
+                // Refresh current view jika ada data yang disimpan di Supabase
+                if (supabaseSuccess) {
+                    switch(currentView) {
+                        case 'dashboard':
+                            loadDashboard();
+                            break;
+                        case 'karyawan':
+                            loadKaryawan();
+                            break;
+                        case 'absensi':
+                            loadAbsensi();
+                            break;
+                        case 'laporan':
+                            loadLaporan();
+                            break;
+                    }
                 }
                 
             } catch (error) {
                 console.error("Import Error:", error);
-                showGlobalMessage(`Gagal mengimport data: ${error.message}`, 'error');
+                showGlobalMessage(`Error: ${error.message}`, 'error');
             } finally {
                 submitButton.disabled = false;
                 submitButton.innerHTML = '<i class="fas fa-check mr-2"></i>Proses Import';
